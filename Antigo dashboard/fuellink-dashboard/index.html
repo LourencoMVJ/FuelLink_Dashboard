@@ -1,0 +1,1187 @@
+<meta charset="utf-8">
+<title>FuelLink &harr; Bakers Tankers Offset Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --fuellink:       #2a78d6;
+    --bakers:         #eb6834;
+    --good:           #0ca30c;
+    --critical:       #d03b3b;
+    --diverge-pos:    #2a78d6;
+    --diverge-neg:    #e34948;
+    --diverge-mid:    #f0efec;
+    --input-bg:       #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-2:      #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --fuellink:       #3987e5;
+      --bakers:         #d95926;
+      --good:           #0ca30c;
+      --critical:       #e66767;
+      --diverge-pos:    #3987e5;
+      --diverge-neg:    #e66767;
+      --diverge-mid:    #383835;
+      --input-bg:       #232322;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-2:      #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --fuellink:       #3987e5;
+    --bakers:         #d95926;
+    --good:           #0ca30c;
+    --critical:       #e66767;
+    --diverge-pos:    #3987e5;
+    --diverge-neg:    #e66767;
+    --diverge-mid:    #383835;
+    --input-bg:       #232322;
+  }
+
+  .viz-root {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    padding: 24px;
+    max-width: 1180px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .viz-root * { box-sizing: border-box; }
+
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .subtitle { color: var(--text-secondary); font-size: 13px; margin: 0 0 20px; }
+
+  .badge-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .badge.fuellink .dot { background: var(--fuellink); }
+  .badge.bakers .dot { background: var(--bakers); }
+  .badge.live .dot { background: var(--good); }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    font-size: 14px; margin: 0 0 12px; color: var(--text-primary);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card h2 .hint { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .stat-tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-tile .value { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .stat-tile .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .stat-tile.fuellink .value { color: var(--fuellink); }
+  .stat-tile.bakers .value { color: var(--bakers); }
+
+  .settings-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-secondary); }
+  input, select {
+    background: var(--input-bg); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 10px; font-size: 13px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: 2px solid var(--fuellink); outline-offset: 1px; }
+  input[type="number"] { width: 120px; font-variant-numeric: tabular-nums; }
+  input:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
+  .route-rate-input { width: 90px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--text-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  .table-scroll { overflow-x: auto; }
+
+  .btn {
+    background: var(--fuellink); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn.danger-text { background: transparent; color: var(--critical); border: none; padding: 4px 8px; font-weight: 500; cursor: pointer; }
+  .btn.danger-text:hover { text-decoration: underline; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; margin-bottom: 12px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .pill.logistics { background: color-mix(in srgb, var(--bakers) 16%, transparent); color: var(--bakers); }
+  .pill.diesel { background: color-mix(in srgb, var(--fuellink) 16%, transparent); color: var(--fuellink); }
+  .pill.settlement, .pill.void { background: color-mix(in srgb, var(--text-secondary) 16%, transparent); color: var(--text-secondary); }
+  .pill.role-bakers { background: color-mix(in srgb, var(--bakers) 16%, transparent); color: var(--bakers); }
+  .pill.role-fuellink { background: color-mix(in srgb, var(--fuellink) 16%, transparent); color: var(--fuellink); }
+
+  .net-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px; border-radius: 12px; margin-bottom: 18px;
+    border: 1px solid var(--border);
+  }
+  .net-banner .value { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .net-banner .desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+  .net-banner.pos .value { color: var(--diverge-pos); }
+  .net-banner.neg .value { color: var(--diverge-neg); }
+  .net-banner.zero .value { color: var(--text-secondary); }
+
+  #chartWrap { position: relative; }
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: none; white-space: nowrap; z-index: 5;
+  }
+  .tooltip .row { display: flex; gap: 8px; justify-content: space-between; }
+
+  .empty-note { color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+
+  .assumptions { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .assumptions b { color: var(--text-secondary); }
+
+  .locked-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  .voided-text { text-decoration: line-through; opacity: 0.55; }
+  .voided-flag { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .session-pill { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 10px; }
+  .session-pill b { color: var(--text-primary); }
+
+  .login-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
+  .login-card { flex: 1 1 260px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .login-card h3 { margin: 0 0 4px; font-size: 15px; }
+  .login-card .role-tag { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .login-card .field { margin-bottom: 10px; }
+  .login-hint { font-size: 12px; color: var(--text-muted); min-height: 16px; margin-top: 8px; }
+  .login-card.bakers { border-top: 3px solid var(--bakers); }
+  .login-card.fuellink { border-top: 3px solid var(--fuellink); }
+
+  .loading-note { font-size: 13px; color: var(--text-muted); padding: 20px 0; text-align: center; }
+
+  .fleet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .fleet-add-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .fleet-add-row input { flex: 1 1 100px; }
+  .note-link { font-size: 12px; color: var(--fuellink); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+  .note-link:disabled { color: var(--text-muted); cursor: not-allowed; text-decoration: none; }
+  input[type="file"] { font-size: 12px; }
+
+  @media (max-width: 720px) {
+    .stat-row { grid-template-columns: 1fr; }
+    .fleet-grid { grid-template-columns: 1fr; }
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center; z-index: 30;
+  }
+  .modal-card { width: 360px; max-width: 90vw; margin-bottom: 0; }
+  .modal-card h2 { font-size: 15px; margin: 0 0 14px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+</style>
+
+<div class="viz-root">
+  <div class="badge-row">
+    <span class="badge fuellink"><span class="dot"></span>Fuel Link / Rwendo Services</span>
+    <span class="badge bakers"><span class="dot"></span>Bakers Tankers (Pty) Ltd</span>
+  </div>
+  <h1>Inter-company Offset Dashboard</h1>
+  <p class="subtitle">Bakers hauls diesel for Fuel Link's routes; Fuel Link sells diesel to Bakers. This nets the two flows into one running balance, shared live between both parties.</p>
+
+  <div id="loginScreen">
+    <div class="card" style="margin-bottom:14px;">
+      <h2>Sign in</h2>
+      <p class="assumptions" style="margin:0 0 4px;">
+        Each party signs in with their own account. Once signed in, the database only accepts your
+        own side's transactions &mdash; that's enforced by the server, not just the page, so the other
+        party genuinely cannot post or alter your entries. Entries are append-only: corrections are
+        made by adding a Void, which stays visible in the ledger. Both parties see the same live data
+        from their own computer.
+      </p>
+    </div>
+    <div class="login-wrap">
+      <div class="login-card bakers" data-role="bakers">
+        <h3>Bakers Tankers (Pty) Ltd</h3>
+        <div class="role-tag">Logs logistics fees &middot; edits route base rates</div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" class="login-pw">
+        </div>
+        <button class="btn login-btn">Log in</button>
+        <p class="login-hint"></p>
+      </div>
+      <div class="login-card fuellink" data-role="fuellink">
+        <h3>Fuel Link / Rwendo Services</h3>
+        <div class="role-tag">Logs diesel sales &middot; sets diesel price</div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" class="login-pw">
+        </div>
+        <button class="btn login-btn">Log in</button>
+        <p class="login-hint"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="appScreen" style="display:none;">
+    <div class="topbar">
+      <div class="session-pill">
+        Logged in as <b id="sessionRole"></b>
+        <span class="badge live"><span class="dot"></span>Live</span>
+      </div>
+      <button class="btn secondary" id="logoutBtn">Log out</button>
+    </div>
+
+    <div class="net-banner zero" id="netBanner">
+      <div>
+        <div class="desc">Net position</div>
+        <div class="value" id="netValue">R 0.00</div>
+        <div class="desc" id="netDesc">Settled &mdash; no balance owing either way</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-tile fuellink">
+        <div class="label">Diesel sold to Bakers (Fuel Link owed)</div>
+        <div class="value" id="statDiesel">R 0.00</div>
+        <div class="sub" id="statDieselSub">0 L total</div>
+      </div>
+      <div class="stat-tile bakers">
+        <div class="label">Logistics fees (Bakers owed)</div>
+        <div class="value" id="statLogistics">R 0.00</div>
+        <div class="sub" id="statLogisticsSub">0 L hauled</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Settlements recorded</div>
+        <div class="value" id="statSettle">R 0.00</div>
+        <div class="sub" id="statSettleSub">0 payments</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Net balance over time <span class="hint">running total after each transaction</span></h2>
+      <div id="chartWrap">
+        <svg id="chart" width="100%" height="220" viewBox="0 0 1100 220" preserveAspectRatio="none"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="empty-note" id="chartEmpty" style="display:none;">Add transactions below to see the running balance.</div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+      <div class="settings-row">
+        <div class="field">
+          <label for="dieselPrice">Fuel Link diesel sale price (R / litre)</label>
+          <input type="number" id="dieselPrice" step="0.01" value="27.61">
+          <span class="locked-note" id="dieselPriceLock"></span>
+        </div>
+        <div class="field">
+          <label for="monthSel">Bakers fuel-adjustment month (from rate sheet)</label>
+          <select id="monthSel">
+            <option value="may">May</option>
+            <option value="june">June</option>
+            <option value="july" selected>July</option>
+          </select>
+          <span class="locked-note" id="monthSelLock"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bakers route rates <span class="hint">fuel-linked adjustment (c/p/l) + your base haulage rate = total rate charged to Fuel Link</span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Cargo</th>
+              <th class="num">Payload (L)</th>
+              <th class="num">Fuel adj. (c/p/l)</th>
+              <th class="num">Base rate (R/L)</th>
+              <th class="num">Total rate (R/L)</th>
+            </tr>
+          </thead>
+          <tbody id="routesBody"></tbody>
+        </table>
+      </div>
+      <p class="assumptions" style="margin-top:10px;">
+        <b>Assumption:</b> "Fuel adj." is the monthly fuel escalation figure from Bakers' rate sheet
+        (<i>Fuel Link -July 28.xlsx</i>, sheet "Fuelsa"), in cents per litre &mdash; it is an adjustment on top of a
+        base haulage rate, not shown in that sheet. Base rate defaults to 0; edit it per route if you have the
+        underlying contracted rate, so the total reflects what Bakers actually invoices. Only Bakers Tankers can edit this table.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Add transaction</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="txDate">Date</label>
+          <input type="date" id="txDate">
+        </div>
+        <div class="field">
+          <label for="txType">Type</label>
+          <select id="txType">
+            <option value="logistics">Bakers logistics (owed to Bakers)</option>
+            <option value="diesel">Fuel Link diesel sale (owed to Fuel Link)</option>
+            <option value="settlement">Settlement / payment</option>
+          </select>
+        </div>
+        <div class="field" id="routeField">
+          <label for="txRoute">Route</label>
+          <select id="txRoute"></select>
+        </div>
+        <div class="field" id="litresField">
+          <label for="txLitres">Litres</label>
+          <input type="number" id="txLitres" step="1" placeholder="e.g. 40000">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field" id="truckField">
+          <label for="txTruck">Truck</label>
+          <input type="text" id="txTruck" list="truckOptions" placeholder="e.g. BT123GP" autocomplete="off">
+        </div>
+        <div class="field" id="driverField">
+          <label for="txDriver">Driver</label>
+          <input type="text" id="txDriver" list="driverOptions" placeholder="Driver full name" autocomplete="off">
+        </div>
+        <div class="field" id="trailerField">
+          <label for="txTrailer">Trailer / trela reg. (optional)</label>
+          <input type="text" id="txTrailer" placeholder="e.g. TR456GP">
+        </div>
+        <div class="field" id="deliveryNoteField" style="display:none;">
+          <label for="txDeliveryNote">Delivery note (optional)</label>
+          <input type="file" id="txDeliveryNote" accept="application/pdf,image/*">
+        </div>
+        <div class="field" id="settleDirField" style="display:none;">
+          <label for="txSettleDir">Direction</label>
+          <select id="txSettleDir">
+            <option value="bakers_to_fuellink">Bakers paid Fuel Link</option>
+            <option value="fuellink_to_bakers">Fuel Link paid Bakers</option>
+          </select>
+        </div>
+        <div class="field" id="settleAmtField" style="display:none;">
+          <label for="txSettleAmt">Amount (R)</label>
+          <input type="number" id="txSettleAmt" step="0.01" placeholder="e.g. 5000">
+        </div>
+        <div class="field">
+          <label for="txNote">Note (optional)</label>
+          <input type="text" id="txNote" placeholder="reference / invoice #">
+        </div>
+        <div class="field">
+          <button class="btn" id="addTxBtn">Add transaction</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Transaction ledger <span class="hint" id="txCount"></span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Entered by</th>
+              <th>Detail</th>
+              <th>Truck</th>
+              <th>Driver</th>
+              <th>Trailer</th>
+              <th class="num">Litres</th>
+              <th class="num">Amount</th>
+              <th class="num">Running balance</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+      <p class="empty-note" id="ledgerEmpty" style="display:none;">No transactions yet.</p>
+      <p class="assumptions" style="margin-top:10px;">
+        Entries are append-only for all financial fields: the database has no update or delete
+        permission for date, type, amount, litres, etc. To correct a mistake, void it &mdash; that adds
+        a reversing entry and keeps the original visible for the audit trail. You can only void entries
+        your own party entered. The truck, driver and trailer on an entry can be edited by either party
+        &mdash; useful for filling in that detail on entries recorded before this was tracked.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Fleet <span class="hint">trucks and drivers &mdash; either party can add one if it's missing</span></h2>
+      <div class="fleet-grid">
+        <div>
+          <table>
+            <thead><tr><th>Truck reg.</th><th>Description</th><th>Added by</th></tr></thead>
+            <tbody id="trucksBody"></tbody>
+          </table>
+          <div class="fleet-add-row">
+            <input type="text" id="newTruckReg" placeholder="Reg number, e.g. BT123GP">
+            <input type="text" id="newTruckDesc" placeholder="Description (optional)">
+            <button class="btn secondary" id="addTruckBtn">Add truck</button>
+          </div>
+        </div>
+        <div>
+          <table>
+            <thead><tr><th>Driver</th><th>License #</th><th>Phone</th><th>Added by</th></tr></thead>
+            <tbody id="driversBody"></tbody>
+          </table>
+          <div class="fleet-add-row">
+            <input type="text" id="newDriverName" placeholder="Driver name">
+            <input type="text" id="newDriverLicense" placeholder="License # (optional)">
+            <input type="text" id="newDriverPhone" placeholder="Phone (optional)">
+            <button class="btn secondary" id="addDriverBtn">Add driver</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editTxModal" style="display:none;">
+    <div class="card modal-card">
+      <h2>Edit truck / driver / trailer</h2>
+      <div class="field">
+        <label for="editTxTruck">Truck</label>
+        <input type="text" id="editTxTruck" list="truckOptions" placeholder="e.g. BT123GP" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="editTxDriver">Driver</label>
+        <input type="text" id="editTxDriver" list="driverOptions" placeholder="Driver full name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="editTxTrailer">Trailer / trela reg.</label>
+        <input type="text" id="editTxTrailer" placeholder="e.g. TR456GP">
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" id="editTxCancelBtn">Cancel</button>
+        <button class="btn" id="editTxSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="truckOptions"></datalist>
+  <datalist id="driverOptions"></datalist>
+</div>
+
+<script>
+(function() {
+  const SUPABASE_URL = 'https://vyhjninisvdlgbivwxuw.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_p2ne0Zq_u8fYhbTynOOt6g_Z_Dq7qon';
+  const ROLE_EMAIL = { bakers: 'waseem@bakers.co.za', fuellink: 'info@fuelink.co.za' };
+  const ROLE_LABEL = { bakers: 'Bakers Tankers', fuellink: 'Fuel Link' };
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentRole = null;
+  let state = { dieselPrice: 27.61, month: 'july', routes: [], transactions: [], trucks: [], drivers: [] };
+
+  function fmtR(n) {
+    const sign = n < 0 ? '-' : '';
+    return sign + 'R ' + Math.abs(n).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtL(n) {
+    return Math.round(n).toLocaleString('en-ZA') + ' L';
+  }
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // ---------- auth ----------
+  const loginRefreshers = [];
+  function setupLoginCard(card) {
+    const role = card.dataset.role;
+    const pwInput = card.querySelector('.login-pw');
+    const btn = card.querySelector('.login-btn');
+    const hint = card.querySelector('.login-hint');
+
+    btn.addEventListener('click', async () => {
+      const pw = pwInput.value;
+      if (!pw) { hint.textContent = 'Enter your password.'; return; }
+      btn.disabled = true;
+      hint.textContent = 'Signing in...';
+      const { error } = await sb.auth.signInWithPassword({ email: ROLE_EMAIL[role], password: pw });
+      btn.disabled = false;
+      if (error) { hint.textContent = error.message; return; }
+      pwInput.value = '';
+      hint.textContent = '';
+      await resolveSession();
+    });
+    pwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
+  }
+  document.querySelectorAll('.login-card').forEach(setupLoginCard);
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    currentRole = null;
+    document.getElementById('appScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = '';
+  });
+
+  async function resolveSession() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      currentRole = null;
+      document.getElementById('appScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = '';
+      return;
+    }
+    const { data: roleRow, error } = await sb.from('user_roles').select('role').eq('user_id', session.user.id).single();
+    if (error || !roleRow) {
+      alert('Signed in, but no role is assigned to this account. Contact whoever set up the dashboard.');
+      await sb.auth.signOut();
+      return;
+    }
+    currentRole = roleRow.role;
+    await enterApp();
+  }
+
+  async function enterApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = '';
+    document.getElementById('sessionRole').textContent = ROLE_LABEL[currentRole];
+    applyRolePermissions();
+    await fetchAll();
+    renderAll();
+  }
+
+  // ---------- data ----------
+  async function fetchAll() {
+    const [{ data: routes, error: e1 }, { data: fset, error: e2 }, { data: bset, error: e3 }, { data: txs, error: e4 }, { data: trucks, error: e5 }, { data: drivers, error: e6 }] = await Promise.all([
+      sb.from('routes').select('*').order('id'),
+      sb.from('fuellink_settings').select('*').eq('id', 1).single(),
+      sb.from('bakers_settings').select('*').eq('id', 1).single(),
+      sb.from('transactions').select('*').order('created_at'),
+      sb.from('trucks').select('*').order('reg_number'),
+      sb.from('drivers').select('*').order('name'),
+    ]);
+    if (e1 || e2 || e3 || e4 || e5 || e6) {
+      console.error(e1, e2, e3, e4, e5, e6);
+      return;
+    }
+    state.routes = routes.map(r => ({
+      id: r.id, from: r.from_point, to: r.to_point, cargo: r.cargo, payload: Number(r.payload),
+      adj: { may: Number(r.adj_may), june: Number(r.adj_june), july: Number(r.adj_july) },
+      baseRate: Number(r.base_rate),
+    }));
+    state.dieselPrice = Number(fset?.diesel_price ?? 27.61);
+    state.month = bset?.month ?? 'july';
+    state.transactions = txs.map(t => ({
+      id: t.id, date: t.date, type: t.type, amount: Number(t.amount), balanceDelta: Number(t.balance_delta),
+      litres: t.litres != null ? Number(t.litres) : undefined, routeId: t.route_id, enteredBy: t.entered_by,
+      note: t.note || '', detail: t.detail, voidsId: t.voids_id, voidsType: t.voids_type,
+      truckId: t.truck_id, driverId: t.driver_id, trailerReg: t.trailer_reg || '',
+      truckText: t.truck_text || '', driverText: t.driver_text || '',
+      deliveryNotePath: t.delivery_note_path, deliveryNoteName: t.delivery_note_name,
+    }));
+    state.trucks = trucks.map(tr => ({ id: tr.id, reg: tr.reg_number, description: tr.description || '', createdBy: tr.created_by }));
+    state.drivers = drivers.map(d => ({ id: d.id, name: d.name, license: d.license_number || '', phone: d.phone || '', createdBy: d.created_by }));
+  }
+
+  sb.channel('public:changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => { if (currentRole) fetchAll().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, () => { if (currentRole) fetchAll().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'fuellink_settings' }, () => { if (currentRole) fetchAll().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bakers_settings' }, () => { if (currentRole) fetchAll().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trucks' }, () => { if (currentRole) fetchAll().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => { if (currentRole) fetchAll().then(renderAll); })
+    .subscribe();
+
+  const dieselPriceInput = document.getElementById('dieselPrice');
+  const monthSel = document.getElementById('monthSel');
+
+  dieselPriceInput.addEventListener('change', async () => {
+    if (currentRole !== 'fuellink') return;
+    const v = parseFloat(dieselPriceInput.value);
+    if (isNaN(v)) return;
+    const { error } = await sb.from('fuellink_settings').update({ diesel_price: v }).eq('id', 1);
+    if (error) { alert(error.message); }
+    await fetchAll();
+    renderAll();
+  });
+  monthSel.addEventListener('change', async () => {
+    if (currentRole !== 'bakers') return;
+    const { error } = await sb.from('bakers_settings').update({ month: monthSel.value }).eq('id', 1);
+    if (error) { alert(error.message); }
+    await fetchAll();
+    renderAll();
+  });
+
+  function routeTotalRate(route) {
+    const adj = route.adj[state.month] || 0;
+    return (route.baseRate || 0) + adj / 100;
+  }
+
+  function applyRolePermissions() {
+    dieselPriceInput.disabled = currentRole !== 'fuellink';
+    document.getElementById('dieselPriceLock').textContent = currentRole !== 'fuellink' ? 'Only Fuel Link can edit this.' : '';
+    monthSel.disabled = currentRole !== 'bakers';
+    document.getElementById('monthSelLock').textContent = currentRole !== 'bakers' ? 'Only Bakers Tankers can edit this.' : '';
+    updateTxTypeOptions();
+  }
+
+  function updateTxTypeOptions() {
+    const opts = Array.from(txType.querySelectorAll('option'));
+    opts.forEach(o => {
+      const allowed = o.value === 'settlement'
+        || (currentRole === 'bakers' && o.value === 'logistics')
+        || (currentRole === 'fuellink' && o.value === 'diesel');
+      o.hidden = !allowed;
+      o.disabled = !allowed;
+    });
+    const firstAllowed = opts.find(o => !o.hidden);
+    if (firstAllowed) txType.value = firstAllowed.value;
+    updateFormVisibility();
+  }
+
+  function renderRoutes() {
+    const body = document.getElementById('routesBody');
+    body.innerHTML = '';
+    const canEdit = currentRole === 'bakers';
+    state.routes.forEach(route => {
+      const tr = document.createElement('tr');
+      const adj = route.adj[state.month] || 0;
+      const total = routeTotalRate(route);
+      tr.innerHTML = `
+        <td>${route.from} &rarr; ${route.to}</td>
+        <td>${route.cargo}</td>
+        <td class="num">${route.payload.toLocaleString('en-ZA')}</td>
+        <td class="num">${adj.toFixed(2)}</td>
+        <td class="num"><input type="number" class="route-rate-input" step="0.01" data-route="${route.id}" value="${route.baseRate}" ${canEdit ? '' : 'disabled'} title="${canEdit ? '' : 'Only Bakers Tankers can edit this'}"></td>
+        <td class="num">${total.toFixed(4)}</td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('input[data-route]').forEach(inp => {
+      inp.addEventListener('change', async () => {
+        if (currentRole !== 'bakers') return;
+        const v = parseFloat(inp.value);
+        if (isNaN(v)) return;
+        const { error } = await sb.from('routes').update({ base_rate: v }).eq('id', inp.dataset.route);
+        if (error) { alert(error.message); }
+        await fetchAll();
+        renderAll();
+      });
+    });
+  }
+
+  function populateRouteSelect() {
+    const sel = document.getElementById('txRoute');
+    sel.innerHTML = '';
+    state.routes.forEach(route => {
+      const opt = document.createElement('option');
+      opt.value = route.id;
+      opt.textContent = `${route.from} -> ${route.to} (${route.payload.toLocaleString('en-ZA')} L)`;
+      sel.appendChild(opt);
+    });
+  }
+
+  // Truck/driver are free-text inputs backed by a <datalist> of Fleet suggestions.
+  // Typed text is matched against the Fleet list (exact, case-insensitive); if it
+  // matches, we keep the relational id, otherwise we just keep the typed text —
+  // no new Fleet record is created automatically.
+  function resolveTruck(text) {
+    const t = (text || '').trim();
+    if (!t) return { truck_id: null, truck_text: null };
+    const match = state.trucks.find(tr => tr.reg.toLowerCase() === t.toLowerCase());
+    return match ? { truck_id: match.id, truck_text: null } : { truck_id: null, truck_text: t };
+  }
+  function resolveDriver(text) {
+    const t = (text || '').trim();
+    if (!t) return { driver_id: null, driver_text: null };
+    const match = state.drivers.find(d => d.name.toLowerCase() === t.toLowerCase());
+    return match ? { driver_id: match.id, driver_text: null } : { driver_id: null, driver_text: t };
+  }
+  function truckDisplayText(tx) {
+    const truck = state.trucks.find(t => t.id === tx.truckId);
+    return truck ? truck.reg : (tx.truckText || '');
+  }
+  function driverDisplayText(tx) {
+    const driver = state.drivers.find(d => d.id === tx.driverId);
+    return driver ? driver.name : (tx.driverText || '');
+  }
+
+  function populateTruckAndDriverDatalists() {
+    const truckDl = document.getElementById('truckOptions');
+    truckDl.innerHTML = '';
+    state.trucks.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.reg;
+      if (t.description) opt.label = t.description;
+      truckDl.appendChild(opt);
+    });
+
+    const driverDl = document.getElementById('driverOptions');
+    driverDl.innerHTML = '';
+    state.drivers.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.name;
+      if (d.license) opt.label = d.license;
+      driverDl.appendChild(opt);
+    });
+  }
+
+  let editingTxId = null;
+  function openEditModal(id) {
+    const tx = state.transactions.find(t => t.id === id);
+    if (!tx) return;
+    editingTxId = id;
+    document.getElementById('editTxTruck').value = truckDisplayText(tx);
+    document.getElementById('editTxDriver').value = driverDisplayText(tx);
+    document.getElementById('editTxTrailer').value = tx.trailerReg || '';
+    document.getElementById('editTxModal').style.display = 'flex';
+  }
+  function closeEditModal() {
+    editingTxId = null;
+    document.getElementById('editTxModal').style.display = 'none';
+  }
+  document.getElementById('editTxCancelBtn').addEventListener('click', closeEditModal);
+  document.getElementById('editTxSaveBtn').addEventListener('click', async () => {
+    if (!editingTxId) return;
+    const truckMatch = resolveTruck(document.getElementById('editTxTruck').value);
+    const driverMatch = resolveDriver(document.getElementById('editTxDriver').value);
+    const trailerReg = document.getElementById('editTxTrailer').value.trim() || null;
+    const btn = document.getElementById('editTxSaveBtn');
+    btn.disabled = true;
+    const { error } = await sb.from('transactions')
+      .update({
+        truck_id: truckMatch.truck_id, truck_text: truckMatch.truck_text,
+        driver_id: driverMatch.driver_id, driver_text: driverMatch.driver_text,
+        trailer_reg: trailerReg,
+      })
+      .eq('id', editingTxId);
+    btn.disabled = false;
+    if (error) { alert(error.message); return; }
+    closeEditModal();
+    await fetchAll();
+    renderAll();
+  });
+
+  function renderFleet() {
+    const truckBody = document.getElementById('trucksBody');
+    truckBody.innerHTML = state.trucks.length ? '' : '<tr><td colspan="3" class="empty-note">No trucks added yet.</td></tr>';
+    state.trucks.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(t.reg)}</td><td>${escapeHtml(t.description)}</td><td>${enteredByPill(t.createdBy)}</td>`;
+      truckBody.appendChild(tr);
+    });
+
+    const driverBody = document.getElementById('driversBody');
+    driverBody.innerHTML = state.drivers.length ? '' : '<tr><td colspan="4" class="empty-note">No drivers added yet.</td></tr>';
+    state.drivers.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.license)}</td><td>${escapeHtml(d.phone)}</td><td>${enteredByPill(d.createdBy)}</td>`;
+      driverBody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('addTruckBtn').addEventListener('click', async () => {
+    if (!currentRole) return;
+    const reg = document.getElementById('newTruckReg').value.trim();
+    if (!reg) { alert('Enter a truck registration number.'); return; }
+    const description = document.getElementById('newTruckDesc').value.trim();
+    const { error } = await sb.from('trucks').insert({ reg_number: reg, description: description || null, created_by: currentRole });
+    if (error) { alert(error.message); return; }
+    document.getElementById('newTruckReg').value = '';
+    document.getElementById('newTruckDesc').value = '';
+    await fetchAll();
+    renderAll();
+  });
+
+  document.getElementById('addDriverBtn').addEventListener('click', async () => {
+    if (!currentRole) return;
+    const name = document.getElementById('newDriverName').value.trim();
+    if (!name) { alert('Enter a driver name.'); return; }
+    const license = document.getElementById('newDriverLicense').value.trim();
+    const phone = document.getElementById('newDriverPhone').value.trim();
+    const { error } = await sb.from('drivers').insert({ name, license_number: license || null, phone: phone || null, created_by: currentRole });
+    if (error) { alert(error.message); return; }
+    document.getElementById('newDriverName').value = '';
+    document.getElementById('newDriverLicense').value = '';
+    document.getElementById('newDriverPhone').value = '';
+    await fetchAll();
+    renderAll();
+  });
+
+  document.getElementById('txDate').valueAsDate = new Date();
+
+  const txType = document.getElementById('txType');
+  const routeField = document.getElementById('routeField');
+  const litresField = document.getElementById('litresField');
+  const settleDirField = document.getElementById('settleDirField');
+  const settleAmtField = document.getElementById('settleAmtField');
+
+  function updateFormVisibility() {
+    const type = txType.value;
+    const isSettlement = type === 'settlement';
+    const isOperation = type === 'logistics' || type === 'diesel';
+    routeField.style.display = (type === 'logistics') ? '' : 'none';
+    litresField.style.display = isSettlement ? 'none' : '';
+    settleDirField.style.display = isSettlement ? '' : 'none';
+    settleAmtField.style.display = isSettlement ? '' : 'none';
+    document.getElementById('truckField').style.display = isSettlement ? 'none' : '';
+    document.getElementById('driverField').style.display = isOperation ? '' : 'none';
+    document.getElementById('trailerField').style.display = isOperation ? '' : 'none';
+    document.getElementById('deliveryNoteField').style.display = (type === 'logistics') ? '' : 'none';
+  }
+  txType.addEventListener('change', updateFormVisibility);
+  updateFormVisibility();
+
+  document.getElementById('addTxBtn').addEventListener('click', async () => {
+    if (!currentRole) return;
+    const type = txType.value;
+    if ((type === 'logistics' && currentRole !== 'bakers') || (type === 'diesel' && currentRole !== 'fuellink')) {
+      alert('You are not signed in as the party that enters this transaction type.');
+      return;
+    }
+    const date = document.getElementById('txDate').value || new Date().toISOString().slice(0, 10);
+    const note = document.getElementById('txNote').value.trim();
+    let payload = { date, type, note, entered_by: currentRole };
+
+    if (type === 'settlement') {
+      const amt = parseFloat(document.getElementById('txSettleAmt').value);
+      if (isNaN(amt) || amt <= 0) { alert('Enter a settlement amount greater than 0.'); return; }
+      const dir = document.getElementById('txSettleDir').value;
+      payload.amount = amt;
+      payload.balance_delta = dir === 'bakers_to_fuellink' ? -amt : amt;
+      payload.detail = dir === 'bakers_to_fuellink' ? 'Bakers paid Fuel Link' : 'Fuel Link paid Bakers';
+    } else {
+      const litres = parseFloat(document.getElementById('txLitres').value);
+      if (isNaN(litres) || litres <= 0) { alert('Enter litres greater than 0.'); return; }
+      payload.litres = litres;
+
+      const truckInput = document.getElementById('txTruck').value.trim();
+      if (!truckInput) { alert('Enter which truck this is for.'); return; }
+      const truckMatch = resolveTruck(truckInput);
+      payload.truck_id = truckMatch.truck_id;
+      payload.truck_text = truckMatch.truck_text;
+
+      const driverInput = document.getElementById('txDriver').value.trim();
+      if (!driverInput) { alert('Enter which driver this is for.'); return; }
+      const driverMatch = resolveDriver(driverInput);
+      payload.driver_id = driverMatch.driver_id;
+      payload.driver_text = driverMatch.driver_text;
+
+      const trailerReg = document.getElementById('txTrailer').value.trim();
+      if (trailerReg) payload.trailer_reg = trailerReg;
+
+      if (type === 'diesel') {
+        payload.amount = litres * state.dieselPrice;
+        payload.balance_delta = payload.amount;
+        payload.detail = `Diesel @ R${state.dieselPrice.toFixed(2)}/L -> Truck ${truckInput}`;
+      } else {
+        const routeId = document.getElementById('txRoute').value;
+        const route = state.routes.find(r => r.id === routeId);
+        payload.route_id = routeId;
+        payload.amount = litres * routeTotalRate(route);
+        payload.balance_delta = -payload.amount;
+        payload.detail = `${route.from} → ${route.to} @ R${routeTotalRate(route).toFixed(4)}/L (Truck ${truckInput}, Driver ${driverInput})`;
+      }
+    }
+
+    const btn = document.getElementById('addTxBtn');
+    btn.disabled = true;
+
+    if (type === 'logistics') {
+      const fileInput = document.getElementById('txDeliveryNote');
+      const file = fileInput.files[0];
+      if (file) {
+        const path = `${crypto.randomUUID()}-${file.name}`;
+        const { error: upErr } = await sb.storage.from('delivery-notes').upload(path, file);
+        if (upErr) { btn.disabled = false; alert('Delivery note upload failed: ' + upErr.message); return; }
+        payload.delivery_note_path = path;
+        payload.delivery_note_name = file.name;
+      }
+    }
+
+    const { error } = await sb.from('transactions').insert(payload);
+    btn.disabled = false;
+    if (error) { alert(error.message); return; }
+    document.getElementById('txLitres').value = '';
+    document.getElementById('txSettleAmt').value = '';
+    document.getElementById('txNote').value = '';
+    document.getElementById('txTrailer').value = '';
+    document.getElementById('txDeliveryNote').value = '';
+    await fetchAll();
+    renderAll();
+  });
+
+  function typeLabel(type) {
+    if (type === 'logistics') return '<span class="pill logistics">Logistics</span>';
+    if (type === 'diesel') return '<span class="pill diesel">Diesel sale</span>';
+    if (type === 'void') return '<span class="pill void">Void</span>';
+    return '<span class="pill settlement">Settlement</span>';
+  }
+  function enteredByPill(role) {
+    if (role === 'bakers') return '<span class="pill role-bakers">Bakers</span>';
+    if (role === 'fuellink') return '<span class="pill role-fuellink">Fuel Link</span>';
+    return '&mdash;';
+  }
+
+  async function voidTransaction(id) {
+    const original = state.transactions.find(t => t.id === id);
+    if (!original || original.type === 'void') return;
+    if (original.enteredBy !== currentRole) { alert('You can only void entries your own party entered.'); return; }
+    const alreadyVoided = state.transactions.some(t => t.type === 'void' && t.voidsId === id);
+    if (alreadyVoided) return;
+    if (!confirm('Void this entry? This adds a reversing entry — the original stays visible for the audit trail.')) return;
+    const { error } = await sb.from('transactions').insert({
+      date: new Date().toISOString().slice(0, 10),
+      type: 'void',
+      voids_id: original.id,
+      voids_type: original.type,
+      amount: original.amount,
+      balance_delta: -original.balanceDelta,
+      litres: original.litres ?? null,
+      entered_by: currentRole,
+      note: '',
+      detail: `Void of: ${original.detail}`,
+    });
+    if (error) { alert(error.message); return; }
+    await fetchAll();
+    renderAll();
+  }
+
+  function renderLedger() {
+    const body = document.getElementById('ledgerBody');
+    body.innerHTML = '';
+    const sorted = [...state.transactions];
+    let running = 0;
+    const rows = sorted.map(tx => {
+      running += tx.balanceDelta;
+      return { tx, running };
+    });
+
+    document.getElementById('ledgerEmpty').style.display = rows.length ? 'none' : '';
+    document.getElementById('txCount').textContent = rows.length ? `${rows.length} transaction${rows.length === 1 ? '' : 's'}` : '';
+
+    const voidedIds = new Set(state.transactions.filter(t => t.type === 'void').map(t => t.voidsId));
+
+    [...rows].reverse().forEach(({ tx, running }) => {
+      const tr = document.createElement('tr');
+      const isVoided = voidedIds.has(tx.id);
+      const textClass = isVoided ? 'voided-text' : '';
+      const canVoid = tx.type !== 'void' && !isVoided && tx.enteredBy === currentRole;
+      const canEdit = tx.type === 'logistics' || tx.type === 'diesel';
+      const voidControl = canVoid
+        ? `<button class="btn danger-text" data-void="${tx.id}">Void</button>`
+        : (isVoided ? '<span class="voided-flag">voided</span>' : '');
+      const editControl = canEdit ? `<button class="note-link" data-edit="${tx.id}">Edit</button>` : '';
+      const actionCell = `<div style="display:flex; gap:10px; align-items:center;">${editControl}${voidControl}</div>`;
+      const truck = state.trucks.find(t => t.id === tx.truckId);
+      const driver = state.drivers.find(d => d.id === tx.driverId);
+      const truckLabel = truckDisplayText(tx);
+      const driverLabel = driverDisplayText(tx);
+      const noteCell = tx.deliveryNotePath
+        ? `<button class="note-link" data-note="${tx.deliveryNotePath}">${escapeHtml(tx.deliveryNoteName || 'note')}</button>`
+        : '';
+      tr.innerHTML = `
+        <td><span class="${textClass}">${tx.date}</span></td>
+        <td>${typeLabel(tx.type)}</td>
+        <td>${enteredByPill(tx.enteredBy)}</td>
+        <td><span class="${textClass}">${tx.detail}${tx.note ? ' &mdash; ' + escapeHtml(tx.note) : ''}</span>${noteCell ? '<br>' + noteCell : ''}</td>
+        <td><span class="${textClass}">${truckLabel ? escapeHtml(truckLabel) : '&mdash;'}</span></td>
+        <td><span class="${textClass}">${driverLabel ? escapeHtml(driverLabel) + (driver && driver.phone ? ' (' + escapeHtml(driver.phone) + ')' : '') : '&mdash;'}</span></td>
+        <td><span class="${textClass}">${tx.trailerReg ? escapeHtml(tx.trailerReg) : '&mdash;'}</span></td>
+        <td class="num"><span class="${textClass}">${tx.litres ? Math.round(tx.litres).toLocaleString('en-ZA') : '&mdash;'}</span></td>
+        <td class="num"><span class="${textClass}">${fmtR(tx.amount)}</span></td>
+        <td class="num" style="color:${running > 0 ? 'var(--diverge-pos)' : running < 0 ? 'var(--diverge-neg)' : 'var(--text-secondary)'}">${fmtR(running)}</td>
+        <td>${actionCell}</td>
+      `;
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll('button[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => openEditModal(btn.dataset.edit));
+    });
+    body.querySelectorAll('button[data-void]').forEach(btn => {
+      btn.addEventListener('click', () => voidTransaction(btn.dataset.void));
+    });
+    body.querySelectorAll('button[data-note]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const { data, error } = await sb.storage.from('delivery-notes').createSignedUrl(btn.dataset.note, 60);
+        btn.disabled = false;
+        if (error) { alert('Could not open delivery note: ' + error.message); return; }
+        window.open(data.signedUrl, '_blank');
+      });
+    });
+
+    return rows;
+  }
+
+  function renderStatsAndChart(rows) {
+    let dieselTotal = 0, dieselLitres = 0, logisticsTotal = 0, logisticsLitres = 0, settleTotal = 0, settleCount = 0;
+    state.transactions.forEach(tx => {
+      if (tx.type === 'diesel') { dieselTotal += tx.amount; dieselLitres += tx.litres; }
+      else if (tx.type === 'logistics') { logisticsTotal += tx.amount; logisticsLitres += tx.litres; }
+      else if (tx.type === 'settlement') { settleTotal += tx.amount; settleCount += 1; }
+      else if (tx.type === 'void') {
+        if (tx.voidsType === 'diesel') { dieselTotal -= tx.amount; dieselLitres -= (tx.litres || 0); }
+        else if (tx.voidsType === 'logistics') { logisticsTotal -= tx.amount; logisticsLitres -= (tx.litres || 0); }
+        else if (tx.voidsType === 'settlement') { settleTotal -= tx.amount; settleCount -= 1; }
+      }
+    });
+
+    document.getElementById('statDiesel').textContent = fmtR(dieselTotal);
+    document.getElementById('statDieselSub').textContent = fmtL(dieselLitres) + ' total';
+    document.getElementById('statLogistics').textContent = fmtR(logisticsTotal);
+    document.getElementById('statLogisticsSub').textContent = fmtL(logisticsLitres) + ' hauled';
+    document.getElementById('statSettle').textContent = fmtR(settleTotal);
+    document.getElementById('statSettleSub').textContent = settleCount + (settleCount === 1 ? ' payment' : ' payments');
+
+    const net = rows.length ? rows[rows.length - 1].running : 0;
+    const banner = document.getElementById('netBanner');
+    const netValue = document.getElementById('netValue');
+    const netDesc = document.getElementById('netDesc');
+    banner.classList.remove('pos', 'neg', 'zero');
+    netValue.textContent = fmtR(Math.abs(net));
+    if (net > 0.005) {
+      banner.classList.add('pos');
+      netDesc.textContent = 'Bakers owes Fuel Link (net diesel value exceeds logistics fees + settlements)';
+    } else if (net < -0.005) {
+      banner.classList.add('neg');
+      netDesc.textContent = 'Fuel Link owes Bakers (net logistics fees + settlements exceed diesel value)';
+    } else {
+      banner.classList.add('zero');
+      netDesc.textContent = 'Settled - no balance owing either way';
+    }
+
+    renderChart(rows);
+  }
+
+  function renderChart(rows) {
+    const svg = document.getElementById('chart');
+    const tooltip = document.getElementById('tooltip');
+    const emptyNote = document.getElementById('chartEmpty');
+    svg.innerHTML = '';
+
+    if (rows.length < 2) {
+      emptyNote.style.display = '';
+      svg.style.display = 'none';
+      return;
+    }
+    emptyNote.style.display = 'none';
+    svg.style.display = '';
+
+    const W = 1100, H = 220, padL = 60, padR = 20, padT = 16, padB = 28;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const values = rows.map(r => r.running);
+    let maxV = Math.max(...values, 0), minV = Math.min(...values, 0);
+    if (maxV === minV) { maxV += 1; minV -= 1; }
+    const range = maxV - minV;
+    const yFor = v => padT + plotH - ((v - minV) / range) * plotH;
+    const xFor = i => padL + (rows.length === 1 ? plotW / 2 : (i / (rows.length - 1)) * plotW);
+    const zeroY = yFor(0);
+
+    const ns = 'http://www.w3.org/2000/svg';
+    function el(tag, attrs) {
+      const e = document.createElementNS(ns, tag);
+      Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+      return e;
+    }
+
+    const gridVals = [maxV, (maxV + minV) / 2, minV];
+    gridVals.forEach(v => {
+      const y = yFor(v);
+      svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: 'var(--grid)', 'stroke-width': 1 }));
+      const t = el('text', { x: padL - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--text-muted)' });
+      t.textContent = 'R' + Math.round(v).toLocaleString('en-ZA');
+      svg.appendChild(t);
+    });
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: zeroY, y2: zeroY, stroke: 'var(--baseline)', 'stroke-width': 1.5 }));
+
+    for (let i = 0; i < rows.length - 1; i++) {
+      const x1 = xFor(i), y1 = yFor(rows[i].running);
+      const x2 = xFor(i + 1), y2 = yFor(rows[i + 1].running);
+      const avg = (rows[i].running + rows[i + 1].running) / 2;
+      const color = avg >= 0 ? 'var(--diverge-pos)' : 'var(--diverge-neg)';
+      const path = `M ${x1} ${zeroY} L ${x1} ${y1} L ${x2} ${y2} L ${x2} ${zeroY} Z`;
+      svg.appendChild(el('path', { d: path, fill: color, opacity: 0.12 }));
+    }
+
+    for (let i = 0; i < rows.length - 1; i++) {
+      const x1 = xFor(i), y1 = yFor(rows[i].running);
+      const x2 = xFor(i + 1), y2 = yFor(rows[i + 1].running);
+      const avg = (rows[i].running + rows[i + 1].running) / 2;
+      const color = avg >= 0 ? 'var(--diverge-pos)' : 'var(--diverge-neg)';
+      svg.appendChild(el('line', { x1, y1, x2, y2, stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round' }));
+    }
+
+    const lastX = xFor(rows.length - 1), lastY = yFor(rows[rows.length - 1].running);
+    const lastColor = rows[rows.length - 1].running >= 0 ? 'var(--diverge-pos)' : 'var(--diverge-neg)';
+    svg.appendChild(el('circle', { cx: lastX, cy: lastY, r: 4, fill: lastColor }));
+    const label = el('text', { x: Math.min(lastX + 8, W - padR - 4), y: lastY - 8, 'font-size': 12, 'font-weight': 600, fill: lastColor, 'text-anchor': lastX > W - padR - 90 ? 'end' : 'start' });
+    label.textContent = fmtR(rows[rows.length - 1].running);
+    svg.appendChild(label);
+
+    rows.forEach((r, i) => {
+      const x = xFor(i), y = yFor(r.running);
+      const hit = el('circle', { cx: x, cy: y, r: 10, fill: 'transparent', style: 'cursor:pointer' });
+      hit.addEventListener('mouseenter', () => {
+        tooltip.style.display = 'block';
+        tooltip.style.left = Math.min(x, W - 160) + 'px';
+        tooltip.style.top = Math.max(y - 60, 0) + 'px';
+        tooltip.innerHTML = `
+          <div class="row"><b>${r.tx.date}</b></div>
+          <div class="row">${typeLabel(r.tx.type)}</div>
+          <div class="row">${escapeHtml(r.tx.detail)}</div>
+          <div class="row">Balance: <b>${fmtR(r.running)}</b></div>
+        `;
+      });
+      hit.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+      svg.appendChild(hit);
+    });
+  }
+
+  function renderAll() {
+    if (!currentRole) return;
+    dieselPriceInput.value = state.dieselPrice;
+    monthSel.value = state.month;
+    populateRouteSelect();
+    populateTruckAndDriverDatalists();
+    renderFleet();
+    renderRoutes();
+    const rows = renderLedger();
+    renderStatsAndChart(rows);
+  }
+
+  resolveSession();
+})();
+</script>
