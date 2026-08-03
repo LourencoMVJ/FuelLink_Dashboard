@@ -41,7 +41,9 @@
       --diverge-mid:    #383835;
       --input-bg:       #232322;
     }
+    :root:where(:not([data-theme="light"])) .viz-root td { color: #ffffff; }
   }
+  :root[data-theme="dark"] .viz-root td { color: #ffffff; }
   :root[data-theme="dark"] .viz-root {
     color-scheme: dark;
     --surface-1:      #1a1a19;
@@ -122,10 +124,9 @@
   input:focus, select:focus { outline: 2px solid var(--fuellink); outline-offset: 1px; }
   input[type="number"] { width: 120px; font-variant-numeric: tabular-nums; }
   input:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
-  .route-rate-input { width: 90px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; color: var(--text-primary); }
   th { color: var(--text-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   tr:last-child td { border-bottom: none; }
@@ -210,8 +211,9 @@
     position: fixed; inset: 0; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center; z-index: 30;
   }
-  .modal-card { width: 360px; max-width: 90vw; margin-bottom: 0; }
+  .modal-card { width: 360px; max-width: 90vw; margin-bottom: 0; max-height: 85vh; overflow-y: auto; }
   .modal-card h2 { font-size: 15px; margin: 0 0 14px; }
+  #editModalFields .field { margin-bottom: 10px; }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
 </style>
 
@@ -229,9 +231,9 @@
       <p class="assumptions" style="margin:0 0 4px;">
         Each party signs in with their own account. Once signed in, the database only accepts your
         own side's transactions &mdash; that's enforced by the server, not just the page, so the other
-        party genuinely cannot post or alter your entries. Entries are append-only: corrections are
-        made by adding a Void, which stays visible in the ledger. Both parties see the same live data
-        from their own computer.
+        party genuinely cannot post, edit or void your entries. You can correct your own entries directly
+        with Edit, or reverse one with Void, which stays visible in the ledger. Both parties see the same
+        live data from their own computer.
       </p>
     </div>
     <div class="login-wrap">
@@ -334,6 +336,7 @@
               <th class="num">Fuel adj. (c/p/l)</th>
               <th class="num">Base rate (R/L)</th>
               <th class="num">Total rate (R/L)</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="routesBody"></tbody>
@@ -433,11 +436,11 @@
       </div>
       <p class="empty-note" id="ledgerEmpty" style="display:none;">No transactions yet.</p>
       <p class="assumptions" style="margin-top:10px;">
-        Entries are append-only for all financial fields: the database has no update or delete
-        permission for date, type, amount, litres, etc. To correct a mistake, void it &mdash; that adds
-        a reversing entry and keeps the original visible for the audit trail. You can only void entries
-        your own party entered. The truck, driver and trailer on an entry can be edited by either party
-        &mdash; useful for filling in that detail on entries recorded before this was tracked.
+        You can Edit any entry your own party entered &mdash; date, litres, route, truck, driver, trailer,
+        note, and even the amount, which recalculates automatically from litres and the rate. The type and
+        who entered it can't be changed. Alternatively, Void reverses an entry while keeping the original
+        visible for the audit trail. Either way, every change is recorded. You can't edit or void entries
+        the other party entered, or anything already voided.
       </p>
     </div>
 
@@ -446,7 +449,7 @@
       <div class="fleet-grid">
         <div>
           <table>
-            <thead><tr><th>Truck reg.</th><th>Description</th><th>Added by</th></tr></thead>
+            <thead><tr><th>Truck reg.</th><th>Description</th><th>Added by</th><th></th></tr></thead>
             <tbody id="trucksBody"></tbody>
           </table>
           <div class="fleet-add-row">
@@ -457,7 +460,7 @@
         </div>
         <div>
           <table>
-            <thead><tr><th>Driver</th><th>License #</th><th>Phone</th><th>Added by</th></tr></thead>
+            <thead><tr><th>Driver</th><th>License #</th><th>Phone</th><th>Added by</th><th></th></tr></thead>
             <tbody id="driversBody"></tbody>
           </table>
           <div class="fleet-add-row">
@@ -471,24 +474,14 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="editTxModal" style="display:none;">
+  <div class="modal-overlay" id="editModal" style="display:none;">
     <div class="card modal-card">
-      <h2>Edit truck / driver / trailer</h2>
-      <div class="field">
-        <label for="editTxTruck">Truck</label>
-        <input type="text" id="editTxTruck" list="truckOptions" placeholder="e.g. BT123GP" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="editTxDriver">Driver</label>
-        <input type="text" id="editTxDriver" list="driverOptions" placeholder="Driver full name" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="editTxTrailer">Trailer / trela reg.</label>
-        <input type="text" id="editTxTrailer" placeholder="e.g. TR456GP">
-      </div>
+      <h2 id="editModalTitle">Edit</h2>
+      <div id="editModalFields"></div>
+      <p class="locked-note" id="editModalHint" style="display:none;"></p>
       <div class="modal-actions">
-        <button class="btn secondary" id="editTxCancelBtn">Cancel</button>
-        <button class="btn" id="editTxSaveBtn">Save</button>
+        <button class="btn secondary" id="editCancelBtn">Cancel</button>
+        <button class="btn" id="editSaveBtn">Save</button>
       </div>
     </div>
   </div>
@@ -607,6 +600,7 @@
       note: t.note || '', detail: t.detail, voidsId: t.voids_id, voidsType: t.voids_type,
       truckId: t.truck_id, driverId: t.driver_id, trailerReg: t.trailer_reg || '',
       truckText: t.truck_text || '', driverText: t.driver_text || '',
+      unitRate: t.unit_rate != null ? Number(t.unit_rate) : null,
       deliveryNotePath: t.delivery_note_path, deliveryNoteName: t.delivery_note_name,
     }));
     state.trucks = trucks.map(tr => ({ id: tr.id, reg: tr.reg_number, description: tr.description || '', createdBy: tr.created_by }));
@@ -677,25 +671,22 @@
       const tr = document.createElement('tr');
       const adj = route.adj[state.month] || 0;
       const total = routeTotalRate(route);
+      const editControl = canEdit ? `<button class="note-link" data-edit-route="${route.id}">Edit</button>` : '';
       tr.innerHTML = `
         <td>${route.from} &rarr; ${route.to}</td>
         <td>${route.cargo}</td>
         <td class="num">${route.payload.toLocaleString('en-ZA')}</td>
         <td class="num">${adj.toFixed(2)}</td>
-        <td class="num"><input type="number" class="route-rate-input" step="0.01" data-route="${route.id}" value="${route.baseRate}" ${canEdit ? '' : 'disabled'} title="${canEdit ? '' : 'Only Bakers Tankers can edit this'}"></td>
+        <td class="num">${route.baseRate.toFixed(2)}</td>
         <td class="num">${total.toFixed(4)}</td>
+        <td>${editControl}</td>
       `;
       body.appendChild(tr);
     });
-    body.querySelectorAll('input[data-route]').forEach(inp => {
-      inp.addEventListener('change', async () => {
-        if (currentRole !== 'bakers') return;
-        const v = parseFloat(inp.value);
-        if (isNaN(v)) return;
-        const { error } = await sb.from('routes').update({ base_rate: v }).eq('id', inp.dataset.route);
-        if (error) { alert(error.message); }
-        await fetchAll();
-        renderAll();
+    body.querySelectorAll('button[data-edit-route]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const route = state.routes.find(r => r.id === btn.dataset.editRoute);
+        if (route) openEditModalGeneric('route', route);
       });
     });
   }
@@ -756,57 +747,294 @@
     });
   }
 
-  let editingTxId = null;
-  function openEditModal(id) {
-    const tx = state.transactions.find(t => t.id === id);
-    if (!tx) return;
-    editingTxId = id;
-    document.getElementById('editTxTruck').value = truckDisplayText(tx);
-    document.getElementById('editTxDriver').value = driverDisplayText(tx);
-    document.getElementById('editTxTrailer').value = tx.trailerReg || '';
-    document.getElementById('editTxModal').style.display = 'flex';
+  // ---------- transaction financials (shared by create + edit) ----------
+  function isTransactionVoided(id) {
+    return state.transactions.some(t => t.type === 'void' && t.voidsId === id);
   }
-  function closeEditModal() {
-    editingTxId = null;
-    document.getElementById('editTxModal').style.display = 'none';
+  function canEditTransaction(tx) {
+    return tx.type !== 'void' && tx.enteredBy === currentRole && !isTransactionVoided(tx.id);
   }
-  document.getElementById('editTxCancelBtn').addEventListener('click', closeEditModal);
-  document.getElementById('editTxSaveBtn').addEventListener('click', async () => {
-    if (!editingTxId) return;
-    const truckMatch = resolveTruck(document.getElementById('editTxTruck').value);
-    const driverMatch = resolveDriver(document.getElementById('editTxDriver').value);
-    const trailerReg = document.getElementById('editTxTrailer').value.trim() || null;
-    const btn = document.getElementById('editTxSaveBtn');
+
+  // Computes amount/balance_delta/unit_rate/detail for a transaction. On
+  // create, unitRate is omitted so it's priced at today's rate. On edit, the
+  // transaction's frozen unit_rate is passed in so correcting unrelated
+  // fields (date, note, ...) never silently re-prices an old entry.
+  function computeTxFinancials({ type, litres, routeId, settleDir, amount, unitRate, truckLabel, driverLabel }) {
+    if (type === 'settlement') {
+      return {
+        amount: amount,
+        balance_delta: settleDir === 'bakers_to_fuellink' ? -amount : amount,
+        unit_rate: null,
+        detail: settleDir === 'bakers_to_fuellink' ? 'Bakers paid Fuel Link' : 'Fuel Link paid Bakers',
+      };
+    }
+    if (type === 'diesel') {
+      const rate = unitRate != null ? unitRate : state.dieselPrice;
+      const amt = litres * rate;
+      return { amount: amt, balance_delta: amt, unit_rate: rate, detail: `Diesel @ R${rate.toFixed(2)}/L -> Truck ${truckLabel}` };
+    }
+    // logistics
+    const route = state.routes.find(r => r.id === routeId);
+    const rate = unitRate != null ? unitRate : routeTotalRate(route);
+    const amt = litres * rate;
+    return {
+      amount: amt, balance_delta: -amt, unit_rate: rate,
+      detail: `${route.from} → ${route.to} @ R${rate.toFixed(4)}/L (Truck ${truckLabel}, Driver ${driverLabel})`,
+    };
+  }
+
+  // ---------- generic record editor ----------
+  // Each entry describes one editable table: which fields to show (with
+  // current values), who may edit, and how to turn the edited values back
+  // into an update payload. Adding a field to a table is a one-line change
+  // to its fields() list, not a new modal.
+  const EDIT_SPECS = {
+    transaction: {
+      table: 'transactions',
+      title: (tx) => tx.type === 'settlement' ? 'Edit settlement' : tx.type === 'diesel' ? 'Edit diesel sale' : 'Edit logistics operation',
+      canEdit: (tx) => canEditTransaction(tx),
+      hint: (tx) => {
+        if (tx.type === 'settlement') return '';
+        if (tx.unitRate == null) return "This entry has no frozen rate on record (created before this feature) — saving will price it at today's rate.";
+        return `Rate frozen at creation: R${tx.unitRate.toFixed(tx.type === 'diesel' ? 2 : 4)}/L. Editing litres recalculates the amount at this rate, not today's.`;
+      },
+      fields: (tx) => {
+        const common = [{ key: 'date', label: 'Date', type: 'date', value: tx.date }];
+        if (tx.type === 'settlement') {
+          const dir = tx.balanceDelta < 0 ? 'bakers_to_fuellink' : 'fuellink_to_bakers';
+          return [
+            ...common,
+            { key: 'settleDir', label: 'Direction', type: 'select', value: dir, options: [
+              { value: 'bakers_to_fuellink', label: 'Bakers paid Fuel Link' },
+              { value: 'fuellink_to_bakers', label: 'Fuel Link paid Bakers' },
+            ] },
+            { key: 'amount', label: 'Amount (R)', type: 'number', step: '0.01', value: tx.amount },
+            { key: 'note', label: 'Note (optional)', type: 'text', value: tx.note },
+          ];
+        }
+        const fields = [...common];
+        if (tx.type === 'logistics') {
+          fields.push({ key: 'routeId', label: 'Route', type: 'select', value: tx.routeId, options: state.routes.map(r => ({ value: r.id, label: `${r.from} -> ${r.to} (${r.payload.toLocaleString('en-ZA')} L)` })) });
+        }
+        fields.push({ key: 'litres', label: 'Litres', type: 'number', step: '1', value: tx.litres });
+        fields.push({ key: 'truck', label: 'Truck', type: 'datalist', datalistId: 'truckOptions', value: truckDisplayText(tx), autocompleteOff: true });
+        fields.push({ key: 'driver', label: 'Driver', type: 'datalist', datalistId: 'driverOptions', value: driverDisplayText(tx), autocompleteOff: true });
+        fields.push({ key: 'trailer', label: 'Trailer / trela reg. (optional)', type: 'text', value: tx.trailerReg });
+        fields.push({ key: 'note', label: 'Note (optional)', type: 'text', value: tx.note });
+        if (tx.type === 'logistics') {
+          fields.push({ key: 'deliveryNote', label: tx.deliveryNoteName ? `Delivery note (current: ${tx.deliveryNoteName})` : 'Delivery note (optional)', type: 'file' });
+        }
+        return fields;
+      },
+      buildPayload: async (values, tx) => {
+        if (tx.type === 'settlement') {
+          if (!(values.amount > 0)) { alert('Enter a settlement amount greater than 0.'); return null; }
+          return {
+            date: values.date,
+            note: values.note.trim(),
+            ...computeTxFinancials({ type: 'settlement', settleDir: values.settleDir, amount: values.amount }),
+          };
+        }
+        if (!(values.litres > 0)) { alert('Enter litres greater than 0.'); return null; }
+        const truckInput = (values.truck || '').trim();
+        if (!truckInput) { alert('Enter which truck this is for.'); return null; }
+        const driverInput = (values.driver || '').trim();
+        if (!driverInput) { alert('Enter which driver this is for.'); return null; }
+        const truckMatch = resolveTruck(truckInput);
+        const driverMatch = resolveDriver(driverInput);
+        const payload = {
+          date: values.date,
+          litres: values.litres,
+          truck_id: truckMatch.truck_id, truck_text: truckMatch.truck_text,
+          driver_id: driverMatch.driver_id, driver_text: driverMatch.driver_text,
+          trailer_reg: values.trailer ? values.trailer.trim() : null,
+          note: values.note.trim(),
+        };
+        Object.assign(payload, computeTxFinancials({
+          type: tx.type, litres: values.litres, routeId: values.routeId,
+          unitRate: tx.unitRate, truckLabel: truckInput, driverLabel: driverInput,
+        }));
+        if (tx.type === 'logistics') {
+          payload.route_id = values.routeId;
+          if (values.deliveryNote instanceof File) {
+            const path = `${crypto.randomUUID()}-${values.deliveryNote.name}`;
+            const { error: upErr } = await sb.storage.from('delivery-notes').upload(path, values.deliveryNote);
+            if (upErr) { alert('Delivery note upload failed: ' + upErr.message); return null; }
+            payload.delivery_note_path = path;
+            payload.delivery_note_name = values.deliveryNote.name;
+          }
+        }
+        return payload;
+      },
+    },
+    route: {
+      table: 'routes',
+      title: (route) => `Edit route: ${route.from} → ${route.to}`,
+      canEdit: () => currentRole === 'bakers',
+      fields: (route) => [
+        { key: 'from', label: 'From', type: 'text', value: route.from },
+        { key: 'to', label: 'To', type: 'text', value: route.to },
+        { key: 'cargo', label: 'Cargo', type: 'text', value: route.cargo },
+        { key: 'payload', label: 'Payload (L)', type: 'number', step: '1', value: route.payload },
+        { key: 'adjMay', label: 'Fuel adj. May (c/p/l)', type: 'number', step: '0.01', value: route.adj.may },
+        { key: 'adjJune', label: 'Fuel adj. June (c/p/l)', type: 'number', step: '0.01', value: route.adj.june },
+        { key: 'adjJuly', label: 'Fuel adj. July (c/p/l)', type: 'number', step: '0.01', value: route.adj.july },
+        { key: 'baseRate', label: 'Base rate (R/L)', type: 'number', step: '0.01', value: route.baseRate },
+      ],
+      buildPayload: (values) => {
+        if (!values.from.trim() || !values.to.trim()) { alert('Enter both route points.'); return null; }
+        return {
+          from_point: values.from.trim(), to_point: values.to.trim(), cargo: values.cargo.trim(),
+          payload: values.payload, adj_may: values.adjMay, adj_june: values.adjJune, adj_july: values.adjJuly,
+          base_rate: values.baseRate,
+        };
+      },
+    },
+    truck: {
+      table: 'trucks',
+      title: (t) => `Edit truck: ${t.reg}`,
+      canEdit: () => currentRole === 'bakers' || currentRole === 'fuellink',
+      fields: (t) => [
+        { key: 'reg', label: 'Truck reg.', type: 'text', value: t.reg },
+        { key: 'description', label: 'Description (optional)', type: 'text', value: t.description },
+      ],
+      buildPayload: (values) => {
+        if (!values.reg.trim()) { alert('Enter a truck registration number.'); return null; }
+        return { reg_number: values.reg.trim(), description: values.description.trim() || null };
+      },
+    },
+    driver: {
+      table: 'drivers',
+      title: (d) => `Edit driver: ${d.name}`,
+      canEdit: () => currentRole === 'bakers' || currentRole === 'fuellink',
+      fields: (d) => [
+        { key: 'name', label: 'Driver name', type: 'text', value: d.name },
+        { key: 'license', label: 'License # (optional)', type: 'text', value: d.license },
+        { key: 'phone', label: 'Phone (optional)', type: 'text', value: d.phone },
+      ],
+      buildPayload: (values) => {
+        if (!values.name.trim()) { alert('Enter a driver name.'); return null; }
+        return { name: values.name.trim(), license_number: values.license.trim() || null, phone: values.phone.trim() || null };
+      },
+    },
+  };
+
+  function renderEditFields(fields) {
+    const container = document.getElementById('editModalFields');
+    container.innerHTML = '';
+    fields.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const label = document.createElement('label');
+      label.setAttribute('for', 'editField_' + f.key);
+      label.textContent = f.label;
+      wrap.appendChild(label);
+
+      let input;
+      if (f.type === 'select') {
+        input = document.createElement('select');
+        f.options.forEach(o => {
+          const opt = document.createElement('option');
+          opt.value = o.value;
+          opt.textContent = o.label;
+          input.appendChild(opt);
+        });
+        input.value = f.value;
+      } else if (f.type === 'file') {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/pdf,image/*';
+      } else {
+        input = document.createElement('input');
+        input.type = f.type === 'datalist' ? 'text' : f.type;
+        if (f.type === 'datalist') input.setAttribute('list', f.datalistId);
+        if (f.step != null) input.step = f.step;
+        if (f.autocompleteOff) input.autocomplete = 'off';
+        input.value = f.value != null ? f.value : '';
+      }
+      input.id = 'editField_' + f.key;
+      wrap.appendChild(input);
+      container.appendChild(wrap);
+    });
+  }
+
+  function collectEditValues(fields) {
+    const values = {};
+    fields.forEach(f => {
+      const el = document.getElementById('editField_' + f.key);
+      if (f.type === 'file') { values[f.key] = el.files[0] || null; return; }
+      let v = el.value;
+      if (f.type === 'number') v = v === '' ? null : parseFloat(v);
+      values[f.key] = v;
+    });
+    return values;
+  }
+
+  let editSpec = null;
+  let editRecord = null;
+  function openEditModalGeneric(specKey, record) {
+    const spec = EDIT_SPECS[specKey];
+    if (!spec || !spec.canEdit(record)) return;
+    editSpec = spec;
+    editRecord = record;
+    document.getElementById('editModalTitle').textContent = spec.title(record);
+    renderEditFields(spec.fields(record));
+    const hintEl = document.getElementById('editModalHint');
+    const hint = spec.hint ? spec.hint(record) : '';
+    hintEl.textContent = hint || '';
+    hintEl.style.display = hint ? '' : 'none';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+  function closeEditModalGeneric() {
+    editSpec = null;
+    editRecord = null;
+    document.getElementById('editModal').style.display = 'none';
+  }
+  document.getElementById('editCancelBtn').addEventListener('click', closeEditModalGeneric);
+  document.getElementById('editSaveBtn').addEventListener('click', async () => {
+    if (!editSpec || !editRecord) return;
+    const fields = editSpec.fields(editRecord);
+    const values = collectEditValues(fields);
+    const payload = await editSpec.buildPayload(values, editRecord);
+    if (!payload) return;
+    const btn = document.getElementById('editSaveBtn');
     btn.disabled = true;
-    const { error } = await sb.from('transactions')
-      .update({
-        truck_id: truckMatch.truck_id, truck_text: truckMatch.truck_text,
-        driver_id: driverMatch.driver_id, driver_text: driverMatch.driver_text,
-        trailer_reg: trailerReg,
-      })
-      .eq('id', editingTxId);
+    const { error } = await sb.from(editSpec.table).update(payload).eq('id', editRecord.id);
     btn.disabled = false;
     if (error) { alert(error.message); return; }
-    closeEditModal();
+    closeEditModalGeneric();
     await fetchAll();
     renderAll();
   });
 
   function renderFleet() {
     const truckBody = document.getElementById('trucksBody');
-    truckBody.innerHTML = state.trucks.length ? '' : '<tr><td colspan="3" class="empty-note">No trucks added yet.</td></tr>';
+    truckBody.innerHTML = state.trucks.length ? '' : '<tr><td colspan="4" class="empty-note">No trucks added yet.</td></tr>';
     state.trucks.forEach(t => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(t.reg)}</td><td>${escapeHtml(t.description)}</td><td>${enteredByPill(t.createdBy)}</td>`;
+      tr.innerHTML = `<td>${escapeHtml(t.reg)}</td><td>${escapeHtml(t.description)}</td><td>${enteredByPill(t.createdBy)}</td><td><button class="note-link" data-edit-truck="${t.id}">Edit</button></td>`;
       truckBody.appendChild(tr);
     });
 
     const driverBody = document.getElementById('driversBody');
-    driverBody.innerHTML = state.drivers.length ? '' : '<tr><td colspan="4" class="empty-note">No drivers added yet.</td></tr>';
+    driverBody.innerHTML = state.drivers.length ? '' : '<tr><td colspan="5" class="empty-note">No drivers added yet.</td></tr>';
     state.drivers.forEach(d => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.license)}</td><td>${escapeHtml(d.phone)}</td><td>${enteredByPill(d.createdBy)}</td>`;
+      tr.innerHTML = `<td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.license)}</td><td>${escapeHtml(d.phone)}</td><td>${enteredByPill(d.createdBy)}</td><td><button class="note-link" data-edit-driver="${d.id}">Edit</button></td>`;
       driverBody.appendChild(tr);
+    });
+
+    truckBody.querySelectorAll('button[data-edit-truck]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const truck = state.trucks.find(t => t.id === btn.dataset.editTruck);
+        if (truck) openEditModalGeneric('truck', truck);
+      });
+    });
+    driverBody.querySelectorAll('button[data-edit-driver]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const driver = state.drivers.find(d => d.id === btn.dataset.editDriver);
+        if (driver) openEditModalGeneric('driver', driver);
+      });
     });
   }
 
@@ -877,9 +1105,7 @@
       const amt = parseFloat(document.getElementById('txSettleAmt').value);
       if (isNaN(amt) || amt <= 0) { alert('Enter a settlement amount greater than 0.'); return; }
       const dir = document.getElementById('txSettleDir').value;
-      payload.amount = amt;
-      payload.balance_delta = dir === 'bakers_to_fuellink' ? -amt : amt;
-      payload.detail = dir === 'bakers_to_fuellink' ? 'Bakers paid Fuel Link' : 'Fuel Link paid Bakers';
+      Object.assign(payload, computeTxFinancials({ type, settleDir: dir, amount: amt }));
     } else {
       const litres = parseFloat(document.getElementById('txLitres').value);
       if (isNaN(litres) || litres <= 0) { alert('Enter litres greater than 0.'); return; }
@@ -900,17 +1126,12 @@
       const trailerReg = document.getElementById('txTrailer').value.trim();
       if (trailerReg) payload.trailer_reg = trailerReg;
 
-      if (type === 'diesel') {
-        payload.amount = litres * state.dieselPrice;
-        payload.balance_delta = payload.amount;
-        payload.detail = `Diesel @ R${state.dieselPrice.toFixed(2)}/L -> Truck ${truckInput}`;
-      } else {
+      if (type === 'logistics') {
         const routeId = document.getElementById('txRoute').value;
-        const route = state.routes.find(r => r.id === routeId);
         payload.route_id = routeId;
-        payload.amount = litres * routeTotalRate(route);
-        payload.balance_delta = -payload.amount;
-        payload.detail = `${route.from} → ${route.to} @ R${routeTotalRate(route).toFixed(4)}/L (Truck ${truckInput}, Driver ${driverInput})`;
+        Object.assign(payload, computeTxFinancials({ type, litres, routeId, truckLabel: truckInput, driverLabel: driverInput }));
+      } else {
+        Object.assign(payload, computeTxFinancials({ type, litres, truckLabel: truckInput }));
       }
     }
 
@@ -997,7 +1218,7 @@
       const isVoided = voidedIds.has(tx.id);
       const textClass = isVoided ? 'voided-text' : '';
       const canVoid = tx.type !== 'void' && !isVoided && tx.enteredBy === currentRole;
-      const canEdit = tx.type === 'logistics' || tx.type === 'diesel';
+      const canEdit = tx.type !== 'void' && !isVoided && tx.enteredBy === currentRole;
       const voidControl = canVoid
         ? `<button class="btn danger-text" data-void="${tx.id}">Void</button>`
         : (isVoided ? '<span class="voided-flag">voided</span>' : '');
@@ -1027,7 +1248,10 @@
     });
 
     body.querySelectorAll('button[data-edit]').forEach(btn => {
-      btn.addEventListener('click', () => openEditModal(btn.dataset.edit));
+      btn.addEventListener('click', () => {
+        const tx = state.transactions.find(t => t.id === btn.dataset.edit);
+        if (tx) openEditModalGeneric('transaction', tx);
+      });
     });
     body.querySelectorAll('button[data-void]').forEach(btn => {
       btn.addEventListener('click', () => voidTransaction(btn.dataset.void));
