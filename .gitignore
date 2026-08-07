@@ -1,0 +1,9 @@
+# Real secrets — never commit
+private/config/env.php
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
