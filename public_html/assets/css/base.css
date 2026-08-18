@@ -1,0 +1,74 @@
+/**
+ * Design Tokens & Base Styles
+ * FuelLink & Bankers Tankers Management Platform
+ */
+
+:root {
+  /* Brand Palettes */
+  --primary-fuellink: #185FA5;
+  --primary-fuellink-hover: #124A82;
+  --primary-fuellink-light: #EBF4FC;
+  --primary-fuellink-glow: rgba(24, 95, 165, 0.35);
+
+  --primary-bakers: #EB6834;
+  --primary-bakers-hover: #D05321;
+  --primary-bakers-light: #FDF1EB;
+  --primary-bakers-glow: rgba(235, 104, 52, 0.35);
+
+  /* Semantic Colors */
+  --color-success: #0CA30C;
+  --color-success-light: #E7F6E7;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+  --color-danger-light: #FEE2E2;
+
+  /* Surfaces & Neutrals */
+  --bg-body: #F1F5F9;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #F8FAFC;
+  --bg-input: #FFFFFF;
+  
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --text-subtle: #94A3B8;
+
+  --border-subtle: #E2E8F0;
+  --border-focus: #185FA5;
+
+  /* Radii - Fully Rounded Aesthetic */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Typography */
+  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Reset & Box Sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}

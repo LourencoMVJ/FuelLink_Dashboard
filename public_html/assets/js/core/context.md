@@ -6,11 +6,10 @@ yet as standalone modules — the current dashboard
 in the single HTML file (see its `supabase.createClient(...)` call and the
 `user_roles` lookup right after sign-in).
 
-## Expected files
+## Implemented files
 
-- `auth.js` — `requireSession()` / `requireAdmin()` (or equivalent). Every
-  new screen calls this on load; don't reimplement inline per page like the
-  Antigo dashboard does.
+- `auth.js` — Gerenciamento de sessão, autenticação (`signIn`, `signOut`, `getSession`) e resolução de papéis (`user_roles`).
+
 
 ## Fixed rule
 

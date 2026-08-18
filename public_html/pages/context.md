@@ -8,8 +8,8 @@ this structure is part of upcoming module work, not done yet.
 
 ## Existing pages
 
-_(none yet — see `Antigo dashboard/fuellink-dashboard/index.html` for the
-current production screen)_
+- `login.html` — Tela de login moderna com design split-screen responsivo, tokens de design compartilhados e integração com o core de autenticação modular (`assets/js/core/auth.js`).
+
 
 ## Sidebar navigation decision
 
