@@ -1,0 +1,1343 @@
+<meta charset="utf-8">
+<title>Dashboard de Compensação Inter-empresas — Versão Ilustrativa</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --empresa-a:      #2a78d6;
+    --empresa-b:      #eb6834;
+    --good:           #0ca30c;
+    --critical:       #d03b3b;
+    --diverge-pos:    #2a78d6;
+    --diverge-neg:    #e34948;
+    --diverge-mid:    #f0efec;
+    --input-bg:       #ffffff;
+    --demo-bg:        #fff6e5;
+    --demo-border:    #e0b34d;
+    --demo-text:      #8a6300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-2:      #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --empresa-a:      #3987e5;
+      --empresa-b:      #d95926;
+      --good:           #0ca30c;
+      --critical:       #e66767;
+      --diverge-pos:    #3987e5;
+      --diverge-neg:    #e66767;
+      --diverge-mid:    #383835;
+      --input-bg:       #232322;
+      --demo-bg:        #2a230d;
+      --demo-border:    #8a6300;
+      --demo-text:      #f0c355;
+    }
+    :root:where(:not([data-theme="light"])) .viz-root td { color: #ffffff; }
+  }
+  :root[data-theme="dark"] .viz-root td { color: #ffffff; }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-2:      #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --empresa-a:      #3987e5;
+    --empresa-b:      #d95926;
+    --good:           #0ca30c;
+    --critical:       #e66767;
+    --diverge-pos:    #3987e5;
+    --diverge-neg:    #e66767;
+    --diverge-mid:    #383835;
+    --input-bg:       #232322;
+    --demo-bg:        #2a230d;
+    --demo-border:    #8a6300;
+    --demo-text:      #f0c355;
+  }
+
+  .viz-root {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    padding: 24px;
+    max-width: 1180px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .viz-root * { box-sizing: border-box; }
+
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .subtitle { color: var(--text-secondary); font-size: 13px; margin: 0 0 14px; }
+
+  .demo-banner {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--demo-bg); border: 1px solid var(--demo-border); color: var(--demo-text);
+    font-size: 12.5px; font-weight: 600; padding: 9px 14px; border-radius: 10px; margin-bottom: 16px;
+  }
+
+  .badge-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .badge.empresa-a .dot { background: var(--empresa-a); }
+  .badge.empresa-b .dot { background: var(--empresa-b); }
+  .badge.live .dot { background: var(--good); }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    font-size: 14px; margin: 0 0 12px; color: var(--text-primary);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card h2 .hint { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .stat-tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-tile .value { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .stat-tile .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .stat-tile.empresa-a .value { color: var(--empresa-a); }
+  .stat-tile.empresa-b .value { color: var(--empresa-b); }
+
+  .settings-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-secondary); }
+  input, select {
+    background: var(--input-bg); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 10px; font-size: 13px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: 2px solid var(--empresa-a); outline-offset: 1px; }
+  input[type="number"] { width: 120px; font-variant-numeric: tabular-nums; }
+  input:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; color: var(--text-primary); }
+  th { color: var(--text-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  .table-scroll { overflow-x: auto; }
+
+  .btn {
+    background: var(--empresa-a); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn.danger-text { background: transparent; color: var(--critical); border: none; padding: 4px 8px; font-weight: 500; cursor: pointer; }
+  .btn.danger-text:hover { text-decoration: underline; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; margin-bottom: 12px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .pill.logistics { background: color-mix(in srgb, var(--empresa-b) 16%, transparent); color: var(--empresa-b); }
+  .pill.diesel { background: color-mix(in srgb, var(--empresa-a) 16%, transparent); color: var(--empresa-a); }
+  .pill.settlement, .pill.void { background: color-mix(in srgb, var(--text-secondary) 16%, transparent); color: var(--text-secondary); }
+  .pill.role-b { background: color-mix(in srgb, var(--empresa-b) 16%, transparent); color: var(--empresa-b); }
+  .pill.role-a { background: color-mix(in srgb, var(--empresa-a) 16%, transparent); color: var(--empresa-a); }
+
+  .net-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px; border-radius: 12px; margin-bottom: 18px;
+    border: 1px solid var(--border);
+  }
+  .net-banner .value { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .net-banner .desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+  .net-banner.pos .value { color: var(--diverge-pos); }
+  .net-banner.neg .value { color: var(--diverge-neg); }
+  .net-banner.zero .value { color: var(--text-secondary); }
+
+  #chartWrap { position: relative; }
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: none; white-space: nowrap; z-index: 5;
+  }
+  .tooltip .row { display: flex; gap: 8px; justify-content: space-between; }
+
+  .empty-note { color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+
+  .assumptions { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .assumptions b { color: var(--text-secondary); }
+
+  .locked-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  .voided-text { text-decoration: line-through; opacity: 0.55; }
+  .voided-flag { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .session-pill { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .session-pill b { color: var(--text-primary); }
+  .topbar-actions { display: flex; gap: 8px; }
+
+  .login-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
+  .login-card { flex: 1 1 260px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .login-card h3 { margin: 0 0 4px; font-size: 15px; }
+  .login-card .role-tag { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .login-card.empresa-b { border-top: 3px solid var(--empresa-b); }
+  .login-card.empresa-a { border-top: 3px solid var(--empresa-a); }
+
+  .fleet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .fleet-add-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .fleet-add-row input { flex: 1 1 100px; }
+  .note-link { font-size: 12px; color: var(--empresa-a); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+  .note-link:disabled { color: var(--text-muted); cursor: not-allowed; text-decoration: none; }
+  input[type="file"] { font-size: 12px; }
+
+  @media (max-width: 720px) {
+    .stat-row { grid-template-columns: 1fr; }
+    .fleet-grid { grid-template-columns: 1fr; }
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center; z-index: 30;
+  }
+  .modal-card { width: 360px; max-width: 90vw; margin-bottom: 0; max-height: 85vh; overflow-y: auto; }
+  .modal-card h2 { font-size: 15px; margin: 0 0 14px; }
+  #editModalFields .field { margin-bottom: 10px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+</style>
+
+<div class="viz-root">
+  <div class="badge-row">
+    <span class="badge empresa-a"><span class="dot"></span>Empresa A — Distribuidora (exemplo)</span>
+    <span class="badge empresa-b"><span class="dot"></span>Empresa B — Transportadora (exemplo)</span>
+  </div>
+  <h1>Dashboard de Compensação Inter-empresas</h1>
+  <p class="subtitle">A Empresa B transporta combustível pelas rotas da Empresa A; a Empresa A vende combustível à Empresa B. Este ecrã cruza os dois fluxos num único saldo corrido, partilhado entre as partes.</p>
+  <div class="demo-banner">⚠ Versão ilustrativa — todas as empresas, rotas, matrículas, motoristas e valores são fictícios. Sem ligação a qualquer base de dados real; os dados existem apenas na memória do browser.</div>
+
+  <div id="loginScreen">
+    <div class="card" style="margin-bottom:14px;">
+      <h2>Iniciar sessão (demonstração)</h2>
+      <p class="assumptions" style="margin:0 0 4px;">
+        Não há autenticação real nesta versão. Escolha uma das duas empresas fictícias abaixo para
+        explorar o dashboard com o respetivo conjunto de permissões — cada parte só pode editar ou
+        anular as suas próprias entradas, tal como está previsto para a versão final. Aqui isso é apenas
+        simulado no browser, sem qualquer servidor por trás.
+      </p>
+    </div>
+    <div class="login-wrap">
+      <div class="login-card empresa-b" data-role="b">
+        <h3>Empresa B — Transportadora (exemplo)</h3>
+        <div class="role-tag">Regista custos de logística &middot; edita tarifas base das rotas</div>
+        <button class="btn login-btn">Entrar como Empresa B</button>
+      </div>
+      <div class="login-card empresa-a" data-role="a">
+        <h3>Empresa A — Distribuidora (exemplo)</h3>
+        <div class="role-tag">Regista vendas de combustível &middot; define o preço do combustível</div>
+        <button class="btn login-btn">Entrar como Empresa A</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="appScreen" style="display:none;">
+    <div class="topbar">
+      <div class="session-pill">
+        Sessão de demonstração: <b id="sessionRole"></b>
+        <span class="badge live"><span class="dot"></span>Modo demo</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn secondary" id="resetBtn">Reiniciar dados de exemplo</button>
+        <button class="btn secondary" id="logoutBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="net-banner zero" id="netBanner">
+      <div>
+        <div class="desc">Posição líquida (dados fictícios)</div>
+        <div class="value" id="netValue">€ 0,00</div>
+        <div class="desc" id="netDesc">Saldado &mdash; sem valor em dívida de nenhuma das partes</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-tile empresa-a">
+        <div class="label">Combustível vendido à Empresa B (a receber pela Empresa A)</div>
+        <div class="value" id="statDiesel">€ 0,00</div>
+        <div class="sub" id="statDieselSub">0 L no total</div>
+      </div>
+      <div class="stat-tile empresa-b">
+        <div class="label">Taxas de logística (a receber pela Empresa B)</div>
+        <div class="value" id="statLogistics">€ 0,00</div>
+        <div class="sub" id="statLogisticsSub">0 L transportados</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Pagamentos registados</div>
+        <div class="value" id="statSettle">€ 0,00</div>
+        <div class="sub" id="statSettleSub">0 pagamentos</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Saldo líquido ao longo do tempo <span class="hint">total acumulado após cada transação</span></h2>
+      <div id="chartWrap">
+        <svg id="chart" width="100%" height="220" viewBox="0 0 1100 220" preserveAspectRatio="none"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="empty-note" id="chartEmpty" style="display:none;">Adicione transações abaixo para ver o saldo acumulado.</div>
+    </div>
+
+    <div class="card">
+      <h2>Definições (exemplo)</h2>
+      <div class="settings-row">
+        <div class="field">
+          <label for="dieselPrice">Preço de venda de combustível da Empresa A (€ / litro)</label>
+          <input type="number" id="dieselPrice" step="0.01" value="25.00">
+          <span class="locked-note" id="dieselPriceLock"></span>
+        </div>
+        <div class="field">
+          <label for="monthSel">Mês de referência do ajuste de combustível (tabela de tarifas)</label>
+          <select id="monthSel">
+            <option value="maio">Maio</option>
+            <option value="junho">Junho</option>
+            <option value="julho" selected>Julho</option>
+          </select>
+          <span class="locked-note" id="monthSelLock"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tarifas de rotas — Empresa B <span class="hint">ajuste ligado ao combustível (cênt./L) + tarifa base = tarifa total cobrada à Empresa A</span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Rota</th>
+              <th>Carga</th>
+              <th class="num">Carga útil (L)</th>
+              <th class="num">Ajuste comb. (cênt./L)</th>
+              <th class="num">Tarifa base (€/L)</th>
+              <th class="num">Tarifa total (€/L)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="routesBody"></tbody>
+        </table>
+      </div>
+      <p class="assumptions" style="margin-top:10px;">
+        <b>Nota:</b> valores fictícios, apenas para demonstrar a estrutura da tabela &mdash; o "ajuste de
+        combustível" mensal soma-se à tarifa base contratada para dar a tarifa total faturada. Apenas a
+        Empresa B (transportadora) pode editar esta tabela.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Adicionar transação</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="txDate">Data</label>
+          <input type="date" id="txDate">
+        </div>
+        <div class="field">
+          <label for="txType">Tipo</label>
+          <select id="txType">
+            <option value="logistics">Logística Empresa B (a receber pela Empresa B)</option>
+            <option value="diesel">Venda de combustível Empresa A (a receber pela Empresa A)</option>
+            <option value="settlement">Pagamento / liquidação</option>
+          </select>
+        </div>
+        <div class="field" id="routeField">
+          <label for="txRoute">Rota</label>
+          <select id="txRoute"></select>
+        </div>
+        <div class="field" id="litresField">
+          <label for="txLitres">Litros</label>
+          <input type="number" id="txLitres" step="1" placeholder="ex.: 40000">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field" id="truckField">
+          <label for="txTruck">Camião</label>
+          <input type="text" id="txTruck" list="truckOptions" placeholder="ex.: CAM-001" autocomplete="off">
+        </div>
+        <div class="field" id="driverField">
+          <label for="txDriver">Motorista</label>
+          <input type="text" id="txDriver" list="driverOptions" placeholder="Nome do motorista" autocomplete="off">
+        </div>
+        <div class="field" id="trailerField">
+          <label for="txTrailer">Reboque / matrícula (opcional)</label>
+          <input type="text" id="txTrailer" placeholder="ex.: REB-001">
+        </div>
+        <div class="field" id="deliveryNoteField" style="display:none;">
+          <label for="txDeliveryNote">Guia de entrega (opcional, ilustrativo)</label>
+          <input type="file" id="txDeliveryNote" accept="application/pdf,image/*">
+        </div>
+        <div class="field" id="settleDirField" style="display:none;">
+          <label for="txSettleDir">Direção</label>
+          <select id="txSettleDir">
+            <option value="b_para_a">Empresa B pagou a Empresa A</option>
+            <option value="a_para_b">Empresa A pagou a Empresa B</option>
+          </select>
+        </div>
+        <div class="field" id="settleAmtField" style="display:none;">
+          <label for="txSettleAmt">Valor (€)</label>
+          <input type="number" id="txSettleAmt" step="0.01" placeholder="ex.: 5000">
+        </div>
+        <div class="field">
+          <label for="txNote">Nota (opcional)</label>
+          <input type="text" id="txNote" placeholder="referência / nº fatura">
+        </div>
+        <div class="field">
+          <button class="btn" id="addTxBtn">Adicionar transação</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Livro de transações <span class="hint" id="txCount"></span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Registado por</th>
+              <th>Detalhe</th>
+              <th>Camião</th>
+              <th>Motorista</th>
+              <th>Reboque</th>
+              <th class="num">Litros</th>
+              <th class="num">Valor</th>
+              <th class="num">Saldo acumulado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+      <p class="empty-note" id="ledgerEmpty" style="display:none;">Ainda sem transações.</p>
+      <p class="assumptions" style="margin-top:10px;">
+        Pode editar qualquer entrada que a sua própria empresa tenha registado &mdash; data, litros, rota,
+        camião, motorista, reboque, nota e até o valor, que é recalculado automaticamente a partir dos
+        litros e da tarifa. O tipo e quem registou não podem ser alterados. Em alternativa, "Anular" reverte
+        uma entrada mantendo o original visível para efeitos de auditoria. Não é possível editar ou anular
+        entradas registadas pela outra empresa, nem entradas já anuladas.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Frota (exemplo) <span class="hint">camiões e motoristas fictícios &mdash; qualquer uma das partes pode adicionar</span></h2>
+      <div class="fleet-grid">
+        <div>
+          <table>
+            <thead><tr><th>Matrícula</th><th>Descrição</th><th>Adicionado por</th><th></th></tr></thead>
+            <tbody id="trucksBody"></tbody>
+          </table>
+          <div class="fleet-add-row">
+            <input type="text" id="newTruckReg" placeholder="Matrícula, ex.: CAM-004">
+            <input type="text" id="newTruckDesc" placeholder="Descrição (opcional)">
+            <button class="btn secondary" id="addTruckBtn">Adicionar camião</button>
+          </div>
+        </div>
+        <div>
+          <table>
+            <thead><tr><th>Motorista</th><th>Nº licença</th><th>Telefone</th><th>Adicionado por</th><th></th></tr></thead>
+            <tbody id="driversBody"></tbody>
+          </table>
+          <div class="fleet-add-row">
+            <input type="text" id="newDriverName" placeholder="Nome do motorista">
+            <input type="text" id="newDriverLicense" placeholder="Nº licença (opcional)">
+            <input type="text" id="newDriverPhone" placeholder="Telefone (opcional)">
+            <button class="btn secondary" id="addDriverBtn">Adicionar motorista</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editModal" style="display:none;">
+    <div class="card modal-card">
+      <h2 id="editModalTitle">Editar</h2>
+      <div id="editModalFields"></div>
+      <p class="locked-note" id="editModalHint" style="display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn secondary" id="editCancelBtn">Cancelar</button>
+        <button class="btn" id="editSaveBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="truckOptions"></datalist>
+  <datalist id="driverOptions"></datalist>
+</div>
+
+<script>
+(function() {
+  const ROLE_LABEL = { b: 'Empresa B — Transportadora', a: 'Empresa A — Distribuidora' };
+
+  let currentRole = null;
+  let idCounter = 1;
+  function genId(prefix) { return prefix + '-' + (idCounter++); }
+
+  // ---------- placeholder seed data (fictitious, no real company data) ----------
+  function buildSeed() {
+    const routes = [
+      { id: 'r1', from: 'Local A', to: 'Local B', cargo: 'Combustível', payload: 40000, adj: { maio: 120, junho: 135, julho: 140 }, baseRate: 3.20 },
+      { id: 'r2', from: 'Local C', to: 'Local D', cargo: 'Combustível', payload: 32000, adj: { maio: 95, junho: 100, julho: 110 }, baseRate: 2.85 },
+      { id: 'r3', from: 'Local E', to: 'Local F', cargo: 'Combustível', payload: 45000, adj: { maio: 150, junho: 148, julho: 155 }, baseRate: 3.60 },
+    ];
+    const trucks = [
+      { id: 't1', reg: 'CAM-001', description: 'Camião exemplo 1', createdBy: 'b' },
+      { id: 't2', reg: 'CAM-002', description: 'Camião exemplo 2', createdBy: 'b' },
+      { id: 't3', reg: 'CAM-003', description: 'Camião exemplo 3', createdBy: 'a' },
+    ];
+    const drivers = [
+      { id: 'd1', name: 'Motorista Exemplo 1', license: 'LIC-0001', phone: '000 000 0001', createdBy: 'b' },
+      { id: 'd2', name: 'Motorista Exemplo 2', license: 'LIC-0002', phone: '000 000 0002', createdBy: 'b' },
+      { id: 'd3', name: 'Motorista Exemplo 3', license: '', phone: '', createdBy: 'a' },
+    ];
+    return {
+      dieselPrice: 25.00,
+      month: 'junho',
+      routes, trucks, drivers,
+      transactions: [],
+    };
+  }
+
+  let state = buildSeed();
+
+  function routeTotalRate(route) {
+    const adj = route.adj[state.month] || 0;
+    return (route.baseRate || 0) + adj / 100;
+  }
+
+  function computeTxFinancials({ type, litres, routeId, settleDir, amount, unitRate, truckLabel, driverLabel }) {
+    if (type === 'settlement') {
+      return {
+        amount: amount,
+        balance_delta: settleDir === 'b_para_a' ? -amount : amount,
+        unit_rate: null,
+        detail: settleDir === 'b_para_a' ? 'Empresa B pagou a Empresa A' : 'Empresa A pagou a Empresa B',
+      };
+    }
+    if (type === 'diesel') {
+      const rate = unitRate != null ? unitRate : state.dieselPrice;
+      const amt = litres * rate;
+      return { amount: amt, balance_delta: amt, unit_rate: rate, detail: `Combustível @ €${rate.toFixed(2)}/L → Camião ${truckLabel}` };
+    }
+    const route = state.routes.find(r => r.id === routeId);
+    const rate = unitRate != null ? unitRate : routeTotalRate(route);
+    const amt = litres * rate;
+    return {
+      amount: amt, balance_delta: -amt, unit_rate: rate,
+      detail: `${route.from} → ${route.to} @ €${rate.toFixed(4)}/L (Camião ${truckLabel}, Motorista ${driverLabel})`,
+    };
+  }
+
+  function seedTransactions() {
+    const entries = [
+      { date: '2026-06-02', type: 'logistics', litres: 40000, routeId: 'r1', truck: 'CAM-001', driver: 'Motorista Exemplo 1', enteredBy: 'b' },
+      { date: '2026-06-05', type: 'diesel', litres: 15000, truck: 'CAM-003', enteredBy: 'a' },
+      { date: '2026-06-10', type: 'logistics', litres: 32000, routeId: 'r2', truck: 'CAM-002', driver: 'Motorista Exemplo 2', enteredBy: 'b' },
+      { date: '2026-06-12', type: 'settlement', settleDir: 'a_para_b', amount: 50000, enteredBy: 'a' },
+      { date: '2026-06-15', type: 'diesel', litres: 20000, truck: 'CAM-001', enteredBy: 'a' },
+      { date: '2026-06-18', type: 'logistics', litres: 45000, routeId: 'r3', truck: 'CAM-003', driver: 'Motorista Exemplo 3', enteredBy: 'b' },
+      { date: '2026-06-22', type: 'settlement', settleDir: 'b_para_a', amount: 30000, enteredBy: 'b' },
+      { date: '2026-06-25', type: 'diesel', litres: 18000, truck: 'CAM-002', enteredBy: 'a' },
+    ];
+    entries.forEach(e => {
+      const truckMatch = resolveTruck(e.truck || '');
+      const driverMatch = resolveDriver(e.driver || '');
+      const fin = computeTxFinancials({
+        type: e.type, litres: e.litres, routeId: e.routeId, settleDir: e.settleDir, amount: e.amount,
+        truckLabel: e.truck || '', driverLabel: e.driver || '',
+      });
+      state.transactions.push({
+        id: genId('tx'), date: e.date, type: e.type, amount: fin.amount, balanceDelta: fin.balance_delta,
+        litres: e.litres, routeId: e.routeId, enteredBy: e.enteredBy, note: '', detail: fin.detail,
+        voidsId: null, voidsType: null,
+        truckId: truckMatch.truck_id, driverId: driverMatch.driver_id,
+        trailerReg: '', truckText: truckMatch.truck_text, driverText: driverMatch.driver_text,
+        unitRate: fin.unit_rate,
+        deliveryNotePath: null, deliveryNoteName: null,
+      });
+    });
+    // demonstrate the void flow on one entry
+    const toVoid = state.transactions.find(t => t.routeId === 'r2');
+    if (toVoid) {
+      state.transactions.push({
+        id: genId('tx'), date: '2026-06-20', type: 'void', amount: toVoid.amount, balanceDelta: -toVoid.balanceDelta,
+        litres: toVoid.litres, routeId: null, enteredBy: toVoid.enteredBy, note: '', detail: `Anulação de: ${toVoid.detail}`,
+        voidsId: toVoid.id, voidsType: toVoid.type, truckId: null, driverId: null, trailerReg: '',
+        truckText: null, driverText: null, unitRate: null, deliveryNotePath: null, deliveryNoteName: null,
+      });
+    }
+  }
+  seedTransactions();
+
+  function fmtR(n) {
+    const sign = n < 0 ? '-' : '';
+    return sign + '€ ' + Math.abs(n).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtL(n) {
+    return Math.round(n).toLocaleString('pt-PT') + ' L';
+  }
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // ---------- "auth" (illustrative only — no real validation) ----------
+  document.querySelectorAll('.login-card .login-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const role = btn.closest('.login-card').dataset.role;
+      currentRole = role;
+      enterApp();
+    });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    currentRole = null;
+    document.getElementById('appScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = '';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('Repor todos os dados de exemplo para o estado inicial?')) return;
+    state = buildSeed();
+    idCounter = 1;
+    seedTransactions();
+    renderAll();
+  });
+
+  function enterApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = '';
+    document.getElementById('sessionRole').textContent = ROLE_LABEL[currentRole];
+    applyRolePermissions();
+    renderAll();
+  }
+
+  const dieselPriceInput = document.getElementById('dieselPrice');
+  const monthSel = document.getElementById('monthSel');
+
+  dieselPriceInput.addEventListener('change', () => {
+    if (currentRole !== 'a') return;
+    const v = parseFloat(dieselPriceInput.value);
+    if (isNaN(v)) return;
+    state.dieselPrice = v;
+    renderAll();
+  });
+  monthSel.addEventListener('change', () => {
+    if (currentRole !== 'b') return;
+    state.month = monthSel.value;
+    renderAll();
+  });
+
+  function applyRolePermissions() {
+    dieselPriceInput.disabled = currentRole !== 'a';
+    document.getElementById('dieselPriceLock').textContent = currentRole !== 'a' ? 'Apenas a Empresa A pode editar este valor.' : '';
+    monthSel.disabled = currentRole !== 'b';
+    document.getElementById('monthSelLock').textContent = currentRole !== 'b' ? 'Apenas a Empresa B pode editar este valor.' : '';
+    updateTxTypeOptions();
+  }
+
+  function updateTxTypeOptions() {
+    const opts = Array.from(txType.querySelectorAll('option'));
+    opts.forEach(o => {
+      const allowed = o.value === 'settlement'
+        || (currentRole === 'b' && o.value === 'logistics')
+        || (currentRole === 'a' && o.value === 'diesel');
+      o.hidden = !allowed;
+      o.disabled = !allowed;
+    });
+    const firstAllowed = opts.find(o => !o.hidden);
+    if (firstAllowed) txType.value = firstAllowed.value;
+    updateFormVisibility();
+  }
+
+  function renderRoutes() {
+    const body = document.getElementById('routesBody');
+    body.innerHTML = '';
+    const canEdit = currentRole === 'b';
+    state.routes.forEach(route => {
+      const tr = document.createElement('tr');
+      const adj = route.adj[state.month] || 0;
+      const total = routeTotalRate(route);
+      const editControl = canEdit ? `<button class="note-link" data-edit-route="${route.id}">Editar</button>` : '';
+      tr.innerHTML = `
+        <td>${route.from} &rarr; ${route.to}</td>
+        <td>${route.cargo}</td>
+        <td class="num">${route.payload.toLocaleString('pt-PT')}</td>
+        <td class="num">${adj.toFixed(2)}</td>
+        <td class="num">${route.baseRate.toFixed(2)}</td>
+        <td class="num">${total.toFixed(4)}</td>
+        <td>${editControl}</td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button[data-edit-route]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const route = state.routes.find(r => r.id === btn.dataset.editRoute);
+        if (route) openEditModalGeneric('route', route);
+      });
+    });
+  }
+
+  function populateRouteSelect() {
+    const sel = document.getElementById('txRoute');
+    sel.innerHTML = '';
+    state.routes.forEach(route => {
+      const opt = document.createElement('option');
+      opt.value = route.id;
+      opt.textContent = `${route.from} -> ${route.to} (${route.payload.toLocaleString('pt-PT')} L)`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function resolveTruck(text) {
+    const t = (text || '').trim();
+    if (!t) return { truck_id: null, truck_text: null };
+    const match = state.trucks.find(tr => tr.reg.toLowerCase() === t.toLowerCase());
+    return match ? { truck_id: match.id, truck_text: null } : { truck_id: null, truck_text: t };
+  }
+  function resolveDriver(text) {
+    const t = (text || '').trim();
+    if (!t) return { driver_id: null, driver_text: null };
+    const match = state.drivers.find(d => d.name.toLowerCase() === t.toLowerCase());
+    return match ? { driver_id: match.id, driver_text: null } : { driver_id: null, driver_text: t };
+  }
+  function truckDisplayText(tx) {
+    const truck = state.trucks.find(t => t.id === tx.truckId);
+    return truck ? truck.reg : (tx.truckText || '');
+  }
+  function driverDisplayText(tx) {
+    const driver = state.drivers.find(d => d.id === tx.driverId);
+    return driver ? driver.name : (tx.driverText || '');
+  }
+
+  function populateTruckAndDriverDatalists() {
+    const truckDl = document.getElementById('truckOptions');
+    truckDl.innerHTML = '';
+    state.trucks.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.reg;
+      if (t.description) opt.label = t.description;
+      truckDl.appendChild(opt);
+    });
+
+    const driverDl = document.getElementById('driverOptions');
+    driverDl.innerHTML = '';
+    state.drivers.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.name;
+      if (d.license) opt.label = d.license;
+      driverDl.appendChild(opt);
+    });
+  }
+
+  function isTransactionVoided(id) {
+    return state.transactions.some(t => t.type === 'void' && t.voidsId === id);
+  }
+  function canEditTransaction(tx) {
+    return tx.type !== 'void' && tx.enteredBy === currentRole && !isTransactionVoided(tx.id);
+  }
+
+  // ---------- generic record editor (mutates local state directly — illustrative, no backend) ----------
+  const EDIT_SPECS = {
+    transaction: {
+      title: (tx) => tx.type === 'settlement' ? 'Editar pagamento' : tx.type === 'diesel' ? 'Editar venda de combustível' : 'Editar operação de logística',
+      canEdit: (tx) => canEditTransaction(tx),
+      hint: (tx) => {
+        if (tx.type === 'settlement') return '';
+        if (tx.unitRate == null) return 'Esta entrada não tem tarifa fixada em registo — ao guardar, será calculada à tarifa atual.';
+        return `Tarifa fixada na criação: €${tx.unitRate.toFixed(tx.type === 'diesel' ? 2 : 4)}/L. Editar os litros recalcula o valor a esta tarifa, não à atual.`;
+      },
+      fields: (tx) => {
+        const common = [{ key: 'date', label: 'Data', type: 'date', value: tx.date }];
+        if (tx.type === 'settlement') {
+          const dir = tx.balanceDelta < 0 ? 'b_para_a' : 'a_para_b';
+          return [
+            ...common,
+            { key: 'settleDir', label: 'Direção', type: 'select', value: dir, options: [
+              { value: 'b_para_a', label: 'Empresa B pagou a Empresa A' },
+              { value: 'a_para_b', label: 'Empresa A pagou a Empresa B' },
+            ] },
+            { key: 'amount', label: 'Valor (€)', type: 'number', step: '0.01', value: tx.amount },
+            { key: 'note', label: 'Nota (opcional)', type: 'text', value: tx.note },
+          ];
+        }
+        const fields = [...common];
+        if (tx.type === 'logistics') {
+          fields.push({ key: 'routeId', label: 'Rota', type: 'select', value: tx.routeId, options: state.routes.map(r => ({ value: r.id, label: `${r.from} -> ${r.to} (${r.payload.toLocaleString('pt-PT')} L)` })) });
+        }
+        fields.push({ key: 'litres', label: 'Litros', type: 'number', step: '1', value: tx.litres });
+        fields.push({ key: 'truck', label: 'Camião', type: 'datalist', datalistId: 'truckOptions', value: truckDisplayText(tx), autocompleteOff: true });
+        fields.push({ key: 'driver', label: 'Motorista', type: 'datalist', datalistId: 'driverOptions', value: driverDisplayText(tx), autocompleteOff: true });
+        fields.push({ key: 'trailer', label: 'Reboque / matrícula (opcional)', type: 'text', value: tx.trailerReg });
+        fields.push({ key: 'note', label: 'Nota (opcional)', type: 'text', value: tx.note });
+        if (tx.type === 'logistics') {
+          fields.push({ key: 'deliveryNote', label: tx.deliveryNoteName ? `Guia de entrega (atual: ${tx.deliveryNoteName})` : 'Guia de entrega (opcional, ilustrativo)', type: 'file' });
+        }
+        return fields;
+      },
+      apply: (values, tx) => {
+        if (tx.type === 'settlement') {
+          if (!(values.amount > 0)) { alert('Introduza um valor de pagamento superior a 0.'); return false; }
+          Object.assign(tx, { date: values.date, note: values.note.trim() });
+          const fin = computeTxFinancials({ type: 'settlement', settleDir: values.settleDir, amount: values.amount });
+          tx.amount = fin.amount; tx.balanceDelta = fin.balance_delta; tx.unitRate = fin.unit_rate; tx.detail = fin.detail;
+          return true;
+        }
+        if (!(values.litres > 0)) { alert('Introduza litros superiores a 0.'); return false; }
+        const truckInput = (values.truck || '').trim();
+        if (!truckInput) { alert('Indique para que camião é esta entrada.'); return false; }
+        const driverInput = (values.driver || '').trim();
+        if (!driverInput) { alert('Indique para que motorista é esta entrada.'); return false; }
+        const truckMatch = resolveTruck(truckInput);
+        const driverMatch = resolveDriver(driverInput);
+        tx.date = values.date;
+        tx.litres = values.litres;
+        tx.truckId = truckMatch.truck_id; tx.truckText = truckMatch.truck_text;
+        tx.driverId = driverMatch.driver_id; tx.driverText = driverMatch.driver_text;
+        tx.trailerReg = values.trailer ? values.trailer.trim() : '';
+        tx.note = values.note.trim();
+        if (tx.type === 'logistics') tx.routeId = values.routeId;
+        const fin = computeTxFinancials({
+          type: tx.type, litres: values.litres, routeId: values.routeId,
+          unitRate: tx.unitRate, truckLabel: truckInput, driverLabel: driverInput,
+        });
+        tx.amount = fin.amount; tx.balanceDelta = fin.balance_delta; tx.unitRate = fin.unit_rate; tx.detail = fin.detail;
+        if (tx.type === 'logistics' && values.deliveryNote instanceof File) {
+          tx.deliveryNotePath = 'demo';
+          tx.deliveryNoteName = values.deliveryNote.name;
+        }
+        return true;
+      },
+    },
+    route: {
+      title: (route) => `Editar rota: ${route.from} → ${route.to}`,
+      canEdit: () => currentRole === 'b',
+      fields: (route) => [
+        { key: 'from', label: 'De', type: 'text', value: route.from },
+        { key: 'to', label: 'Para', type: 'text', value: route.to },
+        { key: 'cargo', label: 'Carga', type: 'text', value: route.cargo },
+        { key: 'payload', label: 'Carga útil (L)', type: 'number', step: '1', value: route.payload },
+        { key: 'adjMaio', label: 'Ajuste comb. Maio (cênt./L)', type: 'number', step: '0.01', value: route.adj.maio },
+        { key: 'adjJunho', label: 'Ajuste comb. Junho (cênt./L)', type: 'number', step: '0.01', value: route.adj.junho },
+        { key: 'adjJulho', label: 'Ajuste comb. Julho (cênt./L)', type: 'number', step: '0.01', value: route.adj.julho },
+        { key: 'baseRate', label: 'Tarifa base (€/L)', type: 'number', step: '0.01', value: route.baseRate },
+      ],
+      apply: (values, route) => {
+        if (!values.from.trim() || !values.to.trim()) { alert('Indique os dois pontos da rota.'); return false; }
+        route.from = values.from.trim(); route.to = values.to.trim(); route.cargo = values.cargo.trim();
+        route.payload = values.payload;
+        route.adj = { maio: values.adjMaio, junho: values.adjJunho, julho: values.adjJulho };
+        route.baseRate = values.baseRate;
+        return true;
+      },
+    },
+    truck: {
+      title: (t) => `Editar camião: ${t.reg}`,
+      canEdit: () => currentRole === 'b' || currentRole === 'a',
+      fields: (t) => [
+        { key: 'reg', label: 'Matrícula', type: 'text', value: t.reg },
+        { key: 'description', label: 'Descrição (opcional)', type: 'text', value: t.description },
+      ],
+      apply: (values, t) => {
+        if (!values.reg.trim()) { alert('Introduza uma matrícula.'); return false; }
+        t.reg = values.reg.trim(); t.description = values.description.trim();
+        return true;
+      },
+    },
+    driver: {
+      title: (d) => `Editar motorista: ${d.name}`,
+      canEdit: () => currentRole === 'b' || currentRole === 'a',
+      fields: (d) => [
+        { key: 'name', label: 'Nome do motorista', type: 'text', value: d.name },
+        { key: 'license', label: 'Nº licença (opcional)', type: 'text', value: d.license },
+        { key: 'phone', label: 'Telefone (opcional)', type: 'text', value: d.phone },
+      ],
+      apply: (values, d) => {
+        if (!values.name.trim()) { alert('Introduza o nome do motorista.'); return false; }
+        d.name = values.name.trim(); d.license = values.license.trim(); d.phone = values.phone.trim();
+        return true;
+      },
+    },
+  };
+
+  function renderEditFields(fields) {
+    const container = document.getElementById('editModalFields');
+    container.innerHTML = '';
+    fields.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const label = document.createElement('label');
+      label.setAttribute('for', 'editField_' + f.key);
+      label.textContent = f.label;
+      wrap.appendChild(label);
+
+      let input;
+      if (f.type === 'select') {
+        input = document.createElement('select');
+        f.options.forEach(o => {
+          const opt = document.createElement('option');
+          opt.value = o.value;
+          opt.textContent = o.label;
+          input.appendChild(opt);
+        });
+        input.value = f.value;
+      } else if (f.type === 'file') {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/pdf,image/*';
+      } else {
+        input = document.createElement('input');
+        input.type = f.type === 'datalist' ? 'text' : f.type;
+        if (f.type === 'datalist') input.setAttribute('list', f.datalistId);
+        if (f.step != null) input.step = f.step;
+        if (f.autocompleteOff) input.autocomplete = 'off';
+        input.value = f.value != null ? f.value : '';
+      }
+      input.id = 'editField_' + f.key;
+      wrap.appendChild(input);
+      container.appendChild(wrap);
+    });
+  }
+
+  function collectEditValues(fields) {
+    const values = {};
+    fields.forEach(f => {
+      const el = document.getElementById('editField_' + f.key);
+      if (f.type === 'file') { values[f.key] = el.files[0] || null; return; }
+      let v = el.value;
+      if (f.type === 'number') v = v === '' ? null : parseFloat(v);
+      values[f.key] = v;
+    });
+    return values;
+  }
+
+  let editSpec = null;
+  let editRecord = null;
+  function openEditModalGeneric(specKey, record) {
+    const spec = EDIT_SPECS[specKey];
+    if (!spec || !spec.canEdit(record)) return;
+    editSpec = spec;
+    editRecord = record;
+    document.getElementById('editModalTitle').textContent = spec.title(record);
+    renderEditFields(spec.fields(record));
+    const hintEl = document.getElementById('editModalHint');
+    const hint = spec.hint ? spec.hint(record) : '';
+    hintEl.textContent = hint || '';
+    hintEl.style.display = hint ? '' : 'none';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+  function closeEditModalGeneric() {
+    editSpec = null;
+    editRecord = null;
+    document.getElementById('editModal').style.display = 'none';
+  }
+  document.getElementById('editCancelBtn').addEventListener('click', closeEditModalGeneric);
+  document.getElementById('editSaveBtn').addEventListener('click', () => {
+    if (!editSpec || !editRecord) return;
+    const fields = editSpec.fields(editRecord);
+    const values = collectEditValues(fields);
+    const ok = editSpec.apply(values, editRecord);
+    if (!ok) return;
+    closeEditModalGeneric();
+    renderAll();
+  });
+
+  function renderFleet() {
+    const truckBody = document.getElementById('trucksBody');
+    truckBody.innerHTML = state.trucks.length ? '' : '<tr><td colspan="4" class="empty-note">Ainda sem camiões.</td></tr>';
+    state.trucks.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(t.reg)}</td><td>${escapeHtml(t.description)}</td><td>${enteredByPill(t.createdBy)}</td><td><button class="note-link" data-edit-truck="${t.id}">Editar</button></td>`;
+      truckBody.appendChild(tr);
+    });
+
+    const driverBody = document.getElementById('driversBody');
+    driverBody.innerHTML = state.drivers.length ? '' : '<tr><td colspan="5" class="empty-note">Ainda sem motoristas.</td></tr>';
+    state.drivers.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.license)}</td><td>${escapeHtml(d.phone)}</td><td>${enteredByPill(d.createdBy)}</td><td><button class="note-link" data-edit-driver="${d.id}">Editar</button></td>`;
+      driverBody.appendChild(tr);
+    });
+
+    truckBody.querySelectorAll('button[data-edit-truck]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const truck = state.trucks.find(t => t.id === btn.dataset.editTruck);
+        if (truck) openEditModalGeneric('truck', truck);
+      });
+    });
+    driverBody.querySelectorAll('button[data-edit-driver]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const driver = state.drivers.find(d => d.id === btn.dataset.editDriver);
+        if (driver) openEditModalGeneric('driver', driver);
+      });
+    });
+  }
+
+  document.getElementById('addTruckBtn').addEventListener('click', () => {
+    if (!currentRole) return;
+    const reg = document.getElementById('newTruckReg').value.trim();
+    if (!reg) { alert('Introduza uma matrícula.'); return; }
+    const description = document.getElementById('newTruckDesc').value.trim();
+    state.trucks.push({ id: genId('t'), reg, description, createdBy: currentRole });
+    document.getElementById('newTruckReg').value = '';
+    document.getElementById('newTruckDesc').value = '';
+    renderAll();
+  });
+
+  document.getElementById('addDriverBtn').addEventListener('click', () => {
+    if (!currentRole) return;
+    const name = document.getElementById('newDriverName').value.trim();
+    if (!name) { alert('Introduza o nome do motorista.'); return; }
+    const license = document.getElementById('newDriverLicense').value.trim();
+    const phone = document.getElementById('newDriverPhone').value.trim();
+    state.drivers.push({ id: genId('d'), name, license, phone, createdBy: currentRole });
+    document.getElementById('newDriverName').value = '';
+    document.getElementById('newDriverLicense').value = '';
+    document.getElementById('newDriverPhone').value = '';
+    renderAll();
+  });
+
+  document.getElementById('txDate').valueAsDate = new Date();
+
+  const txType = document.getElementById('txType');
+  const routeField = document.getElementById('routeField');
+  const litresField = document.getElementById('litresField');
+  const settleDirField = document.getElementById('settleDirField');
+  const settleAmtField = document.getElementById('settleAmtField');
+
+  function updateFormVisibility() {
+    const type = txType.value;
+    const isSettlement = type === 'settlement';
+    const isOperation = type === 'logistics' || type === 'diesel';
+    routeField.style.display = (type === 'logistics') ? '' : 'none';
+    litresField.style.display = isSettlement ? 'none' : '';
+    settleDirField.style.display = isSettlement ? '' : 'none';
+    settleAmtField.style.display = isSettlement ? '' : 'none';
+    document.getElementById('truckField').style.display = isSettlement ? 'none' : '';
+    document.getElementById('driverField').style.display = isOperation ? '' : 'none';
+    document.getElementById('trailerField').style.display = isOperation ? '' : 'none';
+    document.getElementById('deliveryNoteField').style.display = (type === 'logistics') ? '' : 'none';
+  }
+  txType.addEventListener('change', updateFormVisibility);
+  updateFormVisibility();
+
+  document.getElementById('addTxBtn').addEventListener('click', () => {
+    if (!currentRole) return;
+    const type = txType.value;
+    if ((type === 'logistics' && currentRole !== 'b') || (type === 'diesel' && currentRole !== 'a')) {
+      alert('A sua empresa não regista este tipo de transação.');
+      return;
+    }
+    const date = document.getElementById('txDate').value || new Date().toISOString().slice(0, 10);
+    const note = document.getElementById('txNote').value.trim();
+    const tx = { id: genId('tx'), date, type, note, enteredBy: currentRole, voidsId: null, voidsType: null, deliveryNotePath: null, deliveryNoteName: null };
+
+    if (type === 'settlement') {
+      const amt = parseFloat(document.getElementById('txSettleAmt').value);
+      if (isNaN(amt) || amt <= 0) { alert('Introduza um valor de pagamento superior a 0.'); return; }
+      const dir = document.getElementById('txSettleDir').value;
+      Object.assign(tx, computeTxFinancialsMapped(computeTxFinancials({ type, settleDir: dir, amount: amt })));
+      tx.litres = undefined; tx.routeId = null; tx.truckId = null; tx.driverId = null; tx.trailerReg = ''; tx.truckText = null; tx.driverText = null;
+    } else {
+      const litres = parseFloat(document.getElementById('txLitres').value);
+      if (isNaN(litres) || litres <= 0) { alert('Introduza litros superiores a 0.'); return; }
+      tx.litres = litres;
+
+      const truckInput = document.getElementById('txTruck').value.trim();
+      if (!truckInput) { alert('Indique para que camião é esta entrada.'); return; }
+      const truckMatch = resolveTruck(truckInput);
+      tx.truckId = truckMatch.truck_id; tx.truckText = truckMatch.truck_text;
+
+      const driverInput = document.getElementById('txDriver').value.trim();
+      if (!driverInput) { alert('Indique para que motorista é esta entrada.'); return; }
+      const driverMatch = resolveDriver(driverInput);
+      tx.driverId = driverMatch.driver_id; tx.driverText = driverMatch.driver_text;
+
+      tx.trailerReg = document.getElementById('txTrailer').value.trim();
+
+      if (type === 'logistics') {
+        tx.routeId = document.getElementById('txRoute').value;
+        Object.assign(tx, computeTxFinancialsMapped(computeTxFinancials({ type, litres, routeId: tx.routeId, truckLabel: truckInput, driverLabel: driverInput })));
+        const file = document.getElementById('txDeliveryNote').files[0];
+        if (file) { tx.deliveryNotePath = 'demo'; tx.deliveryNoteName = file.name; }
+      } else {
+        tx.routeId = null;
+        Object.assign(tx, computeTxFinancialsMapped(computeTxFinancials({ type, litres, truckLabel: truckInput })));
+      }
+    }
+
+    state.transactions.push(tx);
+    document.getElementById('txLitres').value = '';
+    document.getElementById('txSettleAmt').value = '';
+    document.getElementById('txNote').value = '';
+    document.getElementById('txTrailer').value = '';
+    document.getElementById('txDeliveryNote').value = '';
+    renderAll();
+  });
+
+  function computeTxFinancialsMapped(fin) {
+    return { amount: fin.amount, balanceDelta: fin.balance_delta, unitRate: fin.unit_rate, detail: fin.detail };
+  }
+
+  function typeLabel(type) {
+    if (type === 'logistics') return '<span class="pill logistics">Logística</span>';
+    if (type === 'diesel') return '<span class="pill diesel">Venda combustível</span>';
+    if (type === 'void') return '<span class="pill void">Anulação</span>';
+    return '<span class="pill settlement">Pagamento</span>';
+  }
+  function enteredByPill(role) {
+    if (role === 'b') return '<span class="pill role-b">Empresa B</span>';
+    if (role === 'a') return '<span class="pill role-a">Empresa A</span>';
+    return '&mdash;';
+  }
+
+  function voidTransaction(id) {
+    const original = state.transactions.find(t => t.id === id);
+    if (!original || original.type === 'void') return;
+    if (original.enteredBy !== currentRole) { alert('Só pode anular entradas registadas pela sua própria empresa.'); return; }
+    const alreadyVoided = state.transactions.some(t => t.type === 'void' && t.voidsId === id);
+    if (alreadyVoided) return;
+    if (!confirm('Anular esta entrada? É adicionada uma entrada de reversão — o original mantém-se visível para auditoria.')) return;
+    state.transactions.push({
+      id: genId('tx'), date: new Date().toISOString().slice(0, 10), type: 'void',
+      voidsId: original.id, voidsType: original.type, amount: original.amount, balanceDelta: -original.balanceDelta,
+      litres: original.litres ?? null, routeId: null, enteredBy: currentRole, note: '', detail: `Anulação de: ${original.detail}`,
+      truckId: null, driverId: null, trailerReg: '', truckText: null, driverText: null, unitRate: null,
+      deliveryNotePath: null, deliveryNoteName: null,
+    });
+    renderAll();
+  }
+
+  function renderLedger() {
+    const body = document.getElementById('ledgerBody');
+    body.innerHTML = '';
+    const sorted = [...state.transactions];
+    let running = 0;
+    const rows = sorted.map(tx => {
+      running += tx.balanceDelta;
+      return { tx, running };
+    });
+
+    document.getElementById('ledgerEmpty').style.display = rows.length ? 'none' : '';
+    document.getElementById('txCount').textContent = rows.length ? `${rows.length} transaç${rows.length === 1 ? 'ão' : 'ões'}` : '';
+
+    const voidedIds = new Set(state.transactions.filter(t => t.type === 'void').map(t => t.voidsId));
+
+    [...rows].reverse().forEach(({ tx, running }) => {
+      const tr = document.createElement('tr');
+      const isVoided = voidedIds.has(tx.id);
+      const textClass = isVoided ? 'voided-text' : '';
+      const canVoid = tx.type !== 'void' && !isVoided && tx.enteredBy === currentRole;
+      const canEdit = tx.type !== 'void' && !isVoided && tx.enteredBy === currentRole;
+      const voidControl = canVoid
+        ? `<button class="btn danger-text" data-void="${tx.id}">Anular</button>`
+        : (isVoided ? '<span class="voided-flag">anulada</span>' : '');
+      const editControl = canEdit ? `<button class="note-link" data-edit="${tx.id}">Editar</button>` : '';
+      const actionCell = `<div style="display:flex; gap:10px; align-items:center;">${editControl}${voidControl}</div>`;
+      const driver = state.drivers.find(d => d.id === tx.driverId);
+      const truckLabel = truckDisplayText(tx);
+      const driverLabel = driverDisplayText(tx);
+      const noteCell = tx.deliveryNotePath
+        ? `<button class="note-link" data-note="${tx.deliveryNotePath}">${escapeHtml(tx.deliveryNoteName || 'guia')}</button>`
+        : '';
+      tr.innerHTML = `
+        <td><span class="${textClass}">${tx.date}</span></td>
+        <td>${typeLabel(tx.type)}</td>
+        <td>${enteredByPill(tx.enteredBy)}</td>
+        <td><span class="${textClass}">${tx.detail}${tx.note ? ' &mdash; ' + escapeHtml(tx.note) : ''}</span>${noteCell ? '<br>' + noteCell : ''}</td>
+        <td><span class="${textClass}">${truckLabel ? escapeHtml(truckLabel) : '&mdash;'}</span></td>
+        <td><span class="${textClass}">${driverLabel ? escapeHtml(driverLabel) + (driver && driver.phone ? ' (' + escapeHtml(driver.phone) + ')' : '') : '&mdash;'}</span></td>
+        <td><span class="${textClass}">${tx.trailerReg ? escapeHtml(tx.trailerReg) : '&mdash;'}</span></td>
+        <td class="num"><span class="${textClass}">${tx.litres ? Math.round(tx.litres).toLocaleString('pt-PT') : '&mdash;'}</span></td>
+        <td class="num"><span class="${textClass}">${fmtR(tx.amount)}</span></td>
+        <td class="num" style="color:${running > 0 ? 'var(--diverge-pos)' : running < 0 ? 'var(--diverge-neg)' : 'var(--text-secondary)'}">${fmtR(running)}</td>
+        <td>${actionCell}</td>
+      `;
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll('button[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tx = state.transactions.find(t => t.id === btn.dataset.edit);
+        if (tx) openEditModalGeneric('transaction', tx);
+      });
+    });
+    body.querySelectorAll('button[data-void]').forEach(btn => {
+      btn.addEventListener('click', () => voidTransaction(btn.dataset.void));
+    });
+    body.querySelectorAll('button[data-note]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        alert('Versão ilustrativa — não existem ficheiros reais para abrir.');
+      });
+    });
+
+    return rows;
+  }
+
+  function renderStatsAndChart(rows) {
+    let dieselTotal = 0, dieselLitres = 0, logisticsTotal = 0, logisticsLitres = 0, settleTotal = 0, settleCount = 0;
+    state.transactions.forEach(tx => {
+      if (tx.type === 'diesel') { dieselTotal += tx.amount; dieselLitres += tx.litres; }
+      else if (tx.type === 'logistics') { logisticsTotal += tx.amount; logisticsLitres += tx.litres; }
+      else if (tx.type === 'settlement') { settleTotal += tx.amount; settleCount += 1; }
+      else if (tx.type === 'void') {
+        if (tx.voidsType === 'diesel') { dieselTotal -= tx.amount; dieselLitres -= (tx.litres || 0); }
+        else if (tx.voidsType === 'logistics') { logisticsTotal -= tx.amount; logisticsLitres -= (tx.litres || 0); }
+        else if (tx.voidsType === 'settlement') { settleTotal -= tx.amount; settleCount -= 1; }
+      }
+    });
+
+    document.getElementById('statDiesel').textContent = fmtR(dieselTotal);
+    document.getElementById('statDieselSub').textContent = fmtL(dieselLitres) + ' no total';
+    document.getElementById('statLogistics').textContent = fmtR(logisticsTotal);
+    document.getElementById('statLogisticsSub').textContent = fmtL(logisticsLitres) + ' transportados';
+    document.getElementById('statSettle').textContent = fmtR(settleTotal);
+    document.getElementById('statSettleSub').textContent = settleCount + (settleCount === 1 ? ' pagamento' : ' pagamentos');
+
+    const net = rows.length ? rows[rows.length - 1].running : 0;
+    const banner = document.getElementById('netBanner');
+    const netValue = document.getElementById('netValue');
+    const netDesc = document.getElementById('netDesc');
+    banner.classList.remove('pos', 'neg', 'zero');
+    netValue.textContent = fmtR(Math.abs(net));
+    if (net > 0.005) {
+      banner.classList.add('pos');
+      netDesc.textContent = 'Empresa B deve à Empresa A (valor de combustível supera taxas de logística + pagamentos)';
+    } else if (net < -0.005) {
+      banner.classList.add('neg');
+      netDesc.textContent = 'Empresa A deve à Empresa B (taxas de logística + pagamentos superam o valor de combustível)';
+    } else {
+      banner.classList.add('zero');
+      netDesc.textContent = 'Saldado — sem valor em dívida de nenhuma das partes';
+    }
+
+    renderChart(rows);
+  }
+
+  function renderChart(rows) {
+    const svg = document.getElementById('chart');
+    const tooltip = document.getElementById('tooltip');
+    const emptyNote = document.getElementById('chartEmpty');
+    svg.innerHTML = '';
+
+    if (rows.length < 2) {
+      emptyNote.style.display = '';
+      svg.style.display = 'none';
+      return;
+    }
+    emptyNote.style.display = 'none';
+    svg.style.display = '';
+
+    const W = 1100, H = 220, padL = 60, padR = 20, padT = 16, padB = 28;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const values = rows.map(r => r.running);
+    let maxV = Math.max(...values, 0), minV = Math.min(...values, 0);
+    if (maxV === minV) { maxV += 1; minV -= 1; }
+    const range = maxV - minV;
+    const yFor = v => padT + plotH - ((v - minV) / range) * plotH;
+    const xFor = i => padL + (rows.length === 1 ? plotW / 2 : (i / (rows.length - 1)) * plotW);
+    const zeroY = yFor(0);
+
+    const ns = 'http://www.w3.org/2000/svg';
+    function el(tag, attrs) {
+      const e = document.createElementNS(ns, tag);
+      Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+      return e;
+    }
+
+    const gridVals = [maxV, (maxV + minV) / 2, minV];
+    gridVals.forEach(v => {
+      const y = yFor(v);
+      svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: 'var(--grid)', 'stroke-width': 1 }));
+      const t = el('text', { x: padL - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--text-muted)' });
+      t.textContent = '€' + Math.round(v).toLocaleString('pt-PT');
+      svg.appendChild(t);
+    });
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: zeroY, y2: zeroY, stroke: 'var(--baseline)', 'stroke-width': 1.5 }));
+
+    for (let i = 0; i < rows.length - 1; i++) {
+      const x1 = xFor(i), y1 = yFor(rows[i].running);
+      const x2 = xFor(i + 1), y2 = yFor(rows[i + 1].running);
+      const avg = (rows[i].running + rows[i + 1].running) / 2;
+      const color = avg >= 0 ? 'var(--diverge-pos)' : 'var(--diverge-neg)';
+      const path = `M ${x1} ${zeroY} L ${x1} ${y1} L ${x2} ${y2} L ${x2} ${zeroY} Z`;
+      svg.appendChild(el('path', { d: path, fill: color, opacity: 0.12 }));
+    }
+
+    for (let i = 0; i < rows.length - 1; i++) {
+      const x1 = xFor(i), y1 = yFor(rows[i].running);
+      const x2 = xFor(i + 1), y2 = yFor(rows[i + 1].running);
+      const avg = (rows[i].running + rows[i + 1].running) / 2;
+      const color = avg >= 0 ? 'var(--diverge-pos)' : 'var(--diverge-neg)';
+      svg.appendChild(el('line', { x1, y1, x2, y2, stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round' }));
+    }
+
+    const lastX = xFor(rows.length - 1), lastY = yFor(rows[rows.length - 1].running);
+    const lastColor = rows[rows.length - 1].running >= 0 ? 'var(--diverge-pos)' : 'var(--diverge-neg)';
+    svg.appendChild(el('circle', { cx: lastX, cy: lastY, r: 4, fill: lastColor }));
+    const label = el('text', { x: Math.min(lastX + 8, W - padR - 4), y: lastY - 8, 'font-size': 12, 'font-weight': 600, fill: lastColor, 'text-anchor': lastX > W - padR - 90 ? 'end' : 'start' });
+    label.textContent = fmtR(rows[rows.length - 1].running);
+    svg.appendChild(label);
+
+    rows.forEach((r, i) => {
+      const x = xFor(i), y = yFor(r.running);
+      const hit = el('circle', { cx: x, cy: y, r: 10, fill: 'transparent', style: 'cursor:pointer' });
+      hit.addEventListener('mouseenter', () => {
+        tooltip.style.display = 'block';
+        tooltip.style.left = Math.min(x, W - 160) + 'px';
+        tooltip.style.top = Math.max(y - 60, 0) + 'px';
+        tooltip.innerHTML = `
+          <div class="row"><b>${r.tx.date}</b></div>
+          <div class="row">${typeLabel(r.tx.type)}</div>
+          <div class="row">${escapeHtml(r.tx.detail)}</div>
+          <div class="row">Saldo: <b>${fmtR(r.running)}</b></div>
+        `;
+      });
+      hit.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+      svg.appendChild(hit);
+    });
+  }
+
+  function renderAll() {
+    if (!currentRole) return;
+    dieselPriceInput.value = state.dieselPrice;
+    monthSel.value = state.month;
+    populateRouteSelect();
+    populateTruckAndDriverDatalists();
+    renderFleet();
+    renderRoutes();
+    const rows = renderLedger();
+    renderStatsAndChart(rows);
+  }
+})();
+</script>

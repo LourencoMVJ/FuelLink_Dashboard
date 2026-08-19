@@ -5,6 +5,12 @@ Supabase secret key, or logic that must never run in the browser — creating
 users, generating sequentially-numbered PDFs, etc.). Nothing here yet — no
 Month-1 work has started.
 
+## Planned Controllers (see docs/ROADMAP_BACKEND.md for the full plan)
+
+- `UserController` (M1), `PermissionController` (M1)
+- `OperationController` (M2, extended M3/M4)
+- `DocumentController` (M5)
+
 ## Existing Controllers
 
 _(none yet)_
