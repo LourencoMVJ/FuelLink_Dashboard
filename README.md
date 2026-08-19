@@ -8,6 +8,26 @@ handoff doc (business model, contract terms, real DB schema, open
 reconciliation points, stack, folder layout, UI/UX principles, screen
 decisions).
 
+Then: [docs/PROPOSTA_DESENVOLVIMENTO.md](docs/PROPOSTA_DESENVOLVIMENTO.md) —
+the month-by-month technical execution plan, with all 7 open architecture
+points resolved (or flagged for client sign-off) and each contract module
+broken into concrete DB/PHP/JS deliverables.
+
+Backend detail: [docs/ROADMAP_BACKEND.md](docs/ROADMAP_BACKEND.md) — the
+server-side roadmap (PHP layers, DB migrations, API route map) with a
+Foundation phase and a per-module work structure + definition of done.
+
+Frontend detail: [docs/ROADMAP_FRONTEND.md](docs/ROADMAP_FRONTEND.md) — the
+client-side roadmap (folder structure, design system, what to port from the
+old dashboard, permission catalog, screen inventory) for whoever builds
+`public_html/`.
+
+Frontend Phase 1 hand-off:
+[docs/ESPECIFICACAO_FASE1_FRONTEND.md](docs/ESPECIFICACAO_FASE1_FRONTEND.md) —
+the actionable report for the frontend engineer building Login, Dashboard,
+Operações Fuellink, Operações Bankers and Detalhe da Operação: what must
+exist on each screen, not implementation detail.
+
 ## Current state
 
 - `Antigo dashboard/fuellink-dashboard/index.html` — the existing

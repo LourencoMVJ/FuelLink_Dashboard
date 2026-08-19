@@ -47,3 +47,28 @@ production, not just proposed:
 The other five points (company vs role, ledger vs `operations` table,
 attachments structure, `routes` monthly-adjustment columns, and the
 `user_permissions` catalog) are still open — see the main handoff doc.
+
+## New gap found during frontend spec work (16/08/2026, not one of the original 7)
+
+**`transactions` has no `SELECT` RLS policy at all** — confirmed by reading
+0001-0003 directly: none of them enables RLS on `transactions` or creates a
+`FOR SELECT` policy (only `audit_log` has RLS enabled, in 0003). Today, any
+`authenticated` user can read every row regardless of `entered_by`.
+
+This was fine for the Antigo dashboard (2 Admin accounts, one per company,
+that are meant to see each other's side for the shared ledger to make
+sense), but breaks once Month 1 introduces regular Users per company — a
+Bankers User should never see Fuellink's diesel-sale rows and vice versa.
+The two new frontend screens (`operations-fuellink` / `operations-bankers`,
+see [docs/ROADMAP_FRONTEND.md](../../docs/ROADMAP_FRONTEND.md) Section 7)
+depend on this being fixed first: **migration `0004` needs to add
+`ALTER TABLE transactions ENABLE ROW LEVEL SECURITY` + a `FOR SELECT`
+policy scoped to `entered_by = current_user_role()`**, alongside the
+`user_permissions` work already planned for that migration (see
+[docs/ROADMAP_BACKEND.md](../../docs/ROADMAP_BACKEND.md) Section 3, Month 1).
+
+The future Ledger de Compensação screen still needs to see both companies'
+rows to compute the net balance — that has to go through a separate path
+(a `SECURITY DEFINER` view or a privileged PHP endpoint), not the same
+company-scoped `SELECT` policy. Not designed yet; revisit when that screen
+is speced.

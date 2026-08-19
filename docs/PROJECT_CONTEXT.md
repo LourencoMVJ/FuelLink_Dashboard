@@ -9,6 +9,12 @@
 > pasta (Secção 11) e [database/migrations/context.md](../database/migrations/context.md)
 > para o estado real e mais actual. Em caso de conflito entre este documento e o
 > código/schema real, **o código/schema real vence**.
+>
+> Os 7 pontos de reconciliação da Secção 5 têm agora resolução concreta (ou
+> pendência de decisão do cliente explicitamente marcada) em
+> [docs/PROPOSTA_DESENVOLVIMENTO.md](PROPOSTA_DESENVOLVIMENTO.md), que também
+> quebra os 6 meses do contrato em entregáveis técnicos — ler esse documento
+> antes de começar a implementar qualquer módulo.
 
 ---
 
@@ -371,17 +377,15 @@ momento do handoff)
   `role` resolvem-se a partir do perfil, depois da autenticação.
 - **Sem self-signup** — só o Admin cria contas.
 
-### Dashboard
-- **O mesmo ecrã serve Admin e User** (ambos influenciam os valores
-  partilhados do ledger).
-- 4 zonas: filtro (período + comparação + estado) → KPIs em cartões
-  (cor = estado real, não decoração) → gráficos comparativos (actual vs
-  período anterior) → tabela "últimas operações".
-- **A tabela de operações difere por empresa** — Fuellink mostra
-  litros/valor de venda; Bankers mostra litros/valor de aluguer + prova de
-  entrega (reflecte `type='diesel'` vs `type='logistics'` da Secção 3).
-  Isolamento formal desta lógica fica **para o futuro** (decisão do
-  cliente: "prefiro que no isolar para o futuro").
+### Dashboard — **revisto (16/08/2026)**, ver [ROADMAP_FRONTEND.md](ROADMAP_FRONTEND.md) Secção 7
+A ideia original desta secção (1 ecrã totalmente partilhado, "isolamento
+fica para o futuro") foi **substituída**: a mesma separação por empresa
+decidida para as Operações aplica-se agora também ao Dashboard — KPIs
+próprios de cada empresa sempre visíveis, o que cruza as duas (Net
+Position, gráfico de saldo) só visível a quem tiver `ledger.view`. O
+"isolamento para o futuro" que ficou registado aqui como decisão do cliente
+está, portanto, **resolvido** — não continua em aberto. Especificação
+completa (4 KPIs por lado, zonas, gating) no `ROADMAP_FRONTEND.md`.
 
 ### Gestão de Utilizadores (Mês 1)
 - Tabela (avatar, nome+email, telefone, role badge, estado
@@ -397,19 +401,21 @@ momento do handoff)
   deste handoff — ver [public_html/pages/context.md](../public_html/pages/context.md)
   para o estado actual.
 
-### Lista de Operações (Mês 2, Fuellink)
-- Filtros (estado, camião, período, ordenação) + tabela: Data, Camião,
-  Motorista, Litros, Valor venda, Aluguer, Prova (ícone presença/ausência),
-  Estado, `›` para detalhe.
-- **Sem ações rápidas na linha** (editar/estornar) — ações sensíveis vivem
-  só no ecrã de Detalhe da Operação, com confirmação.
-- Linhas `void`/estornadas aparecem esbatidas visualmente.
+### Lista de Operações — **revisto (16/08/2026)**, ver [ROADMAP_FRONTEND.md](ROADMAP_FRONTEND.md) Secção 7
+A ideia original desta secção (1 ecrã "Lista de Operações" Mês 2, só
+Fuellink, colunas Data/Camião/Motorista/Litros/Valor venda/Aluguer/Prova/
+Estado) foi **substituída** depois de se identificar que uma lista
+partilhada expõe dados comerciais de uma empresa aos Users da outra. Decisão
+actual: **dois ecrãs separados e mutuamente isolados**
+(`operations-fuellink.html` / `operations-bankers.html`), cada um só com os
+campos da sua própria empresa; o cruzamento entre as duas fica exclusivo do
+Ledger de Compensação. Especificação completa (campos, colunas, formulários
+de criação) no `ROADMAP_FRONTEND.md`, não repetida aqui.
 
-### Por desenhar ainda (inventário completo)
-- Registar nova Operação (formulário, mobile-first)
-- Detalhe de uma Operação (onde vivem edit/estorno)
-- Extensão Bankers (prova de entrega, diferença carregado/entregue, edição
-  de fornecimento)
+### Por desenhar ainda (inventário completo) — **revisto (16/08/2026)**
+"Registar nova Operação", "Detalhe de uma Operação" e "Extensão Bankers"
+desta lista original já têm spec fechada — ver
+[ROADMAP_FRONTEND.md](ROADMAP_FRONTEND.md) Secção 7. Continuam por desenhar:
 - Ledger de Compensação (redesign do que já existe em produção)
 - Módulo Financeiro/Documental (lista de documentos, gerar, pré-visualizar
   PDF)
