@@ -1,5 +1,15 @@
+# Composer-managed dependencies — reproducible via composer.lock, never committed
+vendor/
+
 # Real secrets — never commit
 private/config/env.php
+
+# Runtime storage (JWKS cache, etc.) — never commit
+private/storage/
+
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache
 
 # OS / editor junk
 .DS_Store
