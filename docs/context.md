@@ -57,6 +57,11 @@ layer where what's actually on disk differs from that summary.
   exist and how it behaves on each screen, distilled from
   `ROADMAP_FRONTEND.md`. Start here if you're the one building these
   screens; go to `ROADMAP_FRONTEND.md` only for broader rationale.
+- [PEDIDOS_CLIENTE.md](PEDIDOS_CLIENTE.md) — chronological log of feature
+  requests the client made outside the normal planning cycle (WhatsApp,
+  email), with the technical read and the scope decision for each. Check
+  here before assuming current scope is complete, and add to it whenever
+  the client asks for something new.
 
 ## `../referencias visuais/`
 
