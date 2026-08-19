@@ -1,0 +1,10 @@
+# Front-controller routing for the privileged API — every /api/* request
+# reaches public_html/api/index.php, which always runs Bootstrap +
+# AuthMiddleware::requireAuth() before any Controller logic. Real files
+# (assets, pages) are served as-is; only unmatched /api/* paths rewrite.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+</IfModule>
