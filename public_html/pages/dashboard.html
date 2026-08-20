@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | FuelLink & Bankers Tankers</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Core & Page Stylesheets -->
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+
+  <!-- Chart.js for smooth data visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Global Shared Sidebar -->
+    <aside class="sidebar-container" id="globalSidebar" aria-label="Navegação Principal"></aside>
+
+    <!-- Main Dynamic Content -->
+    <main class="main-content" id="mainDashboard">
+
+      <!-- Header Presentation Row with Theme & Language Controls -->
+      <header class="page-header-row">
+        <div class="greeting-block">
+          <h1 id="userGreeting">Olá! <span class="wave">👋</span></h1>
+          <p id="subGreeting">Visão geral do desempenho e métricas operacionais</p>
+        </div>
+        <div id="headerControls" class="header-controls-container"></div>
+      </header>
+
+      <!-- Filter Bar with Explicit Start & End Dates -->
+      <section class="filter-card" aria-label="Filtros do Dashboard">
+        <div class="filter-group">
+          <label for="periodPreset" id="lblPeriodPreset">Período Rápido</label>
+          <select id="periodPreset" class="filter-control">
+            <option value="all" id="optPeriodAll">Todo o Histórico</option>
+            <option value="today" id="optPeriodToday">Hoje</option>
+            <option value="this_week" id="optPeriodWeek">Esta Semana</option>
+            <option value="this_month" id="optPeriodMonth" selected>Este Mês</option>
+            <option value="custom" id="optPeriodCustom">Personalizado</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="startDate" id="lblStartDate">Data Início</label>
+          <input type="date" id="startDate" class="filter-control">
+        </div>
+
+        <div class="filter-group">
+          <label for="endDate" id="lblEndDate">Data Fim</label>
+          <input type="date" id="endDate" class="filter-control">
+        </div>
+
+        <div class="filter-group">
+          <label for="truckFilter" id="lblTruckFilter">Camião / Frota</label>
+          <select id="truckFilter" class="filter-control">
+            <option value="" id="optTruckAll">Todos os Camiões</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-filter-apply" id="btnApplyFilters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          <span id="btnApplyFiltersText">Aplicar Filtros</span>
+        </button>
+
+        <button type="button" class="btn-filter-reset" id="btnResetFilters" title="Limpar Filtros">
+          Limpar
+        </button>
+      </section>
+
+      <!-- 4 High-Impact KPI Cards (Adaptive per company) -->
+      <section class="kpi-grid" id="kpiContainer" aria-label="Indicadores Chave de Desempenho"></section>
+
+      <!-- Net Position Banner (Visible with ledger.view) -->
+      <section id="netPositionSection" class="net-position-banner" style="display: none;">
+        <div class="net-position-info">
+          <h3 id="netPositionTitle">Posição Líquida Cruzada (Compensação)</h3>
+          <p id="netPositionDesc" style="color: #64748B; font-size: 13px;">Balanço corrente entre FuelLink e Bankers Tankers</p>
+        </div>
+        <div class="net-position-val" id="netPositionValue">R 0.00</div>
+      </section>
+
+      <!-- Charts Overview Grid -->
+      <section class="charts-grid" aria-label="Gráficos de Desempenho">
+        <!-- Donut Distribution Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h2 class="chart-title" id="donutTitle">Distribuição de Volume</h2>
+            <p class="chart-subtitle" id="donutSubtitle">Proporção de litros por unidade/rota no período</p>
+          </div>
+          <div class="chart-container">
+            <canvas id="donutChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Line/Area Trend Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h2 class="chart-title" id="trendTitle">Tendência Temporal</h2>
+            <p class="chart-subtitle" id="trendSubtitle">Evolução do volume ao longo do período selecionado</p>
+          </div>
+          <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent 5 Operations Table -->
+      <section class="section-card" aria-label="Operações Recentes">
+        <div class="section-header-row">
+          <div>
+            <h2 class="section-title" id="recentOpsTitle">Últimas 5 Operações</h2>
+            <p id="recentOpsSubtitle" style="font-size: 12px; color: #64748B; margin-top: 2px;">Histórico recente correspondente aos filtros aplicados</p>
+          </div>
+          <a href="operations.html" class="link-all" id="viewAllOperationsLink">
+            <span id="viewAllOpsText">Ver Todas as Operações</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table" id="recentTable">
+            <thead>
+              <tr id="recentTableHead">
+                <!-- Dynamically injected per company -->
+              </tr>
+            </thead>
+            <tbody id="recentTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">A carregar operações...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Dashboard Controller View -->
+  <script type="module" src="../assets/js/views/dashboard.js"></script>
+</body>
+
+</html>
