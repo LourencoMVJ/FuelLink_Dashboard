@@ -17,6 +17,11 @@ Backend detail: [docs/ROADMAP_BACKEND.md](docs/ROADMAP_BACKEND.md) — the
 server-side roadmap (PHP layers, DB migrations, API route map) with a
 Foundation phase and a per-module work structure + definition of done.
 
+Frontend detail: [docs/ROADMAP_FRONTEND.md](docs/ROADMAP_FRONTEND.md) and
+[docs/API_CONTRACT.md](docs/API_CONTRACT.md) — the latter is the actionable
+request/response contract (login, `GET /api/me`, operations CRUD, search,
+filters, KPIs) for whoever builds the frontend.
+
 Frontend detail: [docs/ROADMAP_FRONTEND.md](docs/ROADMAP_FRONTEND.md) — the
 client-side roadmap (folder structure, design system, what to port from the
 old dashboard, permission catalog, screen inventory) for whoever builds

@@ -10,6 +10,10 @@
 > API que este documento consome), com o detalhe de engenharia de cliente.
 > Ler [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) primeiro se ainda não o leste —
 > este documento assume esse contexto e não o repete todo.
+>
+> Para o contrato accionável de cada endpoint (login, `GET /api/me`,
+> operações, filtros/pesquisa, KPIs) — pedido/resposta exactos, prontos a
+> codificar contra — ver [API_CONTRACT.md](API_CONTRACT.md).
 
 ---
 

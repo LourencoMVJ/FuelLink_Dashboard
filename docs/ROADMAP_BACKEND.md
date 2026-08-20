@@ -155,8 +155,10 @@ Cada task dentro do mês arranca pelo ciclo de agentes da **Secção 8.2**
   `balance_delta`/`unit_rate`/`detail` **movido para PHP** (porta do
   `computeTxFinancials` do Antigo dashboard), gated por `operations.create`/
   `.edit`/`.void`.
-- **Rotas**: `GET/POST /api/operations`, `PATCH /api/operations/{id}`,
-  `POST /api/operations/{id}/void`.
+- **Rotas**: `POST /api/operations`, `PATCH /api/operations/{id}`,
+  `POST /api/operations/{id}/void`, `GET /api/operations/summary` (KPIs).
+  **Listar/pesquisar/filtrar não é rota PHP** — direct Supabase, RLS-scoped
+  pela migração `0004` (ver [API_CONTRACT.md](API_CONTRACT.md) Secção 0).
 - **Aceitação**: operação Fuellink criada pelo servidor com permissão
   verificada e financeiro calculado server-side; void gera entrada
   reversora, original preservado.
@@ -233,23 +235,28 @@ Cada task dentro do mês arranca pelo ciclo de agentes da **Secção 8.2**
 
 ## 4. Mapa de rotas API (consolidado)
 
-| Método | Rota | Módulo | Permissão | Modo |
-|---|---|---|---|---|
-| GET | `/api/health` | Fundação | requireAuth | utilizador |
-| GET | `/api/users` | M1 | requireAuth | utilizador |
-| POST | `/api/users` | M1 | admin | serviço |
-| PATCH | `/api/users/{id}` | M1 | admin | serviço |
-| POST | `/api/users/{id}/deactivate` | M1 | admin | serviço |
-| GET | `/api/permissions` | M1 | requireAuth | utilizador |
-| POST | `/api/permissions/grant` | M1 | admin | serviço |
-| POST | `/api/permissions/revoke` | M1 | admin | serviço |
-| GET/POST | `/api/operations` | M2 | operations.view/.create | utilizador |
-| PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador |
-| POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador |
-| POST | `/api/operations/{id}/proof` | M3/M4 | operations.upload_* | utilizador |
-| GET | `/api/operations/{id}/proof-url` | M3/M4 | operations.view | utilizador |
-| POST/GET | `/api/documents` | M5 | documents.generate/.view | serviço/utilizador |
-| GET | `/api/documents/{id}/pdf` | M5 | documents.view | utilizador |
+Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT.md).
+
+| Método | Rota | Módulo | Permissão | Modo | Estado |
+|---|---|---|---|---|---|
+| GET | `/api/health` | Fundação | requireAuth | serviço | ✅ |
+| GET | `/api/me` | Fundação | requireAuth (+ is_active) | serviço | ✅ |
+| GET | `/api/users` | M1 | requireAuth | utilizador | ❌ |
+| POST | `/api/users` | M1 | admin | serviço | ❌ |
+| PATCH | `/api/users/{id}` | M1 | admin | serviço | ❌ |
+| POST | `/api/users/{id}/deactivate` | M1 | admin | serviço | ❌ |
+| GET | `/api/permissions` | M1 | requireAuth | utilizador | ❌ |
+| POST | `/api/permissions/grant` | M1 | admin | serviço | ❌ |
+| POST | `/api/permissions/revoke` | M1 | admin | serviço | ❌ |
+| — | listar/pesquisar/filtrar operações | M2 | RLS (migração `0004`) | **directo Supabase, sem rota PHP** | ⚠️ falta só correr `0004` |
+| POST | `/api/operations` | M2 | operations.create | utilizador | ❌ |
+| PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador | ❌ |
+| POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador | ❌ |
+| GET | `/api/operations/summary` | M2 | requireAuth | utilizador | ❌ |
+| POST | `/api/operations/{id}/proof` | M3/M4 | operations.upload_* | utilizador | ❌ |
+| GET | `/api/operations/{id}/proof-url` | M3/M4 | operations.view | utilizador | ❌ |
+| POST/GET | `/api/documents` | M5 | documents.generate/.view | serviço/utilizador | ❌ |
+| GET | `/api/documents/{id}/pdf` | M5 | documents.view | utilizador | ❌ |
 
 ---
 
