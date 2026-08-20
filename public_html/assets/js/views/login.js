@@ -1,8 +1,5 @@
-/**
- * Login View Controller (Frontend View Layer)
- * Manages user interactions, UI state, company toggle presets, and calls the Auth core.
- */
 import { signIn, getSession, ROLE_PRESETS } from '../core/auth.js';
+import { getCurrentLanguage, setLanguage, t } from '../core/i18n.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('loginForm');
@@ -18,6 +15,68 @@ document.addEventListener('DOMContentLoaded', async () => {
   const forgotLink = document.querySelector('.pill-forgot-link');
   const checkboxContainer = document.querySelector('.pill-checkbox-container');
   const supportLink = document.querySelector('.support-text a');
+
+  // Initialize Language Toggle on Login
+  initLoginLangToggle();
+  applyLoginTranslations();
+
+  function initLoginLangToggle() {
+    const langContainer = document.getElementById('loginLangToggle');
+    if (!langContainer) return;
+    const currentLang = getCurrentLanguage();
+
+    langContainer.innerHTML = `
+      <button type="button" class="pill-toggle-btn ${currentLang === 'pt' ? 'active' : ''}" data-lang="pt" title="Português">
+        <span>PT</span>
+      </button>
+      <button type="button" class="pill-toggle-btn ${currentLang === 'en' ? 'active' : ''}" data-lang="en" title="English">
+        <span>EN</span>
+      </button>
+    `;
+
+    langContainer.querySelectorAll('[data-lang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.getAttribute('data-lang');
+        if (lang !== currentLang) {
+          setLanguage(lang);
+        }
+      });
+    });
+  }
+
+  function applyLoginTranslations() {
+    const currentLang = getCurrentLanguage();
+    const lblInfoTitle = document.getElementById('lblInfoTitle');
+    const lblInfoSubtitle = document.getElementById('lblInfoSubtitle');
+    const lblWelcomeBack = document.getElementById('lblWelcomeBack');
+    const lblSignInTitle = document.getElementById('lblSignInTitle');
+    const lblSignInSubtitle = document.getElementById('lblSignInSubtitle');
+    const lblAccessAs = document.getElementById('lblAccessAs');
+    const lblRememberMe = document.getElementById('lblRememberMe');
+    const lblForgotPass = document.getElementById('lblForgotPass');
+    const btnSubmitText = document.getElementById('btnSubmitText');
+    const lblSupportPrompt = document.getElementById('lblSupportPrompt');
+    const lblContactSupport = document.getElementById('lblContactSupport');
+
+    if (lblInfoTitle) {
+      lblInfoTitle.innerHTML = currentLang === 'en'
+        ? `Integrated Management of <span class="accent-fl">Fuel</span> & <span class="accent-bt">Logistics</span>`
+        : `Gestão Integrada de <span class="accent-fl">Combustível</span> & <span class="accent-bt">Logística</span>`;
+    }
+    if (lblInfoSubtitle) lblInfoSubtitle.textContent = t('loginSubtitle');
+    if (lblWelcomeBack) lblWelcomeBack.textContent = t('welcomeBack');
+    if (lblSignInTitle) lblSignInTitle.textContent = t('signInTitle');
+    if (lblSignInSubtitle) lblSignInSubtitle.textContent = t('signInSubtitle');
+    if (lblAccessAs) lblAccessAs.textContent = t('accessAs');
+    if (lblRememberMe) lblRememberMe.textContent = t('rememberMe');
+    if (lblForgotPass) lblForgotPass.textContent = t('forgotPassword');
+    if (btnSubmitText) btnSubmitText.textContent = t('signInBtn');
+    if (lblSupportPrompt) lblSupportPrompt.textContent = t('supportPrompt');
+    if (lblContactSupport) lblContactSupport.textContent = ` ${t('contactSupport')}`;
+
+    if (emailInput) emailInput.placeholder = t('emailPlaceholder');
+    if (passwordInput) passwordInput.placeholder = t('passwordPlaceholder');
+  }
 
   // Check if session already exists
   try {
@@ -157,6 +216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function redirectToDashboard() {
-    window.location.href = '../../Antigo dashboard/fuellink-dashboard/index.html';
+    window.location.href = 'dashboard.html';
   }
 });

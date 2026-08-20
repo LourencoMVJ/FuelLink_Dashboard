@@ -19,6 +19,66 @@
   background-color: #041220;
 }
 
+/* Floating Full Liquid Glass Language Toggle on Screen Top-Right */
+.login-screen-top-bar {
+  position: absolute;
+  top: 32px;
+  right: clamp(28px, 6vw, 84px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+}
+
+.login-top-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.45), 
+              0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+              0 0 20px rgba(56, 189, 248, 0.25) !important;
+  padding: 5px 6px !important;
+  border-radius: var(--radius-pill) !important;
+  transition: all var(--transition-bounce);
+}
+
+.login-top-toggle:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 20px 42px -4px rgba(0, 0, 0, 0.55), 
+              0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+              0 0 26px rgba(56, 189, 248, 0.4) !important;
+}
+
+.login-top-toggle .pill-toggle-btn {
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.login-top-toggle .pill-toggle-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.login-top-toggle .pill-toggle-btn.active {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
+  text-shadow: none;
+}
+
 /* ==========================================================================
    Fullscreen Background (Clean Truck Visibility + Edge & Form Shading)
    ========================================================================== */
