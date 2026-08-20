@@ -34,21 +34,44 @@ All three are confirmed applied: the live dashboard
    `audit_log` table (trigger-written only, SECURITY DEFINER, not yet
    surfaced in any UI), and audit triggers on all four editable tables.
 
+## Written, not yet run against production
+
+4. **0004_user_roles_permissions_and_transactions_rls.sql** (20/08/2026) —
+   extends `user_roles` (`is_admin`, `full_name`, `phone`, `is_active`,
+   `created_by`, `created_at`; the 2 real accounts become Admins); creates
+   `user_permissions` (own-row `SELECT` only, writes always privileged via
+   `PermissionController`); redefines `current_user_role()` to also require
+   `is_active` (so deactivation immediately blocks every RLS policy that
+   uses it, including the ones from 0003, with no other policy touched);
+   adds `current_user_is_admin()`; enables RLS on `transactions` with a
+   `SELECT` policy scoped to `entered_by = current_user_role()` **and** a
+   matching `INSERT` policy (`WITH CHECK entered_by = current_user_role()`)
+   — the `INSERT` policy isn't optional here: enabling RLS with only a
+   `SELECT` policy would have silently broken every existing "Add
+   transaction"/"Void" insert, and it closes a real spoofing gap where
+   `entered_by` was previously just whatever the client sent. **Needs to be
+   run manually in the Supabase SQL editor before any Month 1/2 endpoint
+   that reads/writes `transactions` or `user_permissions` goes live.**
+
 ## Reconciliation status (main handoff doc, Section 5)
 
-Two of the seven open points are effectively **resolved by 1-3 above**, in
-production, not just proposed:
+Four of the seven open points are now resolved, in production or in a
+written-but-not-yet-run migration:
 
+- **Point 1** (company vs role) → resolved by migration 0004: extends
+  `user_roles` in place, no parallel `profiles` table.
 - **Point 2** (trucks/drivers structured vs free text) → resolved as
   hybrid: free text with optional Fleet match, per migration 0002.
 - **Point 5** (`trailer_reg`) → resolved as a plain free-text column
   directly on `transactions`, per migration 0001.
+- **Point 7** (`user_permissions` catalog) → resolved by migration 0004,
+  as originally designed (free-text permission codes, no rigid `CHECK`).
 
-The other five points (company vs role, ledger vs `operations` table,
-attachments structure, `routes` monthly-adjustment columns, and the
-`user_permissions` catalog) are still open — see the main handoff doc.
+The other three points (ledger vs `operations` table, attachments
+structure, `routes` monthly-adjustment columns) are still open — see the
+main handoff doc.
 
-## New gap found during frontend spec work (16/08/2026, not one of the original 7)
+## New gap found during frontend spec work (16/08/2026, not one of the original 7) — fix written in 0004, not yet run
 
 **`transactions` has no `SELECT` RLS policy at all** — confirmed by reading
 0001-0003 directly: none of them enables RLS on `transactions` or creates a
