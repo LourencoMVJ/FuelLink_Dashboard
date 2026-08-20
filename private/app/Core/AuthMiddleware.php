@@ -27,7 +27,10 @@ final class AuthMiddleware
     {
     }
 
-    /** @return array{user_id: string, role: string} */
+    /**
+     * @return array{user_id: string, email: string, role: string,
+     *     is_admin: bool, full_name: string|null, phone: string|null}
+     */
     public function requireAuth(): array
     {
         $jwt = $this->bearerToken();
@@ -43,13 +46,30 @@ final class AuthMiddleware
         }
 
         $userId = (string) ($claims['sub'] ?? '');
-        $role = $userId === '' ? null : $this->lookupRole($userId);
+        $email = (string) ($claims['email'] ?? '');
+        $profile = $userId === '' ? null : $this->lookupProfile($userId);
 
-        if ($role === null) {
-            Response::error('Account has no assigned company role.', 401);
+        if ($profile === null) {
+            // Covers both "no user_roles row" and "is_active = false" — the
+            // query itself filters on is_active, so a deactivated account
+            // gets exactly the same response as one that was never assigned
+            // a role. Never reveal which case it was.
+            Response::error('Account has no assigned company role, or is inactive.', 401);
         }
 
-        return ['user_id' => $userId, 'role' => $role];
+        return self::buildProfile($userId, $email, $profile);
+    }
+
+    /** @return list<string> */
+    public function listPermissions(string $userId): array
+    {
+        $rows = $this->client->get('user_permissions', [
+            'user_id' => 'eq.' . $userId,
+            'granted' => 'eq.true',
+            'select' => 'permission',
+        ]);
+
+        return self::extractPermissionCodes($rows);
     }
 
     public function requirePermission(string $userId, string $permission): void
@@ -78,6 +98,43 @@ final class AuthMiddleware
     public static function isGranted(array $rows): bool
     {
         return $rows !== [];
+    }
+
+    /**
+     * Pure shaping: turns one already-fetched user_roles row into the
+     * profile shape requireAuth()/GET /api/me return. Split out so the
+     * defaulting of optional fields (a brand-new user may have no
+     * full_name/phone yet) is unit-testable without a real HTTP request.
+     *
+     * @param array<string, mixed> $row
+     * @return array{user_id: string, email: string, role: string,
+     *     is_admin: bool, full_name: string|null, phone: string|null}
+     */
+    public static function buildProfile(string $userId, string $email, array $row): array
+    {
+        return [
+            'user_id' => $userId,
+            'email' => $email,
+            'role' => (string) ($row['role'] ?? ''),
+            'is_admin' => (bool) ($row['is_admin'] ?? false),
+            'full_name' => isset($row['full_name']) ? (string) $row['full_name'] : null,
+            'phone' => isset($row['phone']) ? (string) $row['phone'] : null,
+        ];
+    }
+
+    /**
+     * Pure shaping: user_permissions rows -> the flat list of granted
+     * permission codes GET /api/me and role-aware frontend code consume.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return list<string>
+     */
+    public static function extractPermissionCodes(array $rows): array
+    {
+        return array_values(array_map(
+            static fn (array $row): string => (string) $row['permission'],
+            $rows,
+        ));
     }
 
     /**
@@ -152,12 +209,24 @@ final class AuthMiddleware
         return $decoded;
     }
 
-    private function lookupRole(string $userId): ?string
+    /**
+     * Filters on is_active here (not just relying on RLS) because this
+     * client is always in service mode (see Router::build()) — it bypasses
+     * RLS entirely, so a deactivated account must be excluded explicitly or
+     * PHP-mediated endpoints would keep working for them even though direct
+     * Supabase reads (gated by current_user_role(), migration 0004) would
+     * already deny them.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function lookupProfile(string $userId): ?array
     {
-        $rows = $this->client->get('user_roles', ['user_id' => 'eq.' . $userId, 'select' => 'role']);
+        $rows = $this->client->get('user_roles', [
+            'user_id' => 'eq.' . $userId,
+            'is_active' => 'eq.true',
+            'select' => 'role,is_admin,full_name,phone',
+        ]);
 
-        $role = $rows[0]['role'] ?? null;
-
-        return is_string($role) ? $role : null;
+        return $rows[0] ?? null;
     }
 }

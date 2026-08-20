@@ -8,12 +8,19 @@ Month-1 work has started.
 ## Planned Controllers (see docs/ROADMAP_BACKEND.md for the full plan)
 
 - `UserController` (M1), `PermissionController` (M1)
-- `OperationController` (M2, extended M3/M4)
+- `OperationController` (M2, extended M3/M4) — create/edit/void/summary, see
+  [docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md) Sections 4-7 for the
+  request/response contract. List/search/filter never gets a Controller —
+  it's a direct Supabase read, RLS-scoped (migration 0004).
 - `DocumentController` (M5)
 
 ## Existing Controllers
 
-_(none yet)_
+- `HealthController` — `GET /api/health`, smoke-tests the JWKS auth path.
+- `MeController` — `GET /api/me`, the first call the frontend makes after
+  Supabase login. Returns `AuthMiddleware::requireAuth()`'s profile plus
+  `listPermissions()`. See [docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md)
+  Section 2 for the exact response shape.
 
 ## Fixed rules
 

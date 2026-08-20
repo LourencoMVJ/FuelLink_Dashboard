@@ -124,6 +124,49 @@ final class AuthMiddlewareTest extends TestCase
         $this->assertCount(1, $rows);
     }
 
+    public function test_build_profile_shapes_a_full_user_roles_row(): void
+    {
+        $profile = AuthMiddleware::buildProfile('user-1', 'waseem@bakers.co.za', [
+            'role' => 'bakers',
+            'is_admin' => true,
+            'full_name' => 'Waseem',
+            'phone' => '+27123456789',
+        ]);
+
+        $this->assertSame([
+            'user_id' => 'user-1',
+            'email' => 'waseem@bakers.co.za',
+            'role' => 'bakers',
+            'is_admin' => true,
+            'full_name' => 'Waseem',
+            'phone' => '+27123456789',
+        ], $profile);
+    }
+
+    public function test_build_profile_defaults_missing_optional_fields(): void
+    {
+        $profile = AuthMiddleware::buildProfile('user-2', 'new-user@fuelink.co.za', ['role' => 'fuellink']);
+
+        $this->assertFalse($profile['is_admin']);
+        $this->assertNull($profile['full_name']);
+        $this->assertNull($profile['phone']);
+    }
+
+    public function test_extract_permission_codes_plucks_the_permission_column(): void
+    {
+        $codes = AuthMiddleware::extractPermissionCodes([
+            ['permission' => 'operations.create'],
+            ['permission' => 'operations.void'],
+        ]);
+
+        $this->assertSame(['operations.create', 'operations.void'], $codes);
+    }
+
+    public function test_extract_permission_codes_returns_empty_list_for_no_rows(): void
+    {
+        $this->assertSame([], AuthMiddleware::extractPermissionCodes([]));
+    }
+
     public function test_require_permission_does_not_error_when_granted(): void
     {
         $client = new FakeSupabaseClient();

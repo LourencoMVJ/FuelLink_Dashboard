@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Controllers\HealthController;
+use App\Controllers\MeController;
 use RuntimeException;
 
 /**
@@ -17,6 +18,7 @@ final class Router
     /** @var list<array{0: string, 1: string, 2: class-string, 3: string}> */
     private const ROUTES = [
         ['GET', '#^health$#', HealthController::class, 'get'],
+        ['GET', '#^me$#', MeController::class, 'get'],
     ];
 
     public static function dispatch(string $method, string $uri): void
@@ -60,6 +62,7 @@ final class Router
     {
         return match ($controllerClass) {
             HealthController::class => new HealthController(new AuthMiddleware(SupabaseClient::forService())),
+            MeController::class => new MeController(new AuthMiddleware(SupabaseClient::forService())),
             default => throw new RuntimeException("No factory registered for {$controllerClass}."),
         };
     }
