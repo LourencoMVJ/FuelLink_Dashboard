@@ -10,8 +10,22 @@ export const ROLE_LABELS = {
 };
 
 export const ROLE_PRESETS = {
-  fuellink: 'info@fuelink.co.za',
-  bakers: 'waseem@bakers.co.za'
+  fuellink: 'shads@fuelink.co.za',
+  bakers: 'shads@bakers.co.za'
+};
+
+// Local test mock accounts
+const LOCAL_MOCK_USERS = {
+  'shads@fuelink.co.za': {
+    password: '12345678',
+    role: 'fuellink',
+    id: 'mock-user-fl-01'
+  },
+  'shads@bakers.co.za': {
+    password: '12345678',
+    role: 'bakers',
+    id: 'mock-user-bt-02'
+  }
 };
 
 /**
@@ -21,19 +35,38 @@ export const ROLE_PRESETS = {
  * @returns {Promise<{user: object, role: string}>}
  */
 export async function signIn(email, password) {
-  if (!sb) throw new Error('Supabase client is not available.');
+  const cleanEmail = email.trim().toLowerCase();
 
-  const { data, error } = await sb.auth.signInWithPassword({
-    email: email.trim(),
-    password: password
-  });
-
-  if (error) {
-    throw error;
+  // 1. Check if local test mock account matches
+  if (LOCAL_MOCK_USERS[cleanEmail]) {
+    const mock = LOCAL_MOCK_USERS[cleanEmail];
+    if (mock.password === password) {
+      const mockSession = {
+        user: { id: mock.id, email: cleanEmail },
+        role: mock.role,
+        isMock: true
+      };
+      localStorage.setItem('fuellink_local_session', JSON.stringify(mockSession));
+      return { user: mockSession.user, role: mock.role };
+    } else {
+      throw new Error('Palavra-passe incorreta para conta de teste.');
+    }
   }
 
-  const role = await fetchUserRole(data.user.id);
-  return { user: data.user, role };
+  // 2. Fallback to Supabase if connected
+  if (sb) {
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password
+    });
+
+    if (error) throw error;
+
+    const role = await fetchUserRole(data.user.id);
+    return { user: data.user, role };
+  }
+
+  throw new Error('Credenciais inválidas.');
 }
 
 /**
@@ -62,6 +95,19 @@ export async function fetchUserRole(userId) {
  * @returns {Promise<{session: object, role: string}|null>}
  */
 export async function getSession() {
+  // Check local mock session first
+  const localSaved = localStorage.getItem('fuellink_local_session');
+  if (localSaved) {
+    try {
+      const parsed = JSON.parse(localSaved);
+      if (parsed && parsed.user && parsed.role) {
+        return { session: { user: parsed.user }, role: parsed.role };
+      }
+    } catch (e) {
+      console.warn('Local session parse error:', e);
+    }
+  }
+
   if (!sb) return null;
 
   const { data: { session }, error } = await sb.auth.getSession();
@@ -80,6 +126,8 @@ export async function getSession() {
  * Sign out current user
  */
 export async function signOut() {
-  if (!sb) return;
-  await sb.auth.signOut();
+  localStorage.removeItem('fuellink_local_session');
+  if (sb) {
+    await sb.auth.signOut();
+  }
 }

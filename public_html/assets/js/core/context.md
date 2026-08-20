@@ -1,17 +1,15 @@
-# public_html/assets/js/core
+# Contexto da Pasta `public_html/assets/js/core`
 
-Shared frontend infrastructure: auth guard, shared API client. Nothing here
-yet as standalone modules — the current dashboard
-(`Antigo dashboard/fuellink-dashboard/index.html`) has this logic inlined
-in the single HTML file (see its `supabase.createClient(...)` call and the
-`user_roles` lookup right after sign-in).
+Camada de serviços essenciais e componentes globais partilhados entre as páginas do frontend.
 
-## Implemented files
+## Módulos Existentes
 
-- `auth.js` — Gerenciamento de sessão, autenticação (`signIn`, `signOut`, `getSession`) e resolução de papéis (`user_roles`).
-
-
-## Fixed rule
-
-Session/token refresh is handled automatically by `supabase-js` — never
-reimplement that by hand.
+- **`auth.js`** — Serviço de autenticação e gestão de sessão:
+  - Integração com o Supabase Auth para login via email e palavra-passe.
+  - Suporte a contas locais de teste sem conexão obrigatória à nuvem (`shads@fuelink.co.za` e `shads@bakers.co.za`).
+  - Resolução do perfil/empresa (`user_roles`) e armazenamento local da sessão ativa.
+  - Função de logout (`signOut`).
+- **`sidebar.js`** — Componente global da Sidebar:
+  - Renderiza o menu de navegação com estado ativo da página atual.
+  - Aplica o tema dinâmico e iniciais do perfil da empresa autenticada.
+  - Suporte a recolher/expandir o menu (modo Mini-Dock) através do clique no cabeçalho/logo da sidebar, persistindo o estado no `localStorage`.
