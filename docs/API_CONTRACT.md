@@ -237,12 +237,18 @@ endpoint** — cruza as duas empresas, precisa de via privilegiada à parte
 | Login/logout/recovery (Supabase directo) | ✅ Já funciona hoje (Antigo dashboard usa o mesmo mecanismo) |
 | `GET /api/me` | ✅ Implementado, testado (`tests/Unit/Core/AuthMiddlewareTest.php`) |
 | Listar/pesquisar/filtrar (Supabase directo) | ⚠️ Depende só da migração `0004` correr — sem código PHP novo necessário |
-| `POST /api/operations` | ❌ Por implementar (Mês 2) |
-| `PATCH /api/operations/{id}` | ❌ Por implementar (Mês 2) |
-| `POST /api/operations/{id}/void` | ❌ Por implementar (Mês 2) |
-| `GET /api/operations/summary` | ❌ Por implementar (Mês 2) |
+| `POST /api/operations` | ✅ Código implementado e testado (2026-08-21), diesel (fuellink) + logistics (bakers) — ⚠️ inutilizável em produção até a migração `0004` **e** o seed de permissões correrem (ver [database/migrations/context.md](../database/migrations/context.md)) |
+| `PATCH /api/operations/{id}` | ✅ idem |
+| `POST /api/operations/{id}/void` | ✅ idem |
+| `GET /api/operations/summary` | ✅ idem — decisões fechadas 2026-08-21: exclui transacções anuladas da soma; `avg_diesel_price` é a média ponderada (`total_sold/litres_sold`), não a média simples das taxas |
+
+**Nota de âmbito (2026-08-21)**: `type='settlement'` (pagamentos entre as
+duas empresas) fica de fora de `POST/PATCH /api/operations*` — continua a
+entrar pelo caminho antigo directo ao Supabase até o Ledger de Compensação
+ser desenhado.
 
 **Ordem sugerida para o developer de frontend**: pode começar já pelo login
 + `GET /api/me` + a lista/pesquisa/filtro de operações (tudo real ou já
 implementado, só falta correr a migração `0004`) — os 4 endpoints PHP de
-escrita/KPI chegam a seguir, sem bloquear o arranque do resto do ecrã.
+escrita/KPI já têm código, mas só ficam utilizáveis depois da `0004` e do
+seed de permissões correrem em produção.

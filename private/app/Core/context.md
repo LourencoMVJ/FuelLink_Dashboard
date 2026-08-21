@@ -35,6 +35,10 @@ phase, committed 2026-08-19).
   - `requirePermission()` → `isGranted()` (pure decision over already-
     fetched rows).
   - `listPermissions()` → `extractPermissionCodes()` (pure row→code list).
+  - `bearerToken()` is `public static` (2026-08-21, reads only `$_SERVER`) —
+    `Router::build()` calls it to construct `SupabaseClient::forUser()` for
+    Controllers whose Models must run under the caller's own RLS (see
+    `OperationController`'s factory in `Router.php`).
 - `Request.php` / `Response.php` — `Request::capture()` parses JSON body +
   query string. `Response::envelope()` is the pure builder (unit-tested);
   `json()`/`error()` are the side-effecting emitters (`http_response_code`
@@ -42,7 +46,22 @@ phase, committed 2026-08-19).
 - `Router.php` — explicit route whitelist (`ROUTES` const) mapping
   `METHOD + regex path → Controller::method`. `build()` is the only place
   Controllers get constructed — add a new `match` arm there when adding a
-  Controller, never let request input choose the class.
+  Controller, never let request input choose the class. A route whose path
+  is a fixed literal (e.g. `operations/summary`) must be listed **before**
+  any `{id}`-capturing route on the same path prefix, or the literal would
+  never be reached — the id-pattern route would match it first with `id`
+  bound to the literal text.
+- `SupabaseClientInterface::get()`'s `$query` values can be a single
+  filter string or a `list<string>` (2026-08-21, added for
+  `TransactionModel::listActiveInRange()`'s date range) — PostgREST
+  expresses two constraints on the same column as a repeated query param
+  (`?date=gte.X&date=lte.Y`), which a PHP associative array can't hold
+  under one key. `SupabaseClient::queryString()` builds the query string by
+  hand (not `http_build_query()`) to emit the repeated param; `FakeSupabaseClient`
+  matches every filter in the list, and now understands `gte.`/`lte.`/`gt.`/
+  `lt.` (string comparison — fine for `YYYY-MM-DD` dates, not fine for
+  numeric magnitude comparisons if this is ever reused for a non-date
+  column) alongside `eq.`.
 
 ## Fixed rule
 

@@ -7,11 +7,9 @@ Month-1 work has started.
 
 ## Planned Controllers (see docs/ROADMAP_BACKEND.md for the full plan)
 
-- `UserController` (M1), `PermissionController` (M1)
-- `OperationController` (M2, extended M3/M4) — create/edit/void/summary, see
-  [docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md) Sections 4-7 for the
-  request/response contract. List/search/filter never gets a Controller —
-  it's a direct Supabase read, RLS-scoped (migration 0004).
+- `UserController` (M1), `PermissionController` (M1) — still not built; the
+  permission gap this leaves open is bridged for now with a manual SQL seed,
+  see [database/migrations/context.md](../../../database/migrations/context.md).
 - `DocumentController` (M5)
 
 ## Existing Controllers
@@ -21,6 +19,22 @@ Month-1 work has started.
   Supabase login. Returns `AuthMiddleware::requireAuth()`'s profile plus
   `listPermissions()`. See [docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md)
   Section 2 for the exact response shape.
+- `OperationController` (2026-08-21) — `create()`/`edit()`/`void()`/`summary()`
+  on `transactions`, both companies (`type` derived from the caller's
+  `role`, never from the request — `fuellink`→`diesel`, `bakers`→`logistics`).
+  Direct port of the old dashboard's `computeTxFinancials()`/`resolveTruck()`/
+  `resolveDriver()` (`Antigo dashboard/fuellink-dashboard/index.html`), kept
+  as pure static methods (`computeFinancials()`, `routeTotalRate()`,
+  `resolveTruck()`, `resolveDriver()`, `buildVoidPayload()`) — same
+  split-for-testability pattern as `AuthMiddleware`, tested in
+  `tests/Unit/Controllers/OperationControllerTest.php`. Its Models run
+  under `SupabaseClient::forUser()` (the caller's own JWT), so migration
+  `0004`'s RLS is a second enforcement layer under the explicit
+  `operations.create`/`.edit`/`.void` permission checks. `type='settlement'`
+  is explicitly out of scope — stays on the old direct-Supabase path until
+  the Ledger de Compensação screen is designed. **Not usable yet**: needs
+  migration `0004` run + the permission seed (see
+  [database/migrations/context.md](../../../database/migrations/context.md)).
 
 ## Fixed rules
 

@@ -33,7 +33,7 @@ final class AuthMiddleware
      */
     public function requireAuth(): array
     {
-        $jwt = $this->bearerToken();
+        $jwt = self::bearerToken();
 
         if ($jwt === null) {
             Response::error('Missing or malformed Authorization header.', 401);
@@ -149,7 +149,14 @@ final class AuthMiddleware
         return (array) $decoded;
     }
 
-    private function bearerToken(): ?string
+    /**
+     * Public + static (reads only $_SERVER, no instance state) so Router can
+     * pull the caller's raw JWT to build SupabaseClient::forUser() for
+     * Controllers whose Models must run under the caller's own RLS —
+     * AuthMiddleware itself always runs in service mode (see
+     * Router::build()) and never needs this for its own lookups.
+     */
+    public static function bearerToken(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 

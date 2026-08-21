@@ -11,7 +11,23 @@ Section 7).
 
 ## Existing Models
 
-_(none yet)_
+- `TransactionModel` (2026-08-21) — `transactions`. `create()`/`patch()`/
+  `insertVoid()`/`findById()`/`findVoidFor()`/`listActiveInRange()`. Every
+  read method takes `entered_by` explicitly and filters on it — defense in
+  depth alongside RLS (migration `0004`), and the only way company scoping
+  is enforced at all in unit tests (`FakeSupabaseClient` has no RLS
+  concept). `listActiveInRange()` excludes voided originals by
+  cross-referencing every void of that type/company (not date-scoped — a
+  void can post after the original's own date), same technique already
+  documented for the frontend's own "Estado" derivation
+  ([docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md) Section 3).
+- `RouteModel` — `routes`, `find($id)` only.
+- `TruckModel` / `DriverModel` — `trucks`/`drivers`, `all()` only; **not**
+  scoped by `entered_by` — Fleet is shared reference data across both
+  companies, per the existing free-text-with-Fleet-fallback design
+  (migration 0002).
+- `FuellinkSettingsModel` / `BakersSettingsModel` — the two single-row
+  settings tables (`id=1`), `dieselPrice()` / `activeMonth()`.
 
 ## Real tables to map against (see [database/migrations/context.md](../../../database/migrations/context.md))
 

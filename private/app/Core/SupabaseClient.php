@@ -95,12 +95,26 @@ final class SupabaseClient implements SupabaseClientInterface
         return $this->baseUrl . self::STORAGE_PATH . ltrim($decoded['signedURL'], '/');
     }
 
-    /** @param array<string, string> $query */
+    /**
+     * Builds the query string by hand instead of http_build_query() because
+     * PostgREST expresses two constraints on the same column as a repeated
+     * param (?date=gte.X&date=lte.Y), which http_build_query() cannot
+     * produce from a PHP associative array (duplicate keys aren't
+     * representable) — see SupabaseClientInterface::get().
+     *
+     * @param array<string, string|list<string>> $query
+     */
     private function queryString(array $query): string
     {
-        $qs = http_build_query($query);
+        $pairs = [];
 
-        return $qs === '' ? '' : '?' . $qs;
+        foreach ($query as $column => $filter) {
+            foreach ((array) $filter as $value) {
+                $pairs[] = rawurlencode($column) . '=' . rawurlencode($value);
+            }
+        }
+
+        return $pairs === [] ? '' : '?' . implode('&', $pairs);
     }
 
     /**

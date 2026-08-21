@@ -53,6 +53,31 @@ All three are confirmed applied: the live dashboard
    run manually in the Supabase SQL editor before any Month 1/2 endpoint
    that reads/writes `transactions` or `user_permissions` goes live.**
 
+## Permission seed for the 2 existing accounts — write, don't run yourself
+
+Not a schema migration (no `ALTER`/`CREATE`) — a one-time data seed, needed
+once `0004` has run, before `OperationController` (Month 2,
+`private/app/Controllers/OperationController.php`) is usable in practice.
+`AuthMiddleware::requirePermission()` checks exact `user_permissions` rows,
+deliberately never `is_admin` alone (Regra de ouro #2,
+[docs/ROADMAP_BACKEND.md](../../docs/ROADMAP_BACKEND.md) Section 0) — so
+with `user_permissions` empty, both real accounts get 403 on every
+operation, even though `0004` marks them `is_admin=true`. `PermissionController`
+(Month 1, grant/revoke via the app) doesn't exist yet — this is the stopgap
+until it does, decided with the user 2026-08-21 instead of building
+`PermissionController` first.
+
+**Run manually in the Supabase SQL editor, after `0004`** (Claude never runs
+this — no staging project exists, everything is production, see
+[[project-status]] in memory):
+
+```sql
+insert into user_permissions (user_id, permission, granted, granted_by)
+select user_id, perm, true, user_id
+from user_roles, unnest(array['operations.create','operations.edit','operations.void']) as perm
+on conflict (user_id, permission) do nothing;
+```
+
 ## Reconciliation status (main handoff doc, Section 5)
 
 Four of the seven open points are now resolved, in production or in a

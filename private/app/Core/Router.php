@@ -6,6 +6,13 @@ namespace App\Core;
 
 use App\Controllers\HealthController;
 use App\Controllers\MeController;
+use App\Controllers\OperationController;
+use App\Models\BakersSettingsModel;
+use App\Models\DriverModel;
+use App\Models\FuellinkSettingsModel;
+use App\Models\RouteModel;
+use App\Models\TransactionModel;
+use App\Models\TruckModel;
 use RuntimeException;
 
 /**
@@ -19,6 +26,10 @@ final class Router
     private const ROUTES = [
         ['GET', '#^health$#', HealthController::class, 'get'],
         ['GET', '#^me$#', MeController::class, 'get'],
+        ['GET', '#^operations/summary$#', OperationController::class, 'summary'],
+        ['POST', '#^operations$#', OperationController::class, 'create'],
+        ['PATCH', '#^operations/([0-9a-fA-F-]+)$#', OperationController::class, 'edit'],
+        ['POST', '#^operations/([0-9a-fA-F-]+)/void$#', OperationController::class, 'void'],
     ];
 
     public static function dispatch(string $method, string $uri): void
@@ -63,7 +74,38 @@ final class Router
         return match ($controllerClass) {
             HealthController::class => new HealthController(new AuthMiddleware(SupabaseClient::forService())),
             MeController::class => new MeController(new AuthMiddleware(SupabaseClient::forService())),
+            OperationController::class => self::buildOperationController(),
             default => throw new RuntimeException("No factory registered for {$controllerClass}."),
         };
+    }
+
+    /**
+     * Models here run under the caller's own JWT (forUser), so RLS —
+     * migration 0004's company-scoped SELECT/INSERT on `transactions` —
+     * applies as a second, DB-level enforcement layer underneath the
+     * permission check OperationController does itself. AuthMiddleware
+     * still gets its own forService() client, same as every other
+     * Controller: its role/permission lookups are privileged reads, not
+     * RLS-scoped ones.
+     *
+     * `bearerToken() ?? ''` builds a client with an empty Authorization
+     * even when the header is missing/malformed — safe only because every
+     * OperationController method calls requireAuth() (which re-parses the
+     * same header and exits 401 on failure) before this client is ever
+     * used for a Model call.
+     */
+    private static function buildOperationController(): OperationController
+    {
+        $userClient = SupabaseClient::forUser(AuthMiddleware::bearerToken() ?? '');
+
+        return new OperationController(
+            new AuthMiddleware(SupabaseClient::forService()),
+            new TransactionModel($userClient),
+            new RouteModel($userClient),
+            new TruckModel($userClient),
+            new DriverModel($userClient),
+            new FuellinkSettingsModel($userClient),
+            new BakersSettingsModel($userClient),
+        );
     }
 }

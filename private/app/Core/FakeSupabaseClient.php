@@ -65,7 +65,10 @@ final class FakeSupabaseClient implements SupabaseClientInterface
         return "https://fake.supabase.local/storage/v1/object/sign/{$bucket}/{$objectPath}?expires={$expiresInSeconds}";
     }
 
-    /** @param array<string, mixed> $row @param array<string, string> $query */
+    /**
+     * @param array<string, mixed> $row
+     * @param array<string, string|list<string>> $query
+     */
     private function rowMatches(array $row, array $query): bool
     {
         foreach ($query as $column => $filter) {
@@ -73,14 +76,49 @@ final class FakeSupabaseClient implements SupabaseClientInterface
                 continue;
             }
 
-            $expected = str_starts_with($filter, 'eq.') ? substr($filter, 3) : $filter;
-
-            if ($this->stringify($row[$column] ?? null) !== $expected) {
-                return false;
+            foreach ((array) $filter as $singleFilter) {
+                if (!$this->matchesFilter($row[$column] ?? null, $singleFilter)) {
+                    return false;
+                }
             }
         }
 
         return true;
+    }
+
+    /**
+     * Supports the PostgREST operators this project's callers actually use
+     * (eq/gte/lte/gt/lt). Falls back to treating an operator-less filter as
+     * a literal eq — matches how the real PostgREST query string would be
+     * malformed the same way, so the fake fails the same tests the real
+     * client would.
+     */
+    private function matchesFilter(mixed $rowValue, string $filter): bool
+    {
+        foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<', 'eq' => '=='] as $op => $comparator) {
+            $prefix = $op . '.';
+
+            if (!str_starts_with($filter, $prefix)) {
+                continue;
+            }
+
+            $expected = substr($filter, strlen($prefix));
+
+            return $this->compare($this->stringify($rowValue), $expected, $comparator);
+        }
+
+        return $this->stringify($rowValue) === $filter;
+    }
+
+    private function compare(string $actual, string $expected, string $comparator): bool
+    {
+        return match ($comparator) {
+            '==' => $actual === $expected,
+            '>=' => $actual >= $expected,
+            '<=' => $actual <= $expected,
+            '>' => $actual > $expected,
+            '<' => $actual < $expected,
+        };
     }
 
     /**

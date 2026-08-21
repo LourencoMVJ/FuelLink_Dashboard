@@ -249,10 +249,10 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 | POST | `/api/permissions/grant` | M1 | admin | serviço | ❌ |
 | POST | `/api/permissions/revoke` | M1 | admin | serviço | ❌ |
 | — | listar/pesquisar/filtrar operações | M2 | RLS (migração `0004`) | **directo Supabase, sem rota PHP** | ⚠️ falta só correr `0004` |
-| POST | `/api/operations` | M2 | operations.create | utilizador | ❌ |
-| PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador | ❌ |
-| POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador | ❌ |
-| GET | `/api/operations/summary` | M2 | requireAuth | utilizador | ❌ |
+| POST | `/api/operations` | M2 | operations.create | utilizador | ✅ código; ⚠️ precisa `0004` + seed de permissões corridos |
+| PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador | ✅ código; ⚠️ idem |
+| POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador | ✅ código; ⚠️ idem |
+| GET | `/api/operations/summary` | M2 | requireAuth | utilizador | ✅ código; ⚠️ idem |
 | POST | `/api/operations/{id}/proof` | M3/M4 | operations.upload_* | utilizador | ❌ |
 | GET | `/api/operations/{id}/proof-url` | M3/M4 | operations.view | utilizador | ❌ |
 | POST/GET | `/api/documents` | M5 | documents.generate/.view | serviço/utilizador | ❌ |

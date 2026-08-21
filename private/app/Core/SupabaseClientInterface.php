@@ -13,7 +13,9 @@ namespace App\Core;
 interface SupabaseClientInterface
 {
     /**
-     * @param array<string, string> $query PostgREST-style filters, e.g. ['id' => 'eq.123'].
+     * @param array<string, string|list<string>> $query PostgREST-style filters,
+     *     e.g. ['id' => 'eq.123'] or ['date' => ['gte.2026-08-01', 'lte.2026-08-20']]
+     *     for two constraints on the same column (PostgREST ANDs repeated params).
      * @return array<int, array<string, mixed>>
      */
     public function get(string $table, array $query = []): array;
