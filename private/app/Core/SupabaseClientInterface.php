@@ -33,6 +33,17 @@ interface SupabaseClientInterface
      */
     public function patch(string $table, array $query, array $body): array;
 
+    /**
+     * Auth Admin API — creates a Supabase Auth user directly (no
+     * confirmation email). Only meaningful on a service-mode client; a
+     * user-mode client's own JWT can never authorize this regardless of
+     * what the implementation does with it.
+     *
+     * @param array<string, mixed> $userMetadata
+     * @return array<string, mixed> the created user, including `id`
+     */
+    public function createAuthUser(string $email, string $password, array $userMetadata = []): array;
+
     public function uploadToStorage(string $bucket, string $objectPath, string $contents, string $contentType): void;
 
     public function createSignedUrl(string $bucket, string $objectPath, int $expiresInSeconds = 60): string;

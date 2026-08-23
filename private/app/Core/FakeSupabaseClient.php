@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use RuntimeException;
+
 /**
  * In-memory double for unit tests — Models/AuthMiddleware are injected with
  * this instead of the real SupabaseClient so tests never touch production
@@ -17,6 +19,9 @@ final class FakeSupabaseClient implements SupabaseClientInterface
 
     /** @var array<string, string> */
     private array $storage = [];
+
+    /** @var list<array{id: string, email: string}> */
+    private array $authUsers = [];
 
     /** @param array<int, array<string, mixed>> $rows */
     public function seed(string $table, array $rows): void
@@ -53,6 +58,21 @@ final class FakeSupabaseClient implements SupabaseClientInterface
         }
 
         return $updated;
+    }
+
+    /** @param array<string, mixed> $userMetadata @return array<string, mixed> */
+    public function createAuthUser(string $email, string $password, array $userMetadata = []): array
+    {
+        foreach ($this->authUsers as $existing) {
+            if ($existing['email'] === $email) {
+                throw new RuntimeException('A user with this email address has already been registered');
+            }
+        }
+
+        $id = 'fake-auth-user-' . (count($this->authUsers) + 1);
+        $this->authUsers[] = ['id' => $id, 'email' => $email];
+
+        return ['id' => $id, 'email' => $email, 'user_metadata' => $userMetadata];
     }
 
     public function uploadToStorage(string $bucket, string $objectPath, string $contents, string $contentType): void

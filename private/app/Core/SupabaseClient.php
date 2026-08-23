@@ -24,6 +24,7 @@ final class SupabaseClient implements SupabaseClientInterface
 {
     private const REST_PATH = '/rest/v1/';
     private const STORAGE_PATH = '/storage/v1/';
+    private const AUTH_ADMIN_PATH = '/auth/v1/admin/';
 
     private function __construct(
         private readonly string $baseUrl,
@@ -67,6 +68,28 @@ final class SupabaseClient implements SupabaseClientInterface
         $url = $this->baseUrl . self::REST_PATH . $table . $this->queryString($query);
 
         return $this->requestJsonArray('PATCH', $url, $body, ['Prefer: return=representation']);
+    }
+
+    /**
+     * Auth Admin API (`/auth/v1/admin/users`, not `/rest/v1/`) — only works
+     * with the service_role key as Authorization, so callers must build
+     * this client via forService(), never forUser(). `email_confirm: true`
+     * skips the confirmation email since an admin is creating the account
+     * directly, not the user self-registering.
+     *
+     * @param array<string, mixed> $userMetadata
+     * @return array<string, mixed> the created Supabase Auth user, including `id`
+     */
+    public function createAuthUser(string $email, string $password, array $userMetadata = []): array
+    {
+        $url = $this->baseUrl . self::AUTH_ADMIN_PATH . 'users';
+
+        return $this->requestJsonObject('POST', $url, [
+            'email' => $email,
+            'password' => $password,
+            'email_confirm' => true,
+            'user_metadata' => $userMetadata,
+        ]);
     }
 
     public function uploadToStorage(string $bucket, string $objectPath, string $contents, string $contentType): void

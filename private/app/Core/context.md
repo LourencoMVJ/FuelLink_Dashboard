@@ -10,6 +10,11 @@ phase, committed 2026-08-19).
   Called once at the top of `public_html/api/index.php`.
 - `Env.php` — loads `private/config/env.php`, fails fast if a required key
   is missing. `setForTesting()` exists only for PHPUnit.
+- `SupabaseClient::createAuthUser()` (2026-08-23) — Auth Admin API
+  (`/auth/v1/admin/users`, a different subsystem from `/rest/v1/`), used by
+  `UserController::create()`. Only works with the service_role secret key
+  as Authorization — always build via `forService()`, never `forUser()`
+  (not enforced by the type system, just convention + `Router::build()`).
 - `SupabaseClientInterface` / `SupabaseClient` / `FakeSupabaseClient` — the
   testability seam. `SupabaseClient::forUser($jwt)` forwards the caller's
   own JWT (RLS applies); `::forService()` uses the secret key
