@@ -62,6 +62,16 @@ layer where what's actually on disk differs from that summary.
   email), with the technical read and the scope decision for each. Check
   here before assuming current scope is complete, and add to it whenever
   the client asks for something new.
+- [RELATORIO_REQUISITOS_FRONTEND.md](RELATORIO_REQUISITOS_FRONTEND.md)
+  (2026-08-21) — cross-check of client requests vs. what's actually built,
+  plus a full Model/Controller/route mapping of everything the backend
+  still needs to build for the frontend built on `shads_staging`
+  (separate worktree, `C:\xampp2\htdocs\FuelLink_Dashboard-shads_staging`)
+  to work as specified. Flags real divergences found by reading that
+  frontend's code against `API_CONTRACT.md` (it doesn't call `GET /api/me`,
+  computes/writes financials client-side, no per-company request
+  filtering) — read this before wiring up Month 1/2 endpoints, since some
+  of that frontend code needs rework, not just a backend to point at.
 
 ## `../referencias visuais/`
 
