@@ -7,9 +7,9 @@ Month-1 work has started.
 
 ## Planned Controllers (see docs/ROADMAP_BACKEND.md for the full plan)
 
-- `UserController` (M1), `PermissionController` (M1) — still not built; the
-  permission gap this leaves open is bridged for now with a manual SQL seed,
-  see [database/migrations/context.md](../../../database/migrations/context.md).
+- `PermissionController` (M1) — still not built; the permission gap this
+  leaves open is bridged for now with a manual SQL seed, see
+  [database/migrations/context.md](../../../database/migrations/context.md).
 - `DocumentController` (M5)
 
 ## Existing Controllers
@@ -19,6 +19,16 @@ Month-1 work has started.
   Supabase login. Returns `AuthMiddleware::requireAuth()`'s profile plus
   `listPermissions()`. See [docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md)
   Section 2 for the exact response shape.
+- `UserController` (2026-08-23, partial — `create()` only) — `POST /api/users`,
+  built to back a standalone "create user" form ahead of putting the
+  dashboard in production. Gated on `is_admin` directly (not a permission
+  code — there isn't one for user management in the catalog). Uses the new
+  `SupabaseClient::createAuthUser()` (Auth Admin API, `/auth/v1/admin/users`
+  — a different subsystem from `/rest/v1/`, always called via
+  `SupabaseClient::forService()`, never `forUser()`) to create the Supabase
+  Auth account, then `UserRoleModel::create()` to insert the matching
+  `user_roles` row. `list()`/`update()`/`deactivate()` from the original M1
+  plan are **not built** — add them when actually needed.
 - `OperationController` (2026-08-21) — `create()`/`edit()`/`void()`/`summary()`
   on `transactions`, both companies (`type` derived from the caller's
   `role`, never from the request — `fuellink`→`diesel`, `bakers`→`logistics`).

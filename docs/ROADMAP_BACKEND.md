@@ -242,7 +242,7 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 | GET | `/api/health` | Fundação | requireAuth | serviço | ✅ |
 | GET | `/api/me` | Fundação | requireAuth (+ is_active) | serviço | ✅ |
 | GET | `/api/users` | M1 | requireAuth | utilizador | ❌ |
-| POST | `/api/users` | M1 | admin | serviço | ❌ |
+| POST | `/api/users` | M1 | admin | serviço | ✅ código (2026-08-23, só `create`); ⚠️ precisa só confirmar que `0004` correu (`is_admin`/`is_active` em `user_roles`) — gated em `is_admin`, não numa permissão, por isso **não** depende do seed de `operations.*` |
 | PATCH | `/api/users/{id}` | M1 | admin | serviço | ❌ |
 | POST | `/api/users/{id}/deactivate` | M1 | admin | serviço | ❌ |
 | GET | `/api/permissions` | M1 | requireAuth | utilizador | ❌ |

@@ -7,12 +7,14 @@ namespace App\Core;
 use App\Controllers\HealthController;
 use App\Controllers\MeController;
 use App\Controllers\OperationController;
+use App\Controllers\UserController;
 use App\Models\BakersSettingsModel;
 use App\Models\DriverModel;
 use App\Models\FuellinkSettingsModel;
 use App\Models\RouteModel;
 use App\Models\TransactionModel;
 use App\Models\TruckModel;
+use App\Models\UserRoleModel;
 use RuntimeException;
 
 /**
@@ -30,6 +32,7 @@ final class Router
         ['POST', '#^operations$#', OperationController::class, 'create'],
         ['PATCH', '#^operations/([0-9a-fA-F-]+)$#', OperationController::class, 'edit'],
         ['POST', '#^operations/([0-9a-fA-F-]+)/void$#', OperationController::class, 'void'],
+        ['POST', '#^users$#', UserController::class, 'create'],
     ];
 
     public static function dispatch(string $method, string $uri): void
@@ -75,8 +78,26 @@ final class Router
             HealthController::class => new HealthController(new AuthMiddleware(SupabaseClient::forService())),
             MeController::class => new MeController(new AuthMiddleware(SupabaseClient::forService())),
             OperationController::class => self::buildOperationController(),
+            UserController::class => self::buildUserController(),
             default => throw new RuntimeException("No factory registered for {$controllerClass}."),
         };
+    }
+
+    /**
+     * Everything here is privileged (creating an Auth user, writing
+     * user_roles) — no RLS-scoped client involved, unlike
+     * buildOperationController(). One forService() instance covers both
+     * the Auth Admin API call and the user_roles insert.
+     */
+    private static function buildUserController(): UserController
+    {
+        $serviceClient = SupabaseClient::forService();
+
+        return new UserController(
+            new AuthMiddleware($serviceClient),
+            $serviceClient,
+            new UserRoleModel($serviceClient),
+        );
     }
 
     /**
