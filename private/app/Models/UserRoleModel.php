@@ -23,4 +23,23 @@ final class UserRoleModel
     {
         return $this->client->post('user_roles', $payload)[0];
     }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>|null null when $userId doesn't exist
+     */
+    public function patch(string $userId, array $payload): ?array
+    {
+        $rows = $this->client->patch('user_roles', ['user_id' => 'eq.' . $userId], $payload);
+
+        return $rows[0] ?? null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByUserId(string $userId): ?array
+    {
+        $rows = $this->client->get('user_roles', ['user_id' => 'eq.' . $userId]);
+
+        return $rows[0] ?? null;
+    }
 }

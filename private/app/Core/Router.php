@@ -33,6 +33,7 @@ final class Router
         ['PATCH', '#^operations/([0-9a-fA-F-]+)$#', OperationController::class, 'edit'],
         ['POST', '#^operations/([0-9a-fA-F-]+)/void$#', OperationController::class, 'void'],
         ['POST', '#^users$#', UserController::class, 'create'],
+        ['PATCH', '#^users/([0-9a-fA-F-]+)$#', UserController::class, 'update'],
     ];
 
     public static function dispatch(string $method, string $uri): void

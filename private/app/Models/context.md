@@ -11,9 +11,12 @@ Section 7).
 
 ## Existing Models
 
-- `UserRoleModel` (2026-08-23, partial — `create()` only) — `user_roles`.
-  Always used with a service-mode client (`UserController`) — writing this
-  table is admin-only, never RLS-scoped to the caller.
+- `UserRoleModel` (2026-08-23/24 — `create()`/`patch()`/`findByUserId()`) —
+  `user_roles`. Always used with a service-mode client (`UserController`) —
+  writing this table is admin-only, never RLS-scoped to the caller.
+  `patch()` is currently blocked in production by a `log_audit()` trigger
+  bug unrelated to this Model — see `database/migrations/context.md`
+  (migration `0005`).
 - `TransactionModel` (2026-08-21) — `transactions`. `create()`/`patch()`/
   `insertVoid()`/`findById()`/`findVoidFor()`/`listActiveInRange()`. Every
   read method takes `entered_by` explicitly and filters on it — defense in

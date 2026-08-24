@@ -19,16 +19,32 @@ Month-1 work has started.
   Supabase login. Returns `AuthMiddleware::requireAuth()`'s profile plus
   `listPermissions()`. See [docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md)
   Section 2 for the exact response shape.
-- `UserController` (2026-08-23, partial — `create()` only) — `POST /api/users`,
-  built to back a standalone "create user" form ahead of putting the
-  dashboard in production. Gated on `is_admin` directly (not a permission
-  code — there isn't one for user management in the catalog). Uses the new
-  `SupabaseClient::createAuthUser()` (Auth Admin API, `/auth/v1/admin/users`
-  — a different subsystem from `/rest/v1/`, always called via
-  `SupabaseClient::forService()`, never `forUser()`) to create the Supabase
-  Auth account, then `UserRoleModel::create()` to insert the matching
-  `user_roles` row. `list()`/`update()`/`deactivate()` from the original M1
-  plan are **not built** — add them when actually needed.
+- `UserController` (2026-08-23/24, partial — `create()` + `update()`) —
+  `POST /api/users`, built to back a standalone "create user" form ahead of
+  putting the dashboard in production. Gated on `is_admin` directly (not a
+  permission code — there isn't one for user management in the catalog).
+  Uses the new `SupabaseClient::createAuthUser()` (Auth Admin API,
+  `/auth/v1/admin/users` — a different subsystem from `/rest/v1/`, always
+  called via `SupabaseClient::forService()`, never `forUser()`) to create
+  the Supabase Auth account, then `UserRoleModel::create()` to insert the
+  matching `user_roles` row. `is_admin` is accepted directly from the
+  request body — any admin can create another admin this way (briefly
+  restricted after a security review, reverted 2026-08-24 at the user's
+  explicit request: a 2-3 person trusted team, manual SQL promotion was
+  worse than the accepted risk).
+  `PATCH /api/users/{id}` (`update()`, 2026-08-24) — partial update, only
+  the 4 columns migration 0004 actually granted UPDATE on:
+  `full_name`/`phone`/`is_active`/`is_admin` (never `role` — which company
+  an account belongs to shouldn't change post-creation — and never
+  email/password, a separate Auth Admin API concern not built here).
+  `buildUpdatePayload()` uses `array_key_exists()`, not `isset()`/`??`, so
+  an explicit `null` clears a field instead of being indistinguishable from
+  "omitted". **Blocked until migration `0005` runs** — the first-ever
+  UPDATE against `user_roles` surfaced a pre-existing bug in the shared
+  `log_audit()` trigger function (hardcoded `NEW.id`, but `user_roles`'
+  key is `user_id`), see `database/migrations/context.md`.
+  `list()`/`deactivate()` from the original M1 plan are **not built** —
+  add them when actually needed.
 - `OperationController` (2026-08-21) — `create()`/`edit()`/`void()`/`summary()`
   on `transactions`, both companies (`type` derived from the caller's
   `role`, never from the request — `fuellink`→`diesel`, `bakers`→`logistics`).

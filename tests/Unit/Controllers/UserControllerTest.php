@@ -47,4 +47,62 @@ final class UserControllerTest extends TestCase
         $this->assertFalse(UserController::isValidRole(''));
         $this->assertFalse(UserController::isValidRole('Fuellink'));
     }
+
+    // ---------- buildUpdatePayload ----------
+
+    public function test_build_update_payload_includes_only_the_fields_present_in_the_body(): void
+    {
+        $payload = UserController::buildUpdatePayload(['full_name' => 'Waseem K.']);
+
+        $this->assertSame(['full_name' => 'Waseem K.'], $payload);
+    }
+
+    public function test_build_update_payload_is_empty_when_body_has_no_updatable_fields(): void
+    {
+        $this->assertSame([], UserController::buildUpdatePayload(['role' => 'fuellink']));
+    }
+
+    public function test_build_update_payload_ignores_role_email_and_password(): void
+    {
+        $payload = UserController::buildUpdatePayload([
+            'role' => 'fuellink',
+            'email' => 'new@example.com',
+            'password' => 'whatever',
+            'phone' => '+27123456789',
+        ]);
+
+        $this->assertSame(['phone' => '+27123456789'], $payload);
+    }
+
+    public function test_build_update_payload_honors_an_explicit_null_full_name_as_clearing_it(): void
+    {
+        $payload = UserController::buildUpdatePayload(['full_name' => null]);
+
+        $this->assertArrayHasKey('full_name', $payload);
+        $this->assertNull($payload['full_name']);
+    }
+
+    public function test_build_update_payload_casts_is_active_and_is_admin_to_bool(): void
+    {
+        $payload = UserController::buildUpdatePayload(['is_active' => false, 'is_admin' => true]);
+
+        $this->assertSame(['is_active' => false, 'is_admin' => true], $payload);
+    }
+
+    public function test_build_update_payload_includes_all_four_fields_when_all_are_present(): void
+    {
+        $payload = UserController::buildUpdatePayload([
+            'full_name' => 'New Name',
+            'phone' => '123',
+            'is_active' => true,
+            'is_admin' => false,
+        ]);
+
+        $this->assertSame([
+            'full_name' => 'New Name',
+            'phone' => '123',
+            'is_active' => true,
+            'is_admin' => false,
+        ], $payload);
+    }
 }
