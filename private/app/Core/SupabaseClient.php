@@ -190,9 +190,19 @@ final class SupabaseClient implements SupabaseClientInterface
     }
 
     /** @param list<string> $extraHeaders */
+    /**
+     * PostgREST errors use `message`/`error`; GoTrue (Auth, including the
+     * Admin API) uses `msg` or `error_description` instead — confirmed
+     * 2026-08-24 against a real 422 from createAuthUser() that came back as
+     * "Unknown error" until `msg` was added here. Checks all four so a
+     * caller catching the RuntimeException (e.g. UserController::create())
+     * actually gets Supabase's real reason to forward, not a dead end.
+     */
     private function throwApiError(int $status, mixed $decoded): never
     {
-        $message = is_array($decoded) ? ($decoded['message'] ?? $decoded['error'] ?? 'Unknown error') : 'Unknown error';
+        $message = is_array($decoded)
+            ? ($decoded['message'] ?? $decoded['msg'] ?? $decoded['error_description'] ?? $decoded['error'] ?? 'Unknown error')
+            : 'Unknown error';
         throw new RuntimeException("Supabase error ({$status}): {$message}");
     }
 

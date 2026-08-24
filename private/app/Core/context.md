@@ -15,6 +15,14 @@ phase, committed 2026-08-19).
   `UserController::create()`. Only works with the service_role secret key
   as Authorization — always build via `forService()`, never `forUser()`
   (not enforced by the type system, just convention + `Router::build()`).
+- `SupabaseClient::throwApiError()` (2026-08-24) — extracts the message
+  from `message`/`msg`/`error_description`/`error`, in that order. GoTrue
+  (Auth, including the Admin API) uses `msg`/`error_description`;
+  PostgREST uses `message`/`error`. Confirmed live: a real 422 from
+  `createAuthUser()` surfaced as "Unknown error" until `msg` was added —
+  any caller catching the `RuntimeException` (e.g.
+  `UserController::create()`'s forwarded error message) depends on this
+  actually finding Supabase's real reason.
 - `SupabaseClientInterface` / `SupabaseClient` / `FakeSupabaseClient` — the
   testability seam. `SupabaseClient::forUser($jwt)` forwards the caller's
   own JWT (RLS applies); `::forService()` uses the secret key
