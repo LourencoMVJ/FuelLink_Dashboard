@@ -4,6 +4,15 @@
 # (assets, pages) are served as-is; only unmatched /api/* paths rewrite.
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Apache/mod_php does not forward the Authorization header into PHP's
+    # $_SERVER by default (confirmed 2026-08-24 — every /api/* request
+    # failed AuthMiddleware::bearerToken() with a valid JWT, even via a
+    # direct curl request bypassing the app entirely). This re-exposes it
+    # as HTTP_AUTHORIZATION, which AuthMiddleware already reads.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^api/(.*)$ api/index.php [QSA,L]
