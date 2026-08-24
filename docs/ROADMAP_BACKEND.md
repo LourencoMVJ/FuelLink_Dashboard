@@ -186,7 +186,7 @@ Cada task dentro do mês arranca pelo ciclo de agentes da **Secção 8.2**
 - **Objectivo**: prova de entrega, diferença carregado/entregue, edição do
   valor de fornecimento.
 - **Pré-requisitos**: Mês 3.
-- **Base de dados** — migração `0005`: `transactions.delivered_litres`
+- **Base de dados** — migração `0006`: `transactions.delivered_litres`
   (para diferença vs `litres` carregado).
 - **Models**: `TransactionModel` estendido (logistics + delivered_litres).
 - **Controllers**: `OperationController` para `type='logistics'` (Bankers) —
@@ -202,7 +202,7 @@ Cada task dentro do mês arranca pelo ciclo de agentes da **Secção 8.2**
 - **Objectivo**: gerar facturas, cotações, recibos, notas de crédito com
   numeração sequencial e carimbo digital.
 - **Pré-requisitos**: Mês 4; decisão da biblioteca PDF.
-- **Base de dados** — migração `0006`: `CREATE TABLE documents` (`number`,
+- **Base de dados** — migração `0007`: `CREATE TABLE documents` (`number`,
   `type`, `related_tx`, `pdf_path`, `stamped`, `created_by`, `created_at`)
   + **sequência atómica** de numeração (Postgres `SEQUENCE` ou tabela de
   contadores com lock) — nunca numeração calculada no cliente.
@@ -243,7 +243,7 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 | GET | `/api/me` | Fundação | requireAuth (+ is_active) | serviço | ✅ |
 | GET | `/api/users` | M1 | requireAuth | utilizador | ❌ |
 | POST | `/api/users` | M1 | admin | serviço | ✅ código (2026-08-23, só `create`); ⚠️ precisa só confirmar que `0004` correu (`is_admin`/`is_active` em `user_roles`) — gated em `is_admin`, não numa permissão, por isso **não** depende do seed de `operations.*` |
-| PATCH | `/api/users/{id}` | M1 | admin | serviço | ❌ |
+| PATCH | `/api/users/{id}` | M1 | admin | serviço | ✅ código (2026-08-24, `full_name`/`phone`/`is_active`/`is_admin` só); ⚠️ precisa `0005` corrida (bug em `log_audit()`) |
 | POST | `/api/users/{id}/deactivate` | M1 | admin | serviço | ❌ |
 | GET | `/api/permissions` | M1 | requireAuth | utilizador | ❌ |
 | POST | `/api/permissions/grant` | M1 | admin | serviço | ❌ |
@@ -262,15 +262,15 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 
 ## 5. Sequência de migrações
 
-Já corridas: `0001`, `0002`, `0003` (ver
+Já corridas: `0001`-`0004` (ver
 [database/migrations/context.md](../database/migrations/context.md)).
 Próximas, por mês:
 
 | Migração | Mês | Conteúdo |
 |---|---|---|
-| `0004` | M1 | estender `user_roles`; criar `user_permissions`; RLS + audit; **RLS de `SELECT` por empresa em `transactions`** (ver Secção 3, Mês 1) |
-| `0005` | M4 | `transactions.delivered_litres` |
-| `0006` | M5 | `documents` + sequência de numeração |
+| `0005` | — | **escrita, por correr** — bug fix ao `log_audit()` (assumia coluna `id`, `user_roles` usa `user_id`), encontrado 2026-08-24 ao testar `PATCH /api/users/{id}` |
+| `0006` | M4 | `transactions.delivered_litres` (renumerado de `0005` — a `0005` já foi usada pelo bug fix acima) |
+| `0007` | M5 | `documents` + sequência de numeração (renumerado de `0006`) |
 | (opcional) | qualquer | `route_monthly_adjustments` (ponto 6 da reconciliação) e índices de listagem, quando pesarem |
 
 **Regra**: antes de escrever cada migração, confirmar contra o schema real

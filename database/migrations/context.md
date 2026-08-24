@@ -11,10 +11,14 @@ schema already has something, document it here instead of re-migrating it.
 
 ## Applied (confirmed against production)
 
-All three are confirmed applied: the live dashboard
+0001-0003 are confirmed applied: the live dashboard
 (`Antigo dashboard/fuellink-dashboard/index.html`) actively reads/writes
 `truck_text`, `driver_text`, `trailer_reg`, `unit_rate`, and queries
-`audit_log` — none of that works unless 0001-0003 already ran.
+`audit_log` — none of that works unless 0001-0003 already ran. 0004 is
+confirmed applied as of 2026-08-24 — a real logged-in `GET /api/me` for
+`waseem@bakers.co.za` returned `is_admin`/`role` correctly from the new
+`user_roles` columns, and (after the permission seed below also ran)
+`permissions: ["operations.create","operations.edit","operations.void"]`.
 
 1. **0001_transactions_add_trailer_and_edit.sql** — adds
    `transactions.trailer_reg` (free text). Opens a narrow column-level
@@ -33,31 +37,48 @@ All three are confirmed applied: the live dashboard
    `id`, `created_at` on `transactions`. Adds `current_user_role()` helper,
    `audit_log` table (trigger-written only, SECURITY DEFINER, not yet
    surfaced in any UI), and audit triggers on all four editable tables.
+4. **0004_user_roles_permissions_and_transactions_rls.sql** (20/08/2026,
+   confirmed applied 2026-08-24) — extends `user_roles` (`is_admin`,
+   `full_name`, `phone`, `is_active`, `created_by`, `created_at`; the 2 real
+   accounts become Admins); creates `user_permissions` (own-row `SELECT`
+   only, writes always privileged via `PermissionController`); redefines
+   `current_user_role()` to also require `is_active` (so deactivation
+   immediately blocks every RLS policy that uses it, including the ones
+   from 0003, with no other policy touched); adds `current_user_is_admin()`;
+   enables RLS on `transactions` with a `SELECT` policy scoped to
+   `entered_by = current_user_role()` **and** a matching `INSERT` policy
+   (`WITH CHECK entered_by = current_user_role()`) — the `INSERT` policy
+   isn't optional here: enabling RLS with only a `SELECT` policy would have
+   silently broken every existing "Add transaction"/"Void" insert, and it
+   closes a real spoofing gap where `entered_by` was previously just
+   whatever the client sent.
 
 ## Written, not yet run against production
 
-4. **0004_user_roles_permissions_and_transactions_rls.sql** (20/08/2026) —
-   extends `user_roles` (`is_admin`, `full_name`, `phone`, `is_active`,
-   `created_by`, `created_at`; the 2 real accounts become Admins); creates
-   `user_permissions` (own-row `SELECT` only, writes always privileged via
-   `PermissionController`); redefines `current_user_role()` to also require
-   `is_active` (so deactivation immediately blocks every RLS policy that
-   uses it, including the ones from 0003, with no other policy touched);
-   adds `current_user_is_admin()`; enables RLS on `transactions` with a
-   `SELECT` policy scoped to `entered_by = current_user_role()` **and** a
-   matching `INSERT` policy (`WITH CHECK entered_by = current_user_role()`)
-   — the `INSERT` policy isn't optional here: enabling RLS with only a
-   `SELECT` policy would have silently broken every existing "Add
-   transaction"/"Void" insert, and it closes a real spoofing gap where
-   `entered_by` was previously just whatever the client sent. **Needs to be
-   run manually in the Supabase SQL editor before any Month 1/2 endpoint
-   that reads/writes `transactions` or `user_permissions` goes live.**
+5. **0005_fix_log_audit_for_user_roles.sql** (2026-08-24) — bug fix, found
+   while testing the new `PATCH /api/users/{id}` endpoint: `log_audit()`
+   (0003) hardcoded `NEW.id::text`, which works for `transactions`/`routes`/
+   `trucks`/`drivers` (all have an `id` column) but not `user_roles` (key is
+   `user_id`, no `id` column at all) — every UPDATE against `user_roles`
+   fails with `Supabase error (400): record "new" has no field "id"`,
+   confirmed live. Nothing ever UPDATEd `user_roles` before this endpoint
+   existed, so the `audit_user_roles` trigger (0004) never actually fired
+   successfully until now. Fix reads the id out of the already-computed
+   `new_json` (`COALESCE(new_json ->> 'id', new_json ->> 'user_id')`)
+   instead of referencing `NEW.id` directly, so it degrades gracefully for
+   any future audited table with a differently-named key too. **Needs to be
+   run manually in the Supabase SQL editor before `PATCH /api/users/{id}`
+   (or any other UPDATE to `user_roles`) is usable.**
 
-## Permission seed for the 2 existing accounts — write, don't run yourself
+## Permission seed for the 2 existing accounts — confirmed applied 2026-08-24
 
 Not a schema migration (no `ALTER`/`CREATE`) — a one-time data seed, needed
 once `0004` has run, before `OperationController` (Month 2,
 `private/app/Controllers/OperationController.php`) is usable in practice.
+Confirmed applied 2026-08-24 — a real `GET /api/me` now returns
+`permissions: ["operations.create","operations.edit","operations.void"]`
+for `waseem@bakers.co.za`. Left here in case it ever needs re-running
+against a 3rd account added outside the (still unbuilt) `PermissionController`.
 `AuthMiddleware::requirePermission()` checks exact `user_permissions` rows,
 deliberately never `is_admin` alone (Regra de ouro #2,
 [docs/ROADMAP_BACKEND.md](../../docs/ROADMAP_BACKEND.md) Section 0) — so
@@ -80,8 +101,7 @@ on conflict (user_id, permission) do nothing;
 
 ## Reconciliation status (main handoff doc, Section 5)
 
-Four of the seven open points are now resolved, in production or in a
-written-but-not-yet-run migration:
+Four of the seven open points are now resolved in production:
 
 - **Point 1** (company vs role) → resolved by migration 0004: extends
   `user_roles` in place, no parallel `profiles` table.
@@ -96,7 +116,7 @@ The other three points (ledger vs `operations` table, attachments
 structure, `routes` monthly-adjustment columns) are still open — see the
 main handoff doc.
 
-## New gap found during frontend spec work (16/08/2026, not one of the original 7) — fix written in 0004, not yet run
+## New gap found during frontend spec work (16/08/2026, not one of the original 7) — fixed by 0004, confirmed applied
 
 **`transactions` has no `SELECT` RLS policy at all** — confirmed by reading
 0001-0003 directly: none of them enables RLS on `transactions` or creates a
@@ -109,11 +129,11 @@ sense), but breaks once Month 1 introduces regular Users per company — a
 Bankers User should never see Fuellink's diesel-sale rows and vice versa.
 The two new frontend screens (`operations-fuellink` / `operations-bankers`,
 see [docs/ROADMAP_FRONTEND.md](../../docs/ROADMAP_FRONTEND.md) Section 7)
-depend on this being fixed first: **migration `0004` needs to add
+depended on this being fixed first: migration `0004` added
 `ALTER TABLE transactions ENABLE ROW LEVEL SECURITY` + a `FOR SELECT`
-policy scoped to `entered_by = current_user_role()`**, alongside the
-`user_permissions` work already planned for that migration (see
-[docs/ROADMAP_BACKEND.md](../../docs/ROADMAP_BACKEND.md) Section 3, Month 1).
+policy scoped to `entered_by = current_user_role()`, alongside the
+`user_permissions` work (see [docs/ROADMAP_BACKEND.md](../../docs/ROADMAP_BACKEND.md)
+Section 3, Month 1) — confirmed applied 2026-08-24.
 
 The future Ledger de Compensação screen still needs to see both companies'
 rows to compute the net balance — that has to go through a separate path
