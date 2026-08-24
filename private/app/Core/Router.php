@@ -67,7 +67,15 @@ final class Router
     {
         $path = parse_url($uri, PHP_URL_PATH);
         $path = is_string($path) ? $path : '/';
-        $path = preg_replace('#^/api/#', '', $path) ?? $path;
+
+        // Strips everything through the LAST "/api/" segment, not just a
+        // literal leading "/api/". In production (cPanel), public_html IS
+        // the document root, so REQUEST_URI is already exactly "/api/...".
+        // Under a plain XAMPP htdocs checkout (no vhost pointing straight
+        // at public_html), it's "/<project-folder>/public_html/api/..." —
+        // the anchored version only matched the former, 404ing every local
+        // request. This matches both without requiring a local vhost.
+        $path = preg_replace('#^.*/api/#', '', $path, 1) ?? $path;
 
         return trim($path, '/');
     }

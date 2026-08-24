@@ -3,6 +3,7 @@ vendor/
 
 # Real secrets — never commit
 private/config/env.php
+private/config/.env
 
 # Runtime storage (JWKS cache, etc.) — never commit
 private/storage/

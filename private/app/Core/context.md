@@ -49,7 +49,14 @@ phase, committed 2026-08-19).
   `json()`/`error()` are the side-effecting emitters (`http_response_code`
   + `exit`) that wrap it. Every `/api/*` response uses this envelope.
 - `Router.php` — explicit route whitelist (`ROUTES` const) mapping
-  `METHOD + regex path → Controller::method`. `build()` is the only place
+  `METHOD + regex path → Controller::method`. `normalizedPath()` strips
+  through the **last** `/api/` segment in the URI (2026-08-24), not just a
+  literal leading `/api/` — needed because a plain XAMPP `htdocs` checkout
+  puts a project-folder prefix in front
+  (`/FuelLink_Dashboard/public_html/api/health`) that a real cPanel
+  deployment never has (`public_html` is the actual document root there,
+  so the URI is already exactly `/api/health`). Both shapes now route
+  correctly without needing a local Apache vhost. `build()` is the only place
   Controllers get constructed — add a new `match` arm there when adding a
   Controller, never let request input choose the class. A route whose path
   is a fixed literal (e.g. `operations/summary`) must be listed **before**

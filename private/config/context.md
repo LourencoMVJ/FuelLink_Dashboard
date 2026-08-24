@@ -7,6 +7,12 @@ directory sits outside `public_html/`, the cPanel document root.
 
 - `env.php` — **git-ignored**, real values. Create it locally from
   `env.example.php`. Never commit it, never paste real values into chat/docs.
+  **Must be named exactly `env.php`** (a PHP file `Env::load()` `require`s
+  and expects to `return [...]`), not `.env` (a mistake made once,
+  2026-08-24 — that dotenv-style filename is a different convention this
+  project doesn't use, and it silently wasn't covered by `.gitignore`
+  either since only `private/config/env.php` was listed there; both
+  `env.php` and `.env` are ignored now).
 - `env.example.php` — checked in, placeholder values only, documents every
   variable this app expects.
 
@@ -26,8 +32,14 @@ directory sits outside `public_html/`, the cPanel document root.
 
 ## Notes
 
-- No PHP backend exists yet (see [private/app/Core/context.md](../app/Core/context.md)).
-  The current frontend (`Antigo dashboard/`) talks to Supabase directly with
-  the public anon key — that pattern is correct for unprivileged reads and
-  should continue; this config directory only matters once privileged
-  PHP endpoints are written (user creation, PDF generation, etc.).
+- The PHP backend now exists (`GET /api/health`/`/me`, `POST /api/operations*`,
+  `POST /api/users`) and needs this file to boot at all — `Bootstrap::init()`
+  fails with a generic 500 (deliberately no internals leaked) if it's
+  missing or misnamed. The frontend (`Antigo dashboard/`, and eventually
+  `shads_staging`) still talks to Supabase directly with the public anon
+  key for unprivileged reads — that pattern is correct and continues
+  alongside this, not replaced by it.
+- Local XAMPP testing: no Apache vhost is needed —
+  `Router::normalizedPath()` (2026-08-24) handles both a real cPanel
+  deployment's URI shape and a plain `htdocs/<project>/public_html/api/...`
+  checkout's. See [private/app/Core/context.md](../app/Core/context.md).
