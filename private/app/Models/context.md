@@ -14,9 +14,13 @@ Section 7).
 - `UserRoleModel` (2026-08-23/24 — `create()`/`patch()`/`findByUserId()`) —
   `user_roles`. Always used with a service-mode client (`UserController`) —
   writing this table is admin-only, never RLS-scoped to the caller.
-  `patch()` is currently blocked in production by a `log_audit()` trigger
-  bug unrelated to this Model — see `database/migrations/context.md`
-  (migration `0005`).
+  `patch()` confirmed working live 2026-08-24 (migration `0005` fixed a
+  `log_audit()` trigger bug this Model's first real UPDATE surfaced).
+- `PasswordResetRequestModel` (2026-08-24) — `password_reset_requests`
+  (migration 0006). `create(email)` + `hasPendingRequestSince(email, since)`
+  (spam mitigation — see `PasswordResetController`). Always service-mode
+  (the caller of this endpoint has no session at all, so there's no
+  user-mode client to even build).
 - `TransactionModel` (2026-08-21) — `transactions`. `create()`/`patch()`/
   `insertVoid()`/`findById()`/`findVoidFor()`/`listActiveInRange()`. Every
   read method takes `entered_by` explicitly and filters on it — defense in

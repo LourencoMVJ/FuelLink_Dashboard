@@ -7,10 +7,12 @@ namespace App\Core;
 use App\Controllers\HealthController;
 use App\Controllers\MeController;
 use App\Controllers\OperationController;
+use App\Controllers\PasswordResetController;
 use App\Controllers\UserController;
 use App\Models\BakersSettingsModel;
 use App\Models\DriverModel;
 use App\Models\FuellinkSettingsModel;
+use App\Models\PasswordResetRequestModel;
 use App\Models\RouteModel;
 use App\Models\TransactionModel;
 use App\Models\TruckModel;
@@ -34,6 +36,7 @@ final class Router
         ['POST', '#^operations/([0-9a-fA-F-]+)/void$#', OperationController::class, 'void'],
         ['POST', '#^users$#', UserController::class, 'create'],
         ['PATCH', '#^users/([0-9a-fA-F-]+)$#', UserController::class, 'update'],
+        ['POST', '#^forgot-password$#', PasswordResetController::class, 'create'],
     ];
 
     public static function dispatch(string $method, string $uri): void
@@ -88,6 +91,9 @@ final class Router
             MeController::class => new MeController(new AuthMiddleware(SupabaseClient::forService())),
             OperationController::class => self::buildOperationController(),
             UserController::class => self::buildUserController(),
+            PasswordResetController::class => new PasswordResetController(
+                new PasswordResetRequestModel(SupabaseClient::forService()),
+            ),
             default => throw new RuntimeException("No factory registered for {$controllerClass}."),
         };
     }

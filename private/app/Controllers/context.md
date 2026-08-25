@@ -39,12 +39,30 @@ Month-1 work has started.
   email/password, a separate Auth Admin API concern not built here).
   `buildUpdatePayload()` uses `array_key_exists()`, not `isset()`/`??`, so
   an explicit `null` clears a field instead of being indistinguishable from
-  "omitted". **Blocked until migration `0005` runs** — the first-ever
-  UPDATE against `user_roles` surfaced a pre-existing bug in the shared
-  `log_audit()` trigger function (hardcoded `NEW.id`, but `user_roles`'
-  key is `user_id`), see `database/migrations/context.md`.
+  "omitted". Confirmed working live 2026-08-24 (after migration `0005`
+  fixed a pre-existing `log_audit()` bug this endpoint's first real UPDATE
+  surfaced — see `database/migrations/context.md`).
   `list()`/`deactivate()` from the original M1 plan are **not built** —
   add them when actually needed.
+- `PasswordResetController` (2026-08-24) — `POST /api/forgot-password`, the
+  **one Controller with no `AuthMiddleware::requireAuth()` call** (see
+  Fixed rules below — the caller can't authenticate, that's the whole
+  point). Deliberately not self-service Supabase Auth reset (overrides the
+  16/08/2026 decision in `docs/API_CONTRACT.md` Section 1, at the user's
+  explicit request): logs a pending row in `password_reset_requests`
+  (migration 0006) for an admin to review manually, instead of emailing the
+  account holder directly. No email server is configured yet —
+  `notifyAdmins()` is an explicit no-op stub marking where that plugs in
+  later. Response is identical regardless of whether the email is
+  well-formed or matches a real account — never reveals which emails are
+  registered, and the insert is wrapped in try/catch for the same reason
+  (a DB failure must still return the same 202, not a 500 that would leak
+  something went wrong server-side). A 1-hour cooldown per email
+  (`PasswordResetRequestModel::hasPendingRequestSince()`) skips creating a
+  duplicate row without changing the response — the only spam mitigation
+  here, since no rate-limiting infrastructure exists anywhere in this app
+  (security review, 2026-08-24 — accepted as proportionate for a 2-3
+  person internal tool, not full IP-based rate limiting).
 - `OperationController` (2026-08-21) — `create()`/`edit()`/`void()`/`summary()`
   on `transactions`, both companies (`type` derived from the caller's
   `role`, never from the request — `fuellink`→`diesel`, `bakers`→`logistics`).
@@ -58,8 +76,8 @@ Month-1 work has started.
   `0004`'s RLS is a second enforcement layer under the explicit
   `operations.create`/`.edit`/`.void` permission checks. `type='settlement'`
   is explicitly out of scope — stays on the old direct-Supabase path until
-  the Ledger de Compensação screen is designed. **Not usable yet**: needs
-  migration `0004` run + the permission seed (see
+  the Ledger de Compensação screen is designed. Confirmed live 2026-08-24
+  (migration `0004` + the permission seed both ran — see
   [database/migrations/context.md](../../../database/migrations/context.md)).
 
 ## Fixed rules
@@ -69,7 +87,11 @@ Month-1 work has started.
 - Every Controller starts with `AuthMiddleware::requireAuth()`
   (see [private/app/Core/context.md](../Core/context.md)), and — once
   `user_permissions` exists — checks the exact permission needed before
-  acting. Never gate on "is this user an admin?" alone.
+  acting. Never gate on "is this user an admin?" alone (except `UserController`
+  itself, see its entry below — deliberate, no finer permission exists for
+  user management). **One deliberate exception to `requireAuth()` itself**:
+  `PasswordResetController` (below) — the entire point of "forgot password"
+  is that the caller can't authenticate.
 - Unprivileged reads don't belong here — the frontend should query Supabase
   directly (see [public_html/assets/js/models/context.md](../../../public_html/assets/js/models/context.md)).
   Only add a Controller when there's a real reason the browser can't do it
