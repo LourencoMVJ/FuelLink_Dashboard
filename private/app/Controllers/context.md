@@ -63,8 +63,32 @@ Month-1 work has started.
   here, since no rate-limiting infrastructure exists anywhere in this app
   (security review, 2026-08-24 — accepted as proportionate for a 2-3
   person internal tool, not full IP-based rate limiting).
-- `OperationController` (2026-08-21) — `create()`/`edit()`/`void()`/`summary()`
-  on `transactions`, both companies (`type` derived from the caller's
+- `LedgerController` (2026-08-27) — `GET /api/ledger`, Net Position /
+  Ledger de Compensação. Admin-gated directly on `is_admin` (same
+  reasoning as `UserController` — no finer permission is actually used).
+  `TransactionModel::listAll()` (no `entered_by` filter, unlike every other
+  method on that Model — deliberately privileged, only ever call it from
+  here) returns both companies' rows via a `SupabaseClient::forService()`
+  instance built in `Router.php`, bypassing RLS entirely by design — the
+  `is_admin` check in this Controller is the only gate, so never call
+  `listAll()` from anywhere that hasn't already checked it. Built as the
+  intended replacement for a forgotten pre-0001 RLS policy
+  (`"transactions readable"`) found live 2026-08-27 that let ANY
+  authenticated user read every company's transactions directly via
+  Supabase — see `database/migrations/context.md`; that policy stays until
+  this endpoint (and whatever consumes it) fully replaces the need for it.
+  `buildLedger()` (pure, static) sorts chronologically, accumulates a
+  running balance across **both companies combined** (that's the actual
+  net position), then splits rows into `fuellink`/`bakers` lists for
+  display — includes void rows (their own `balance_delta` is what nets
+  them against the original), unlike `summary()`'s KPIs which exclude them.
+- `OperationController` (2026-08-21) — `create()`/`edit()`/`void()`/`summary()`/
+  `show()` (`show()` added 2026-08-27 — `GET /api/operations/{id}`, detail
+  view, `requireAuth()` only, no `operations.*` permission — matches
+  list/search/filter being unprivileged elsewhere; 404 for both a missing
+  id and another company's id, via `TransactionModel::findById()`'s
+  existing RLS + `entered_by` scoping, never a 403 that would confirm the
+  id exists) on `transactions`, both companies (`type` derived from the caller's
   `role`, never from the request — `fuellink`→`diesel`, `bakers`→`logistics`).
   Direct port of the old dashboard's `computeTxFinancials()`/`resolveTruck()`/
   `resolveDriver()` (`Antigo dashboard/fuellink-dashboard/index.html`), kept

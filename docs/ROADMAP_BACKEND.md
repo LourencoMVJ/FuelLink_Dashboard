@@ -243,18 +243,20 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 | GET | `/api/me` | Fundação | requireAuth (+ is_active) | serviço | ✅ |
 | GET | `/api/users` | M1 | requireAuth | utilizador | ❌ |
 | POST | `/api/users` | M1 | admin | serviço | ✅ código (2026-08-23, só `create`); ⚠️ precisa só confirmar que `0004` correu (`is_admin`/`is_active` em `user_roles`) — gated em `is_admin`, não numa permissão, por isso **não** depende do seed de `operations.*` |
-| PATCH | `/api/users/{id}` | M1 | admin | serviço | ✅ código (2026-08-24, `full_name`/`phone`/`is_active`/`is_admin` só); ⚠️ precisa `0005` corrida (bug em `log_audit()`) |
+| PATCH | `/api/users/{id}` | M1 | admin | serviço | ✅ confirmado ao vivo 2026-08-24 (`full_name`/`phone`/`is_active`/`is_admin` só, após `0005`) |
 | POST | `/api/users/{id}/deactivate` | M1 | admin | serviço | ❌ |
 | GET | `/api/permissions` | M1 | requireAuth | utilizador | ❌ |
 | POST | `/api/permissions/grant` | M1 | admin | serviço | ❌ |
 | POST | `/api/permissions/revoke` | M1 | admin | serviço | ❌ |
-| — | listar/pesquisar/filtrar operações | M2 | RLS (migração `0004`) | **directo Supabase, sem rota PHP** | ⚠️ falta só correr `0004` |
-| POST | `/api/operations` | M2 | operations.create | utilizador | ✅ código; ⚠️ precisa `0004` + seed de permissões corridos |
-| PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador | ✅ código; ⚠️ idem |
-| POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador | ✅ código; ⚠️ idem |
-| GET | `/api/operations/summary` | M2 | requireAuth | utilizador | ✅ código; ⚠️ idem |
+| — | listar/pesquisar/filtrar operações | M2 | RLS (migração `0004`) | **directo Supabase, sem rota PHP** | ✅ `0004` confirmada corrida 2026-08-24 |
+| GET | `/api/operations/{id}` | M2 (2026-08-27) | requireAuth | utilizador | ✅ confirmado ao vivo 2026-08-27 — 404 correcto para operação de outra empresa mesmo com a fuga de RLS legada activa (ver [database/migrations/context.md](../database/migrations/context.md)) |
+| POST | `/api/operations` | M2 | operations.create | utilizador | ✅ confirmado ao vivo 2026-08-24 |
+| PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador | ✅ confirmado ao vivo 2026-08-24 |
+| POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador | ✅ confirmado ao vivo 2026-08-24 |
+| GET | `/api/operations/summary` | M2 | requireAuth | utilizador | ✅ confirmado ao vivo 2026-08-24 |
 | POST | `/api/operations/{id}/proof` | M3/M4 | operations.upload_* | utilizador | ❌ |
 | GET | `/api/operations/{id}/proof-url` | M3/M4 | operations.view | utilizador | ❌ |
+| GET | `/api/ledger` | Net Position (2026-08-27) | admin | serviço | ✅ confirmado ao vivo — substitui a política de RLS legada `"transactions readable"` ([database/migrations/context.md](../database/migrations/context.md)), que fica activa até este endpoint (e quem o consumir) substituir de facto essa necessidade |
 | POST/GET | `/api/documents` | M5 | documents.generate/.view | serviço/utilizador | ❌ |
 | GET | `/api/documents/{id}/pdf` | M5 | documents.view | utilizador | ❌ |
 

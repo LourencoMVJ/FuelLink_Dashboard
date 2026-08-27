@@ -26,6 +26,21 @@ final class TransactionModel
         return $this->client->post('transactions', $payload)[0];
     }
 
+    /**
+     * ALL transactions, both companies — deliberately does NOT filter by
+     * `entered_by`, unlike every other method here. Only ever call this
+     * from a privileged, already-permission-checked caller (LedgerController,
+     * gated on `is_admin`) — never expose it to a per-caller RLS-scoped
+     * client or a Controller that hasn't already verified the caller may
+     * see across the company boundary.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listAll(): array
+    {
+        return $this->client->get('transactions');
+    }
+
     /** @return array<string, mixed>|null */
     public function findById(string $id, string $enteredBy): ?array
     {

@@ -21,16 +21,22 @@ Section 7).
   (spam mitigation — see `PasswordResetController`). Always service-mode
   (the caller of this endpoint has no session at all, so there's no
   user-mode client to even build).
-- `TransactionModel` (2026-08-21) — `transactions`. `create()`/`patch()`/
-  `insertVoid()`/`findById()`/`findVoidFor()`/`listActiveInRange()`. Every
-  read method takes `entered_by` explicitly and filters on it — defense in
-  depth alongside RLS (migration `0004`), and the only way company scoping
-  is enforced at all in unit tests (`FakeSupabaseClient` has no RLS
-  concept). `listActiveInRange()` excludes voided originals by
+- `TransactionModel` (2026-08-21, extended 2026-08-27) — `transactions`.
+  `create()`/`patch()`/`insertVoid()`/`findById()`/`findVoidFor()`/
+  `listActiveInRange()` all take `entered_by` explicitly and filter on it —
+  defense in depth alongside RLS (migration `0004`), and the only way
+  company scoping is enforced at all in unit tests (`FakeSupabaseClient`
+  has no RLS concept). `listActiveInRange()` excludes voided originals by
   cross-referencing every void of that type/company (not date-scoped — a
   void can post after the original's own date), same technique already
   documented for the frontend's own "Estado" derivation
   ([docs/API_CONTRACT.md](../../../docs/API_CONTRACT.md) Section 3).
+  **`listAll()` is the one exception** — no `entered_by` filter at all, by
+  design: it's the privileged, cross-company read `LedgerController` uses
+  (via a service-mode client built in `Router.php`, bypassing RLS
+  entirely), gated by that Controller's own `is_admin` check rather than
+  by anything this Model does. Never call it from anywhere that hasn't
+  already verified the caller may see across the company boundary.
 - `RouteModel` — `routes`, `find($id)` only.
 - `TruckModel` / `DriverModel` — `trucks`/`drivers`, `all()` only; **not**
   scoped by `entered_by` — Fleet is shared reference data across both

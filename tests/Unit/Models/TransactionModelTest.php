@@ -18,6 +18,21 @@ use PHPUnit\Framework\TestCase;
  */
 final class TransactionModelTest extends TestCase
 {
+    public function test_list_all_returns_rows_from_both_companies_unfiltered(): void
+    {
+        $client = new FakeSupabaseClient();
+        $client->seed('transactions', [
+            ['id' => 'tx-1', 'entered_by' => 'fuellink'],
+            ['id' => 'tx-2', 'entered_by' => 'bakers'],
+        ]);
+        $model = new TransactionModel($client);
+
+        $rows = $model->listAll();
+
+        $this->assertCount(2, $rows);
+    }
+
+
     public function test_list_active_in_range_excludes_a_voided_original(): void
     {
         $client = new FakeSupabaseClient();

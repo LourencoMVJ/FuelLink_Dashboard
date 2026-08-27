@@ -210,6 +210,30 @@ final class OperationController
         Response::json($this->transactions->insertVoid($payload), 201);
     }
 
+    /**
+     * GET /api/operations/{id} — detail view for a single operation.
+     * `requireAuth()` only, no `operations.*` permission check: reading
+     * your own company's data isn't gated behind a permission anywhere
+     * else either (the list/search/filter equivalent is a direct,
+     * unprivileged Supabase read — see docs/API_CONTRACT.md Section 3).
+     * `TransactionModel::findById()` is RLS-scoped by `$caller['role']`
+     * (defense in depth alongside migration 0004's RLS) — a request for
+     * another company's operation gets the same 404 as a genuinely
+     * missing id, never a 403 that would confirm the id exists.
+     */
+    public function show(string $id): void
+    {
+        $caller = $this->auth->requireAuth();
+
+        $tx = $this->transactions->findById($id, $caller['role']);
+
+        if ($tx === null) {
+            Response::error('Operation not found.', 404);
+        }
+
+        Response::json($tx);
+    }
+
     public function summary(): void
     {
         $caller = $this->auth->requireAuth();

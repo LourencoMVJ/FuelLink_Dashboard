@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Controllers\HealthController;
+use App\Controllers\LedgerController;
 use App\Controllers\MeController;
 use App\Controllers\OperationController;
 use App\Controllers\PasswordResetController;
@@ -31,12 +32,14 @@ final class Router
         ['GET', '#^health$#', HealthController::class, 'get'],
         ['GET', '#^me$#', MeController::class, 'get'],
         ['GET', '#^operations/summary$#', OperationController::class, 'summary'],
+        ['GET', '#^operations/([0-9a-fA-F-]+)$#', OperationController::class, 'show'],
         ['POST', '#^operations$#', OperationController::class, 'create'],
         ['PATCH', '#^operations/([0-9a-fA-F-]+)$#', OperationController::class, 'edit'],
         ['POST', '#^operations/([0-9a-fA-F-]+)/void$#', OperationController::class, 'void'],
         ['POST', '#^users$#', UserController::class, 'create'],
         ['PATCH', '#^users/([0-9a-fA-F-]+)$#', UserController::class, 'update'],
         ['POST', '#^forgot-password$#', PasswordResetController::class, 'create'],
+        ['GET', '#^ledger$#', LedgerController::class, 'index'],
     ];
 
     public static function dispatch(string $method, string $uri): void
@@ -93,6 +96,10 @@ final class Router
             UserController::class => self::buildUserController(),
             PasswordResetController::class => new PasswordResetController(
                 new PasswordResetRequestModel(SupabaseClient::forService()),
+            ),
+            LedgerController::class => new LedgerController(
+                new AuthMiddleware(SupabaseClient::forService()),
+                new TransactionModel(SupabaseClient::forService()),
             ),
             default => throw new RuntimeException("No factory registered for {$controllerClass}."),
         };
