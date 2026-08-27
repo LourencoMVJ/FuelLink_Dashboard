@@ -5,7 +5,7 @@ vendor/
 private/config/env.php
 private/config/.env
 
-# Runtime storage (JWKS cache, etc.) — never commit
+# Runtime storage (JWKS cache, uploaded proof files, etc.) — never commit
 private/storage/
 
 # PHPUnit

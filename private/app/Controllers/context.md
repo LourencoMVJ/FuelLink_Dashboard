@@ -104,6 +104,51 @@ Month-1 work has started.
   (migration `0004` + the permission seed both ran — see
   [database/migrations/context.md](../../../database/migrations/context.md)).
 
+  **Bankers delivery tracking, added 2026-08-27** (migration `0008`,
+  user request): `create()`/`edit()` now also read/persist
+  `order_amount`/`loaded_amount`/`offloaded_amount` (litres, all optional,
+  logistics-only) via the shared `readDeliveryTracking()` helper, which
+  also computes and stores `loaded_offloaded_diff`
+  (`loaded_amount - offloaded_amount`) and `delivery_value`
+  (`offloaded_amount * unit_rate` — the operation's own frozen rate, not a
+  separate price) — both null until their inputs exist, per
+  `computeDeliveryTracking()` (pure, tested). These 3 quantities are
+  genuinely new columns, independent of the pre-existing `litres` field
+  (which keeps driving `amount`/`balance_delta` exactly as before).
+
+  `attachProof(id, field)` — `POST /api/operations/{id}/proof/{order|loaded|offloaded}`,
+  multipart/form-data (field name `proof`), gated on
+  `operations.upload_delivery_proof` (catalogued but not seeded before
+  now — see `database/migrations/context.md`). The first file-upload
+  endpoint in this codebase: skips `Request::capture()` entirely (a
+  multipart body has no JSON to parse) via the new
+  `Request::uploadedFile()`, validates with `App\Core\FileValidator`
+  (extension whitelist + real content-sniffed MIME type, never the
+  client-supplied one + size ceiling + the two must agree — Contract
+  Clause 1.3's "accept= doesn't count as strict"), recompresses photos via
+  `App\Core\ImageCompressor`, then sanitizes the client-supplied filename
+  (`sanitizeFilename()`, pure, tested) before it becomes part of the
+  storage path — the original, unsanitized name is still kept verbatim in
+  `*_proof_name` for display. Stores via `App\Core\LocalFileStorage`
+  (cPanel filesystem, `private/storage/proofs/`) — **not** Supabase
+  Storage, changed 2026-08-27 same day it was first built, at the user's
+  request over storage cost (see `database/migrations/context.md`). No
+  `SupabaseClientInterface` needed for this anymore, so the Controller's
+  constructor is back to 7 params.
+
+  `downloadProof(id, field)` — `GET /api/operations/{id}/proof/{order|loaded|offloaded}`
+  (2026-08-27), streams the stored file back via `Response::file()`.
+  `requireAuth()` only, no permission (matches `show()` — viewing your own
+  company's data isn't gated), still company-scoped through
+  `findById()`'s existing `entered_by` filter. Re-sniffs the MIME type
+  from the stored bytes at serve time (`LocalFileStorage::resolvedPathIfExists()`
+  + `FileValidator::sniffMimeType()`) rather than trusting anything from
+  upload time. This is the local-storage replacement for what a Supabase
+  `createSignedUrl()` would have given the frontend.
+
+  Expands the M3 roadmap's original "1 shared proof file, closed decision"
+  to 3 independent proof slots, at the user's explicit request.
+
 ## Fixed rules
 
 - A Controller never talks to the Supabase REST API directly — always via a

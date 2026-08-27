@@ -99,6 +99,22 @@ from user_roles, unnest(array['operations.create','operations.edit','operations.
 on conflict (user_id, permission) do nothing;
 ```
 
+### Addendum (2026-08-27) — `operations.upload_delivery_proof`, not yet run
+
+`OperationController::attachProof()` (Bankers delivery-tracking proof
+uploads, migration `0008`) gates on `operations.upload_delivery_proof`,
+already in the catalog (`docs/ROADMAP_FRONTEND.md` Section 6, "Bankers
+(M4)") but never seeded — the original seed above only covered
+create/edit/void. Same `on conflict do nothing`, safe to run any number of
+times:
+
+```sql
+insert into user_permissions (user_id, permission, granted, granted_by)
+select user_id, 'operations.upload_delivery_proof', true, user_id
+from user_roles
+on conflict (user_id, permission) do nothing;
+```
+
 ## Reconciliation status (main handoff doc, Section 5)
 
 Four of the seven open points are now resolved in production:
@@ -184,3 +200,31 @@ listing/searching operations
 SELECT gap is a real, currently-exploitable cross-company data leak for
 any regular (non-Admin) user account once Month 1's user management ships
 real non-admin accounts.
+
+## Proof storage moved off Supabase Storage to local cPanel disk (2026-08-27)
+
+Migration `0008` (Bankers delivery tracking, 3 proof upload slots) was
+originally built against Supabase Storage — same bucket
+(`delivery-notes`) the Antigo dashboard already used. Changed same day, at
+the user's request: Supabase Storage bills per-GB stored + egress, which
+adds up; the contract already runs this backend self-hosted on cPanel with
+"sem infra nova" (Clause 6.2), and there's a fixed 10GB quota on that
+hosting account to work within instead.
+
+**Capacity math worked through with the user**: worst case (no
+compression, every proof at the 5MB cap, 3 proofs/operation) = 15MB/op →
+~680 operations before the 10GB quota fills. With image compression
+(`App\Core\ImageCompressor`, resize to 1600px long edge + re-encode —
+typically shrinks a phone photo to ~150-400KB) = ~750KB/op → ~13,000+
+operations. PDFs aren't compressed (no tooling in this project for that)
+so the real number depends on the order/loaded/offloaded proof mix in
+practice.
+
+**Worth doing periodically, not automated**: `du -sh private/storage/proofs`
+on the cPanel server to see real consumption against the 10GB quota,
+rather than relying on this estimate indefinitely.
+
+See [private/app/Core/context.md](../../private/app/Core/context.md) for
+`LocalFileStorage`/`ImageCompressor`/`Response::file()`, and
+[private/app/Controllers/context.md](../../private/app/Controllers/context.md)
+for `OperationController::attachProof()`/`downloadProof()`.

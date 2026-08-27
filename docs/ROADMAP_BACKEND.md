@@ -181,28 +181,47 @@ Cada task dentro do mês arranca pelo ciclo de agentes da **Secção 8.2**
   suite de testes do módulo Fuellink verde (unit do cálculo financeiro +
   integração dos endpoints).
 
-### Mês 4 — Extensão Bankers
+### Mês 4 — Extensão Bankers — ✅ construído 2026-08-27 (âmbito real diferente do esboço original abaixo)
 
-- **Objectivo**: prova de entrega, diferença carregado/entregue, edição do
-  valor de fornecimento.
-- **Pré-requisitos**: Mês 3.
-- **Base de dados** — migração `0006`: `transactions.delivered_litres`
-  (para diferença vs `litres` carregado).
-- **Models**: `TransactionModel` estendido (logistics + delivered_litres).
-- **Controllers**: `OperationController` para `type='logistics'` (Bankers) —
-  prova de entrega, cálculo da diferença, edição de valor de fornecimento,
-  gated por `operations.upload_delivery_proof`/`.edit_supply_value`/
-  `.view_fuel_difference`.
-- **Rotas**: reaproveitam `/api/operations/*` com o discriminador de tipo.
-- **Aceitação**: Bankers regista entrega + prova, diferença calculada e
-  auditada; edição de valor de fornecimento fica no `audit_log`.
+- **Objectivo original**: prova de entrega, diferença carregado/entregue,
+  edição do valor de fornecimento.
+- **O que foi realmente pedido e construído** (2026-08-27, substitui o
+  esboço de `delivered_litres` único): 3 quantidades em litros
+  (`order_amount`/`loaded_amount`/`offloaded_amount`), cada uma com prova
+  própria (3 uploads independentes, não 1 partilhado), mais 2 colunas
+  calculadas e guardadas — `loaded_offloaded_diff`
+  (`loaded_amount - offloaded_amount`) e `delivery_value`
+  (`offloaded_amount × unit_rate`, a mesma taxa já congelada da operação).
+  Não há "edição de valor de fornecimento" separada — não foi pedida.
+- **Base de dados** — migração `0008` (`database/migrations/0008_bankers_delivery_tracking.sql`):
+  11 colunas novas em `transactions` (as 5 acima + `order_proof_path/name`,
+  `loaded_proof_path/name`, `offloaded_proof_path/name`) + extensão do
+  `GRANT UPDATE` coluna-a-coluna de `0003`.
+- **Core**: `App\Core\FileValidator` (novo) — validação estrita real
+  (Cláusula 1.3): whitelist de extensão + MIME sniffado por conteúdo
+  (nunca o `type` do cliente) + limite de tamanho + os dois têm de
+  concordar. `Request::uploadedFile()` (novo) — lê `$_FILES` directamente,
+  sem passar por `capture()`/JSON (um corpo multipart não tem JSON para
+  parsear).
+- **Controllers**: `OperationController::attachProof(id, field)` —
+  `POST /api/operations/{id}/proof/{order|loaded|offloaded}`,
+  multipart/form-data, gated por `operations.upload_delivery_proof`
+  (catalogado, seed em falta — ver `database/migrations/context.md`).
+  `create()`/`edit()` estendidos para ler/persistir as 3 quantidades e
+  calcular as 2 colunas derivadas (`readDeliveryTracking()`,
+  `computeDeliveryTracking()` puro e testado).
+- **Rotas**: reaproveitam `/api/operations/*` + a nova rota de proof acima.
+- **Aceitação**: confirmado — 98 testes unitários (incluindo
+  `sanitizeFilename()` contra path traversal no nome de ficheiro do
+  cliente); por testar ao vivo/end-to-end (upload real) e por correr a
+  `0008` + o seed de `operations.upload_delivery_proof`.
 
 ### Mês 5 — Módulo financeiro/documental
 
 - **Objectivo**: gerar facturas, cotações, recibos, notas de crédito com
   numeração sequencial e carimbo digital.
 - **Pré-requisitos**: Mês 4; decisão da biblioteca PDF.
-- **Base de dados** — migração `0007`: `CREATE TABLE documents` (`number`,
+- **Base de dados** — migração `0009`: `CREATE TABLE documents` (`number`,
   `type`, `related_tx`, `pdf_path`, `stamped`, `created_by`, `created_at`)
   + **sequência atómica** de numeração (Postgres `SEQUENCE` ou tabela de
   contadores com lock) — nunca numeração calculada no cliente.
@@ -254,8 +273,8 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 | PATCH | `/api/operations/{id}` | M2 | operations.edit | utilizador | ✅ confirmado ao vivo 2026-08-24 |
 | POST | `/api/operations/{id}/void` | M2 | operations.void | utilizador | ✅ confirmado ao vivo 2026-08-24 |
 | GET | `/api/operations/summary` | M2 | requireAuth | utilizador | ✅ confirmado ao vivo 2026-08-24 |
-| POST | `/api/operations/{id}/proof` | M3/M4 | operations.upload_* | utilizador | ❌ |
-| GET | `/api/operations/{id}/proof-url` | M3/M4 | operations.view | utilizador | ❌ |
+| POST | `/api/operations/{id}/proof/{order\|loaded\|offloaded}` | M4 (2026-08-27) | operations.upload_delivery_proof | utilizador | ✅ código, por testar ao vivo — ⚠️ precisa `0008` + seed corridos |
+| GET | `/api/operations/{id}/proof-url` | M3/M4 | operations.view | utilizador | ❌ — ver nota de sobreposição na Secção 4.4 do relatório de requisitos; provavelmente redundante, leitura directa ao Storage já resolve |
 | GET | `/api/ledger` | Net Position (2026-08-27) | admin | serviço | ✅ confirmado ao vivo — substitui a política de RLS legada `"transactions readable"` ([database/migrations/context.md](../database/migrations/context.md)), que fica activa até este endpoint (e quem o consumir) substituir de facto essa necessidade |
 | POST/GET | `/api/documents` | M5 | documents.generate/.view | serviço/utilizador | ❌ |
 | GET | `/api/documents/{id}/pdf` | M5 | documents.view | utilizador | ❌ |
@@ -264,15 +283,15 @@ Contrato completo (pedido/resposta) de cada rota: [API_CONTRACT.md](API_CONTRACT
 
 ## 5. Sequência de migrações
 
-Já corridas: `0001`-`0004` (ver
-[database/migrations/context.md](../database/migrations/context.md)).
-Próximas, por mês:
+Já corridas: `0001`-`0007` (ver
+[database/migrations/context.md](../database/migrations/context.md) para
+o histórico completo, incluindo 2 bugs de RLS/trigger encontrados e
+corrigidos ao vivo em 2026-08-24 e 2026-08-27). Próximas:
 
 | Migração | Mês | Conteúdo |
 |---|---|---|
-| `0005` | — | **escrita, por correr** — bug fix ao `log_audit()` (assumia coluna `id`, `user_roles` usa `user_id`), encontrado 2026-08-24 ao testar `PATCH /api/users/{id}` |
-| `0006` | M4 | `transactions.delivered_litres` (renumerado de `0005` — a `0005` já foi usada pelo bug fix acima) |
-| `0007` | M5 | `documents` + sequência de numeração (renumerado de `0006`) |
+| `0008` | M4 (2026-08-27) | **escrita, por correr** — `order_amount`/`loaded_amount`/`offloaded_amount` + `loaded_offloaded_diff`/`delivery_value` + 3 pares de prova, em `transactions` (Bankers). Substitui o esboço original de `transactions.delivered_litres` abaixo. |
+| `0009` | M5 | `documents` + sequência de numeração (renumerado — era `0007` no esboço original, antes da `0007` real ter sido usada para o fix de RLS) |
 | (opcional) | qualquer | `route_monthly_adjustments` (ponto 6 da reconciliação) e índices de listagem, quando pesarem |
 
 **Regra**: antes de escrever cada migração, confirmar contra o schema real

@@ -264,4 +264,83 @@ final class OperationControllerTest extends TestCase
     {
         $this->assertFalse(OperationController::isValidDate(''));
     }
+
+    // ---------- computeDeliveryTracking (Bankers, 2026-08-27) ----------
+
+    public function test_delivery_tracking_is_null_for_both_fields_when_no_quantities_are_recorded_yet(): void
+    {
+        $result = OperationController::computeDeliveryTracking(null, null, 0.65);
+
+        $this->assertNull($result['loaded_offloaded_diff']);
+        $this->assertNull($result['delivery_value']);
+    }
+
+    public function test_delivery_tracking_diff_stays_null_until_both_loaded_and_offloaded_exist(): void
+    {
+        $onlyLoaded = OperationController::computeDeliveryTracking(1000.0, null, 0.65);
+        $onlyOffloaded = OperationController::computeDeliveryTracking(null, 950.0, 0.65);
+
+        $this->assertNull($onlyLoaded['loaded_offloaded_diff']);
+        $this->assertNull($onlyOffloaded['loaded_offloaded_diff']);
+    }
+
+    public function test_delivery_tracking_computes_diff_once_both_loaded_and_offloaded_exist(): void
+    {
+        $result = OperationController::computeDeliveryTracking(1000.0, 950.0, 0.65);
+
+        $this->assertSame(50.0, $result['loaded_offloaded_diff']);
+    }
+
+    public function test_delivery_tracking_computes_value_from_offloaded_times_unit_rate(): void
+    {
+        $result = OperationController::computeDeliveryTracking(1000.0, 950.0, 0.65);
+
+        $this->assertSame(617.5, $result['delivery_value']);
+    }
+
+    public function test_delivery_tracking_value_stays_null_without_a_unit_rate(): void
+    {
+        $result = OperationController::computeDeliveryTracking(1000.0, 950.0, null);
+
+        $this->assertNull($result['delivery_value']);
+    }
+
+    public function test_delivery_tracking_diff_can_be_negative_when_offloaded_exceeds_loaded(): void
+    {
+        $result = OperationController::computeDeliveryTracking(900.0, 950.0, 0.65);
+
+        $this->assertSame(-50.0, $result['loaded_offloaded_diff']);
+    }
+
+    // ---------- sanitizeFilename (proof upload path safety, 2026-08-27) ----------
+
+    public function test_sanitize_filename_keeps_a_normal_filename_unchanged(): void
+    {
+        $this->assertSame('proof.pdf', OperationController::sanitizeFilename('proof.pdf'));
+    }
+
+    public function test_sanitize_filename_strips_path_traversal_sequences(): void
+    {
+        $result = OperationController::sanitizeFilename('../../../etc/passwd');
+
+        $this->assertStringNotContainsString('..', $result);
+        $this->assertStringNotContainsString('/', $result);
+    }
+
+    public function test_sanitize_filename_strips_a_leading_slash(): void
+    {
+        $result = OperationController::sanitizeFilename('/etc/passwd');
+
+        $this->assertStringNotContainsString('/', $result);
+    }
+
+    public function test_sanitize_filename_never_returns_an_empty_string(): void
+    {
+        $this->assertSame('file', OperationController::sanitizeFilename('///'));
+    }
+
+    public function test_sanitize_filename_preserves_dots_dashes_and_underscores(): void
+    {
+        $this->assertSame('proof-of-delivery_2026.08.27.pdf', OperationController::sanitizeFilename('proof-of-delivery_2026.08.27.pdf'));
+    }
 }

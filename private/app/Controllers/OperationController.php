@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\AuthMiddleware;
+use App\Core\FileValidator;
+use App\Core\ImageCompressor;
+use App\Core\LocalFileStorage;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\BakersSettingsModel;
@@ -36,6 +39,8 @@ use DateTimeImmutable;
  */
 final class OperationController
 {
+    private const PROOF_FIELDS = ['order', 'loaded', 'offloaded'];
+
     public function __construct(
         private readonly AuthMiddleware $auth,
         private readonly TransactionModel $transactions,
@@ -112,6 +117,7 @@ final class OperationController
 
         if ($type === 'logistics') {
             $payload['route_id'] = $route['id'];
+            $payload = [...$payload, ...self::readDeliveryTracking($request, null, null, null, $financials['unit_rate'])];
         }
 
         Response::json($this->transactions->create($payload), 201);
@@ -194,6 +200,13 @@ final class OperationController
 
         if ($tx['type'] === 'logistics') {
             $payload['route_id'] = $route['id'];
+            $payload = [...$payload, ...self::readDeliveryTracking(
+                $request,
+                isset($tx['order_amount']) ? (float) $tx['order_amount'] : null,
+                isset($tx['loaded_amount']) ? (float) $tx['loaded_amount'] : null,
+                isset($tx['offloaded_amount']) ? (float) $tx['offloaded_amount'] : null,
+                $financials['unit_rate'],
+            )];
         }
 
         Response::json($this->transactions->patch($id, $caller['role'], $payload));
@@ -232,6 +245,140 @@ final class OperationController
         }
 
         Response::json($tx);
+    }
+
+    /**
+     * POST /api/operations/{id}/proof/{field} — attaches a proof file
+     * (multipart/form-data, field name `proof`) for one of the 3 Bankers
+     * delivery-tracking quantities. Bypasses `Request::capture()` entirely
+     * — a multipart body has no JSON to parse. Strict server-side
+     * validation (Contract Clause 1.3): extension whitelist, real
+     * content-sniffed MIME type (never the client-supplied one), size
+     * ceiling, and the two must agree with each other
+     * (`FileValidator::contentMatchesExtension()` — catches a renamed
+     * `evil.php` claiming to be `.pdf`).
+     */
+    public function attachProof(string $id, string $field): void
+    {
+        $caller = $this->auth->requireAuth();
+        $this->auth->requirePermission($caller['user_id'], 'operations.upload_delivery_proof');
+
+        if (!in_array($field, self::PROOF_FIELDS, true)) {
+            Response::error("Invalid proof field — must be 'order', 'loaded', or 'offloaded'.", 400);
+        }
+
+        $tx = $this->fetchEditableTransaction($id, $caller['role']);
+
+        if ($tx['type'] !== 'logistics') {
+            Response::error('Proof uploads are only for Bankers logistics operations.', 400);
+        }
+
+        $file = Request::uploadedFile('proof');
+
+        if ($file === null || $file['error'] !== UPLOAD_ERR_OK) {
+            Response::error('No valid file uploaded (form field name must be "proof").', 400);
+        }
+
+        $filename = $file['name'];
+
+        if (!FileValidator::hasAllowedExtension($filename)) {
+            Response::error('File type not allowed. Use PDF, JPG, or PNG.', 400);
+        }
+
+        if (!FileValidator::isWithinSizeLimit($file['size'])) {
+            Response::error('File is too large (max 5MB).', 400);
+        }
+
+        // Re-checks the actual bytes on disk, not just PHP's own
+        // multipart-reported size, before ever loading the file into
+        // memory (security review, 2026-08-27) — cheap, and means a
+        // mismatch fails closed instead of trusting client-influenced
+        // metadata for a size decision that gates a file_get_contents().
+        $actualSize = filesize($file['tmp_name']);
+
+        if ($actualSize === false || !FileValidator::isWithinSizeLimit($actualSize)) {
+            Response::error('File is too large (max 5MB).', 400);
+        }
+
+        $sniffedType = FileValidator::sniffMimeType($file['tmp_name']);
+
+        if ($sniffedType === null || !FileValidator::contentMatchesExtension($filename, $sniffedType)) {
+            Response::error('File content does not match its extension.', 400);
+        }
+
+        $contents = file_get_contents($file['tmp_name']);
+
+        if ($contents === false) {
+            Response::error('Could not read the uploaded file.', 500);
+        }
+
+        // Recompresses photos before they ever touch disk — decided
+        // 2026-08-27 against a fixed 10GB cPanel quota. PDFs (and
+        // anything GD can't decode) pass through unchanged; never fails
+        // the upload over a compression problem.
+        $contents = ImageCompressor::compress($contents, $sniffedType);
+
+        // $filename is client-controlled — sanitized before it becomes
+        // part of the local storage path (never trust it for anything but
+        // display, where it's kept verbatim in *_proof_name below).
+        $objectPath = sprintf('%s-%s-%s-%s', $field, $id, bin2hex(random_bytes(8)), self::sanitizeFilename($filename));
+
+        LocalFileStorage::store($objectPath, $contents);
+
+        $payload = [
+            $field . '_proof_path' => $objectPath,
+            $field . '_proof_name' => $filename,
+        ];
+
+        Response::json($this->transactions->patch($id, $caller['role'], $payload));
+    }
+
+    /**
+     * GET /api/operations/{id}/proof/{field} — streams a stored proof back
+     * to the caller. `requireAuth()` only (no permission — matches
+     * `show()`'s reasoning: viewing your own company's data isn't gated),
+     * but still company-scoped via `findById()`'s existing `entered_by`
+     * filter — a request for another company's proof gets the same 404 as
+     * a genuinely missing one. Re-sniffs the MIME type from the stored
+     * bytes at serve time rather than trusting anything cached from
+     * upload time, so `Content-Type` is always accurate even if the file
+     * was hand-placed on disk some other way.
+     */
+    public function downloadProof(string $id, string $field): void
+    {
+        $caller = $this->auth->requireAuth();
+
+        if (!in_array($field, self::PROOF_FIELDS, true)) {
+            Response::error("Invalid proof field — must be 'order', 'loaded', or 'offloaded'.", 400);
+        }
+
+        $tx = $this->transactions->findById($id, $caller['role']);
+
+        if ($tx === null) {
+            Response::error('Operation not found.', 404);
+        }
+
+        $objectPath = $tx[$field . '_proof_path'] ?? null;
+        $displayName = $tx[$field . '_proof_name'] ?? 'proof';
+
+        if (!is_string($objectPath)) {
+            Response::error('No proof has been uploaded for this field.', 404);
+        }
+
+        $path = LocalFileStorage::resolvedPathIfExists($objectPath);
+
+        if ($path === null) {
+            Response::error('Proof file is missing.', 404);
+        }
+
+        $contents = file_get_contents($path);
+        $mimeType = FileValidator::sniffMimeType($path) ?? 'application/octet-stream';
+
+        if ($contents === false) {
+            Response::error('Could not read the proof file.', 500);
+        }
+
+        Response::file($contents, $mimeType, (string) $displayName);
     }
 
     public function summary(): void
@@ -386,6 +533,27 @@ final class OperationController
         ];
     }
 
+    /**
+     * loaded_offloaded_diff / delivery_value — null until their inputs
+     * exist (decided with the user 2026-08-27: stored, not purely
+     * derived-on-read, but never fabricated from partial data).
+     * delivery_value reuses the operation's own frozen `unit_rate` — not a
+     * separate price.
+     *
+     * @return array{loaded_offloaded_diff: ?float, delivery_value: ?float}
+     */
+    public static function computeDeliveryTracking(?float $loadedAmount, ?float $offloadedAmount, ?float $unitRate): array
+    {
+        return [
+            'loaded_offloaded_diff' => ($loadedAmount !== null && $offloadedAmount !== null)
+                ? $loadedAmount - $offloadedAmount
+                : null,
+            'delivery_value' => ($offloadedAmount !== null && $unitRate !== null)
+                ? $offloadedAmount * $unitRate
+                : null,
+        ];
+    }
+
     /** Strict YYYY-MM-DD check — rejects malformed input before it ever reaches the database. */
     public static function isValidDate(string $date): bool
     {
@@ -480,6 +648,86 @@ final class OperationController
         }
 
         return (float) $raw;
+    }
+
+    /**
+     * Reads order_amount/loaded_amount/offloaded_amount (each optional,
+     * defaulting to the current value on edit / null on create) and
+     * computes the 2 derived columns from them — the one place create()
+     * and edit() share this so the two never drift apart.
+     *
+     * @return array{order_amount: ?float, loaded_amount: ?float, offloaded_amount: ?float, loaded_offloaded_diff: ?float, delivery_value: ?float}
+     */
+    private static function readDeliveryTracking(
+        Request $request,
+        ?float $defaultOrder,
+        ?float $defaultLoaded,
+        ?float $defaultOffloaded,
+        ?float $unitRate,
+    ): array {
+        $orderAmount = self::readOptionalFloat($request, 'order_amount', $defaultOrder);
+        $loadedAmount = self::readOptionalFloat($request, 'loaded_amount', $defaultLoaded);
+        $offloadedAmount = self::readOptionalFloat($request, 'offloaded_amount', $defaultOffloaded);
+
+        self::requireNonNegative($orderAmount, 'order_amount');
+        self::requireNonNegative($loadedAmount, 'loaded_amount');
+        self::requireNonNegative($offloadedAmount, 'offloaded_amount');
+
+        return [
+            'order_amount' => $orderAmount,
+            'loaded_amount' => $loadedAmount,
+            'offloaded_amount' => $offloadedAmount,
+            ...self::computeDeliveryTracking($loadedAmount, $offloadedAmount, $unitRate),
+        ];
+    }
+
+    /**
+     * Unlike `readLitres()`, this field is optional — no value at all
+     * (omitted, or explicitly `null`/`""`) means "not recorded yet", not
+     * an error. A present-but-garbled value ("abc") is still rejected.
+     */
+    private static function readOptionalFloat(Request $request, string $key, ?float $default): ?float
+    {
+        $raw = $request->input($key, $default);
+
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (!is_numeric($raw)) {
+            Response::error(str_replace('_', ' ', $key) . ' must be a number.', 400);
+        }
+
+        return (float) $raw;
+    }
+
+    /**
+     * Strips everything except alphanumerics/dot/dash/underscore from a
+     * client-supplied filename before it becomes part of a Storage object
+     * path — the raw filename is user input (`$_FILES[...]['name']`) and
+     * must never reach a path unescaped (path traversal via `../`, a
+     * leading `/`, or any other separator). The original, unsanitized name
+     * is still stored verbatim in `*_proof_name` for display; only the
+     * path component goes through this.
+     */
+    public static function sanitizeFilename(string $filename): string
+    {
+        $safe = preg_replace('/[^A-Za-z0-9._-]/', '', $filename) ?? '';
+        // Collapses any surviving run of 2+ dots (e.g. what "../" becomes
+        // once the slash is stripped) down to one — the disallowed-char
+        // strip alone removes every `/`, but leaves the dots themselves
+        // concatenated together, which isn't a traversal risk without a
+        // separator but is still worth neutralizing outright.
+        $safe = preg_replace('/\.{2,}/', '.', $safe) ?? $safe;
+
+        return $safe === '' ? 'file' : $safe;
+    }
+
+    private static function requireNonNegative(?float $value, string $label): void
+    {
+        if ($value !== null && $value < 0) {
+            Response::error("{$label} cannot be negative.", 400);
+        }
     }
 
     /**

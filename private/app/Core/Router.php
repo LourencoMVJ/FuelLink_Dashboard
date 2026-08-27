@@ -36,6 +36,8 @@ final class Router
         ['POST', '#^operations$#', OperationController::class, 'create'],
         ['PATCH', '#^operations/([0-9a-fA-F-]+)$#', OperationController::class, 'edit'],
         ['POST', '#^operations/([0-9a-fA-F-]+)/void$#', OperationController::class, 'void'],
+        ['POST', '#^operations/([0-9a-fA-F-]+)/proof/([a-z]+)$#', OperationController::class, 'attachProof'],
+        ['GET', '#^operations/([0-9a-fA-F-]+)/proof/([a-z]+)$#', OperationController::class, 'downloadProof'],
         ['POST', '#^users$#', UserController::class, 'create'],
         ['PATCH', '#^users/([0-9a-fA-F-]+)$#', UserController::class, 'update'],
         ['POST', '#^forgot-password$#', PasswordResetController::class, 'create'],
