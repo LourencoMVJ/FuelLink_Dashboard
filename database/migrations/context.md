@@ -140,3 +140,47 @@ rows to compute the net balance — that has to go through a separate path
 (a `SECURITY DEFINER` view or a privileged PHP endpoint), not the same
 company-scoped `SELECT` policy. Not designed yet; revisit when that screen
 is speced.
+
+## Found live 2026-08-27: 0004's transactions RLS policies were neutralized by 2 forgotten legacy policies — 1 fixed (0007), 1 deliberately deferred
+
+While testing the new `GET /api/operations/{id}` live, a `bakers`-role
+test account could read `entered_by='fuellink'` rows **directly via
+Supabase** despite `0004`'s `select_own_company_transactions` policy.
+`SELECT policyname, cmd, roles, qual FROM pg_policies WHERE tablename =
+'transactions'` revealed the real cause — 2 policies that predate
+0001-0004 and were never dropped (not documented anywhere, confirming the
+"never assume a table/column doesn't exist" warning at the top of this
+file applies to policies too):
+
+- **`"transactions insert"`** (INSERT, role `public`, `qual: null` — no
+  `WITH CHECK` at all) — Postgres OR's same-command policies together, so
+  this silently neutralized `insert_own_company_transactions`'s spoofing
+  protection entirely; any authenticated caller could INSERT a transaction
+  claiming any `entered_by`. **Fixed in `0007_drop_legacy_transactions_insert_policy.sql`**
+  — safe, no functional dependency (every real write path already sends
+  its own correct `entered_by`).
+- **`"transactions readable"`** (SELECT, role `public`, `qual: auth.role()
+  = 'authenticated'`) — same OR-neutralization, but for SELECT: any
+  authenticated user can currently read every company's rows directly via
+  Supabase, regardless of `select_own_company_transactions`. This is what
+  the Antigo dashboard's shared Ledger view (both Admin accounts seeing
+  each other's transactions) actually runs on — **not** a documented,
+  designed mechanism, just this forgotten wide-open policy from before
+  0001. **Deliberately NOT dropped yet** (user decision 2026-08-27): the
+  privileged Net Position / Ledger de Compensação endpoint (see
+  [docs/RELATORIO_REQUISITOS_FRONTEND.md](../../docs/RELATORIO_REQUISITOS_FRONTEND.md)
+  Section 5.1) needs to exist first, or dropping this breaks the Antigo
+  dashboard's Ledger for the 2 real admins today. Revisit once that
+  endpoint ships.
+
+**The PHP layer was never affected by either gap** —
+`TransactionModel`'s methods all filter `entered_by` explicitly regardless
+of RLS (confirmed live: the same `bakers` test account got a clean 404
+from `GET /api/operations/{id}` for a `fuellink` operation id, even while
+the direct-Supabase read leaked it). This only affects **direct Supabase
+reads/writes** — but that's exactly the pattern the real frontend uses for
+listing/searching operations
+([docs/API_CONTRACT.md](../../docs/API_CONTRACT.md) Section 3), so the
+SELECT gap is a real, currently-exploitable cross-company data leak for
+any regular (non-Admin) user account once Month 1's user management ships
+real non-admin accounts.
