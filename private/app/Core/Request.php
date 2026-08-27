@@ -49,4 +49,26 @@ final class Request
     {
         return $this->body;
     }
+
+    /**
+     * Reads a single uploaded file from `$_FILES` — deliberately separate
+     * from `capture()`/the JSON body parsing above, since a
+     * multipart/form-data upload has no JSON body to parse at all (PHP
+     * already splits it into `$_FILES`/`$_POST` before user code runs).
+     * Callers that need an uploaded file skip `Request::capture()`
+     * entirely rather than risk it choking on a non-JSON body.
+     *
+     * @return array{name: string, type: string, tmp_name: string, error: int, size: int}|null
+     */
+    public static function uploadedFile(string $key): ?array
+    {
+        $file = $_FILES[$key] ?? null;
+
+        if (!is_array($file) || !isset($file['tmp_name'], $file['name'], $file['error'], $file['size'])) {
+            return null;
+        }
+
+        /** @var array{name: string, type: string, tmp_name: string, error: int, size: int} $file */
+        return $file;
+    }
 }

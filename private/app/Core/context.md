@@ -56,6 +56,51 @@ phase, committed 2026-08-19).
   query string. `Response::envelope()` is the pure builder (unit-tested);
   `json()`/`error()` are the side-effecting emitters (`http_response_code`
   + `exit`) that wrap it. Every `/api/*` response uses this envelope.
+  `Request::uploadedFile()` (2026-08-27, static) reads `$_FILES` directly —
+  deliberately bypasses `capture()`: a multipart/form-data request (file
+  uploads) has no JSON body for `capture()` to parse at all, PHP has
+  already split it into `$_FILES`/`$_POST` before user code runs. First
+  consumer: `OperationController::attachProof()`.
+- `FileValidator.php` (2026-08-27) — strict server-side file validation
+  (Contract Clause 1.3 — "`accept=` doesn't count as strict"). 3
+  independent, all-required checks: extension whitelist
+  (`hasAllowedExtension()`), a size ceiling (`isWithinSizeLimit()`), and
+  the real content-sniffed MIME type (`sniffMimeType()`, via `finfo` —
+  never `$_FILES[...]['type']`, which is client-supplied and trivially
+  spoofed) must agree with the extension (`contentMatchesExtension()`) —
+  catches the classic "rename `evil.php` to `proof.pdf`" bypass that an
+  extension check alone would miss. `sniffMimeType()` touches the
+  filesystem so it's the one method here not unit-tested directly.
+- `LocalFileStorage.php` (2026-08-27) — proof uploads live on the cPanel
+  filesystem, under `private/storage/proofs/`, **not Supabase Storage**
+  (changed same day, user request: Supabase Storage's per-GB pricing adds
+  up, and the contract already runs this backend self-hosted with "sem
+  infra nova" — see `database/migrations/context.md` for the cost math).
+  `store()`/`resolvedPathIfExists()` only — no `delete()` yet (not asked
+  for). Every `$objectPath` passed in must already be traversal-safe
+  before it arrives here (`OperationController::sanitizeFilename()` is
+  what guarantees that) — this class does no sanitizing of its own.
+- `ImageCompressor.php` (2026-08-27) — recompresses a proof photo (resize
+  to a 1600px long edge + re-encode) before `LocalFileStorage::store()`
+  ever writes it, cutting a typical multi-MB phone photo down to roughly
+  150-400KB — matters against a fixed disk quota in a way it never did
+  against Supabase's pay-as-you-grow storage. PDFs (and anything GD can't
+  decode) pass through unchanged; fails open on any GD error rather than
+  ever losing an upload over a compression problem. **20-megapixel cap**
+  (security review, 2026-08-27) — checked via `getimagesizefromstring()`
+  (header-only, doesn't decode pixels) *before* ever calling
+  `imagecreatefromstring()`: a full decode is ~4 bytes/pixel in memory, so
+  an oversized image could otherwise exhaust a conservative shared-hosting
+  `memory_limit` with a hard PHP fatal — not something `@`-suppression or
+  try/catch can recover from after the fact, so the fix is to never
+  attempt the decode at all once the header says it's too big.
+- `Response::file()` (2026-08-27) — the one response shape that isn't the
+  JSON envelope: raw bytes + `Content-Type`/`Content-Disposition` headers,
+  for `OperationController::downloadProof()`. `inline`, not `attachment`,
+  so a browser previews a PDF/image directly. The filename goes through
+  `rawurlencode()` before it reaches the header — never interpolate a
+  client- or DB-sourced filename into a header raw (CRLF/header
+  injection).
 - `Router.php` — explicit route whitelist (`ROUTES` const) mapping
   `METHOD + regex path → Controller::method`. `normalizedPath()` strips
   through the **last** `/api/` segment in the URI (2026-08-24), not just a

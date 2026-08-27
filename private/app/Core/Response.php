@@ -36,6 +36,21 @@ final class Response
         self::emit(self::envelope(false, null, $message, $meta), $status);
     }
 
+    /**
+     * The one response type that isn't the JSON envelope — raw file bytes
+     * with the right headers, for `OperationController::downloadProof()`
+     * (2026-08-27). `inline` (not `attachment`) so a browser can preview a
+     * PDF/image directly rather than always forcing a download prompt.
+     */
+    public static function file(string $contents, string $mimeType, string $filename): never
+    {
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
+        header('Content-Length: ' . strlen($contents));
+        echo $contents;
+        exit;
+    }
+
     /** @param array{success: bool, data: mixed, error: string|null, meta: array<string, mixed>|null} $envelope */
     private static function emit(array $envelope, int $status): never
     {
