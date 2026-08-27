@@ -67,6 +67,7 @@ function setupScreenBranding(session) {
   const role = session.role || 'fuellink';
   const isBakers = role === 'bakers';
 
+  document.documentElement.setAttribute('data-company', role);
   // Toggle body class for scoped branding (Bankers orange vs FuelLink blue)
   if (isBakers) {
     document.body.classList.add('role-bakers');
@@ -192,6 +193,19 @@ function setupScreenBranding(session) {
   const lblOpProof = document.getElementById('newOpProofLabel');
   const btnCancelModal = document.getElementById('btnCancelModal');
 
+  // Bankers Specific Modal Elements
+  const bakersVolumesRow = document.getElementById('bakersVolumesFieldRow');
+  const bakersProofsRow = document.getElementById('bakersProofsFieldRow');
+  const flProofField = document.getElementById('flProofField');
+  const flLitresField = document.getElementById('newOpLitresField');
+
+  const lblOpOrderAmount = document.getElementById('lblOpOrderAmount');
+  const lblOpLoadedAmount = document.getElementById('lblOpLoadedAmount');
+  const lblOpOffloadedAmount = document.getElementById('lblOpOffloadedAmount');
+  const lblOpOrderProof = document.getElementById('lblOpOrderProof');
+  const lblOpLoadedProof = document.getElementById('lblOpLoadedProof');
+  const lblOpOffloadedProof = document.getElementById('lblOpOffloadedProof');
+
   if (lblOpDate) lblOpDate.textContent = t('labelOpDate');
   if (lblOpRoute) lblOpRoute.textContent = t('labelRoute');
   if (lblOpTruck) lblOpTruck.textContent = t('labelTruck');
@@ -201,22 +215,37 @@ function setupScreenBranding(session) {
   if (lblOpProof) lblOpProof.textContent = t('labelProof');
   if (btnCancelModal) btnCancelModal.textContent = t('cancel');
 
+  if (lblOpOrderAmount) lblOpOrderAmount.textContent = t('orderAmountFull') + ' *';
+  if (lblOpLoadedAmount) lblOpLoadedAmount.textContent = t('loadedAmountFull') + ' *';
+  if (lblOpOffloadedAmount) lblOpOffloadedAmount.textContent = t('offloadedAmountFull') + ' *';
+  if (lblOpOrderProof) lblOpOrderProof.textContent = t('orderProof');
+  if (lblOpLoadedProof) lblOpLoadedProof.textContent = t('loadedProof');
+  if (lblOpOffloadedProof) lblOpOffloadedProof.textContent = t('offloadedProof');
+
+  if (opsTitle) opsTitle.textContent = t('operationalManagement');
+
   if (isBakers) {
-    if (opsTitle) opsTitle.textContent = t('opsTitleBT');
     if (opsSubtitle) opsSubtitle.textContent = t('opsSubtitleBT');
+    if (tableSectionTitle) tableSectionTitle.textContent = t('opsTitleBT');
     if (btnNewOpText) btnNewOpText.textContent = t('newOperationBT');
     if (btnOpenModal) btnOpenModal.classList.add('bakers');
     if (modalTitle) modalTitle.textContent = t('modalTitleNewBT');
-    if (litresLabel) litresLabel.textContent = t('labelLitresLoaded');
     if (routeField) routeField.style.display = 'flex';
+    if (flLitresField) flLitresField.style.display = 'none';
+    if (bakersVolumesRow) bakersVolumesRow.style.display = 'grid';
+    if (flProofField) flProofField.style.display = 'none';
+    if (bakersProofsRow) bakersProofsRow.style.display = 'grid';
   } else {
-    if (opsTitle) opsTitle.textContent = t('opsTitleFL');
     if (opsSubtitle) opsSubtitle.textContent = t('opsSubtitleFL');
+    if (tableSectionTitle) tableSectionTitle.textContent = t('opsTitleFL');
     if (btnNewOpText) btnNewOpText.textContent = t('newOperationFL');
     if (btnOpenModal) btnOpenModal.classList.remove('bakers');
     if (modalTitle) modalTitle.textContent = t('modalTitleNewFL');
-    if (litresLabel) litresLabel.textContent = t('labelLitresSold');
     if (routeField) routeField.style.display = 'none';
+    if (flLitresField) flLitresField.style.display = 'flex';
+    if (bakersVolumesRow) bakersVolumesRow.style.display = 'none';
+    if (flProofField) flProofField.style.display = 'flex';
+    if (bakersProofsRow) bakersProofsRow.style.display = 'none';
   }
 }
 
@@ -429,9 +458,11 @@ function renderOperations() {
       <th>${t('driver')}</th>
       <th>${t('trailer')}</th>
       <th>${t('route')}</th>
-      <th style="text-align: right;">${t('litresLoaded')}</th>
-      <th style="text-align: right;">${t('value')}</th>
-      <th style="text-align: center;">${t('proofDelivery')}</th>
+      <th style="text-align: right;">${t('orderAmount')}</th>
+      <th style="text-align: right;">${t('loadedAmount')}</th>
+      <th style="text-align: right;">${t('offloadedAmount')}</th>
+      <th style="text-align: right;">${t('differenceCol')}</th>
+      <th style="text-align: right;">${t('deliveryValueCol')}</th>
       <th style="text-align: center;">${t('statusCol')}</th>
       <th>${t('note')}</th>
       <th style="text-align: center;">${t('actions')}</th>
@@ -454,7 +485,7 @@ function renderOperations() {
   if (totalItems === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" style="text-align: center; color: #94A3B8; padding: 36px;">
+        <td colspan="13" style="text-align: center; color: #94A3B8; padding: 36px;">
           ${t('noDataFound')}
         </td>
       </tr>
@@ -468,6 +499,7 @@ function renderOperations() {
     routeMap[r.id] = {
       from: r.from,
       to: r.to,
+      baseRate: r.baseRate,
       html: `<div class="route-stacked-cell"><span class="route-from">${r.from}</span><span class="route-arrow">↓</span><span class="route-to">${r.to}</span></div>`
     }; 
   });
@@ -479,32 +511,54 @@ function renderOperations() {
       : `<span class="table-badge active">${t('activeStatus')}</span>`;
 
     const proofEl = tItem.deliveryNotePath
-      ? `<span class="proof-status-badge verified" title="${t('proof')}">✓</span>`
-      : `<span class="proof-status-badge missing" title="${t('proof')}">✕</span>`;
+      ? `<span class="proof-status-badge verified" title="${t('proofAttached')}">✓</span>`
+      : `<span class="proof-status-badge missing" title="${t('proofMissing')}">✕</span>`;
 
-    const actionsHtml = !isVoided ? `
+    const actionsHtml = `
       <div class="row-actions-group">
-        <button type="button" class="btn-row-action edit" data-edit-id="${tItem.id}" aria-label="${t('edit')}">
+        <button type="button" class="btn-row-action view" data-view-id="${tItem.id}" aria-label="${t('viewDetails')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
           </svg>
-          <span class="action-tooltip">${t('edit')}</span>
+          <span class="action-tooltip">${t('viewDetails')}</span>
         </button>
-        <button type="button" class="btn-row-action void" data-void-id="${tItem.id}" aria-label="${t('voidAction')}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-          <span class="action-tooltip">${t('voidAction')}</span>
-        </button>
+        ${!isVoided ? `
+          <button type="button" class="btn-row-action edit" data-edit-id="${tItem.id}" aria-label="${t('edit')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span class="action-tooltip">${t('edit')}</span>
+          </button>
+          <button type="button" class="btn-row-action void" data-void-id="${tItem.id}" aria-label="${t('voidAction')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span class="action-tooltip">${t('voidAction')}</span>
+          </button>
+        ` : ''}
       </div>
-    ` : `<span style="color: #94A3B8; font-size: 11px;">${t('noActions')}</span>`;
+    `;
 
     if (role === 'bakers') {
       const routeInfo = routeMap[tItem.routeId];
       const routeHtml = routeInfo ? routeInfo.html : '—';
-      const formattedAmount = (tItem.amount || 0).toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const baseRate = routeInfo ? (routeInfo.baseRate || 0) : 1.45;
+
+      const orderAmt = Number(tItem.orderAmount || tItem.litres || 0);
+      const loadedAmt = Number(tItem.loadedAmount || tItem.litres || 0);
+      const offloadedAmt = Number(tItem.offloadedAmount || tItem.litres || 0);
+      const diffVal = loadedAmt - offloadedAmt;
+
+      const diffDisplay = diffVal > 0
+        ? `<span class="diff-danger-value">-${diffVal.toLocaleString('pt-PT')}&nbsp;L</span>`
+        : (diffVal === 0 ? `<span class="diff-zero-value">0&nbsp;L</span>` : `<span class="diff-zero-value">+${Math.abs(diffVal).toLocaleString('pt-PT')}&nbsp;L</span>`);
+
+      const deliveryValue = offloadedAmt * baseRate;
+      const formattedDeliveryValue = deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
       return `
         <tr class="${isVoided ? 'tr-voided' : ''}">
           <td style="font-weight: 600;">${tItem.date}</td>
@@ -512,11 +566,13 @@ function renderOperations() {
           <td>${tItem.driver || '—'}</td>
           <td>${tItem.trailer || '—'}</td>
           <td>${routeHtml}</td>
-          <td style="text-align: right; font-weight: 600;">${(tItem.litres || 0).toLocaleString('pt-PT')}&nbsp;L</td>
-          <td style="text-align: right; font-weight: 700; white-space: nowrap;">R&nbsp;${formattedAmount}</td>
-          <td style="text-align: center;">${proofEl}</td>
+          <td style="text-align: right; font-weight: 600;">${orderAmt.toLocaleString('pt-PT')}&nbsp;L</td>
+          <td style="text-align: right; font-weight: 600;">${loadedAmt.toLocaleString('pt-PT')}&nbsp;L</td>
+          <td style="text-align: right; font-weight: 600;">${offloadedAmt.toLocaleString('pt-PT')}&nbsp;L</td>
+          <td style="text-align: right;">${diffDisplay}</td>
+          <td style="text-align: right; font-weight: 700; white-space: nowrap;">R&nbsp;${formattedDeliveryValue}</td>
           <td style="text-align: center;">${statusBadge}</td>
-          <td style="color: #64748B; font-size: 12px;">${tItem.note || '—'}</td>
+          <td class="op-note-cell">${tItem.note || '—'}</td>
           <td style="text-align: center;">${actionsHtml}</td>
         </tr>
       `;
@@ -532,7 +588,7 @@ function renderOperations() {
           <td style="text-align: right; font-weight: 700; white-space: nowrap;">R&nbsp;${formattedAmount}</td>
           <td style="text-align: center;">${proofEl}</td>
           <td style="text-align: center;">${statusBadge}</td>
-          <td style="color: #64748B; font-size: 12px;">${tItem.note || '—'}</td>
+          <td class="op-note-cell">${tItem.note || '—'}</td>
           <td style="text-align: center;">${actionsHtml}</td>
         </tr>
       `;
@@ -604,82 +660,196 @@ function renderPagination(start, end, total, totalPages) {
 }
 
 function attachRowActionListeners() {
+  const isBakers = currentSession.role === 'bakers';
+
+  // Double Click on any table row to open Quick Action Modal
+  const tbody = document.getElementById('operationsTableBody');
+  if (tbody) {
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('dblclick', (e) => {
+        // If clicked on an action button inside the row, ignore row double-click
+        if (e.target.closest('button') || e.target.closest('a')) return;
+
+        // Find the view button in this row to extract op ID
+        const viewBtn = tr.querySelector('[data-view-id]');
+        if (!viewBtn) return;
+        const id = viewBtn.getAttribute('data-view-id');
+        const op = rawData.transactions.find(t => t.id === id);
+        if (!op) return;
+
+        openQuickActionModal(op);
+      });
+    });
+  }
+
+  // View Details Action -> Navigates to operation-details.html?id=...
+  document.querySelectorAll('[data-view-id]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-view-id');
+      window.location.href = `operation-details.html?id=${encodeURIComponent(id)}`;
+    });
+  });
+
   // Edit Action
   document.querySelectorAll('[data-edit-id]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const id = btn.getAttribute('data-edit-id');
       const op = rawData.transactions.find(t => t.id === id);
       if (!op) return;
-
-      editingTransactionId = id;
-      document.getElementById('modalTitleText').textContent = t('modalTitleEdit');
-      document.getElementById('btnSubmitOp').textContent = t('saveChanges');
-
-      document.getElementById('newOpDate').value = op.date;
-      document.getElementById('newOpLitres').value = op.litres;
-      document.getElementById('newOpTruck').value = op.truck || '';
-      document.getElementById('newOpDriver').value = op.driver || '';
-      document.getElementById('newOpTrailer').value = op.trailer || '';
-      document.getElementById('newOpNote').value = op.note || '';
-      if (document.getElementById('newOpRoute') && op.routeId) {
-        document.getElementById('newOpRoute').value = op.routeId;
-      }
-
-      document.getElementById('newOperationModal')?.classList.add('show');
+      openEditModal(op);
     });
   });
 
   // Delete Action with Explicit Confirmation
   document.querySelectorAll('[data-void-id]').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const id = btn.getAttribute('data-void-id');
-      const confirmDelete = confirm(t('deleteConfirm'));
-      if (!confirmDelete) return;
-
-      try {
-        const targetOp = rawData.transactions.find(t => t.id === id);
-        if (!targetOp) return;
-
-        // Invert balance delta for reversal/deletion tracking
-        const reversalPayload = {
-          date: new Date().toISOString().split('T')[0],
-          type: targetOp.type,
-          amount: targetOp.amount,
-          balance_delta: -targetOp.balanceDelta,
-          litres: targetOp.litres,
-          route_id: targetOp.routeId,
-          entered_by: currentSession.role,
-          truck: targetOp.truck,
-          driver: targetOp.driver,
-          trailer: targetOp.trailer,
-          note: `Deleção de ${targetOp.id}: ${targetOp.note || ''}`,
-          voids_id: targetOp.id,
-          voids_type: targetOp.type
-        };
-
-        if (sb) {
-          const { error } = await sb.from('transactions').insert([reversalPayload]);
-          if (error) throw error;
-        }
-
-        // Local state update
-        rawData.transactions.push({
-          ...reversalPayload,
-          id: `void-${Date.now()}`,
-          createdAt: new Date().toISOString(),
-          status: 'voided'
-        });
-        targetOp.status = 'voided';
-        targetOp.isVoided = true;
-
-        renderOperations();
-        alert(t('deleteSuccess'));
-      } catch (err) {
-        console.error('Error deleting transaction:', err);
-        alert(t('deleteError') + (err.message || err));
-      }
+      await executeDeleteOperation(id);
     });
   });
+}
+
+function openQuickActionModal(op) {
+  const modal = document.getElementById('quickActionModal');
+  const title = document.getElementById('qaModalTitle');
+  const subtitle = document.getElementById('qaModalSubtitle');
+  const btnView = document.getElementById('qaBtnView');
+  const btnEdit = document.getElementById('qaBtnEdit');
+  const btnDelete = document.getElementById('qaBtnDelete');
+  const btnClose = document.getElementById('btnCloseQaModal');
+
+  if (!modal) return;
+
+  const isVoided = op.status === 'voided';
+  const cleanId = (op.id || '').replace(/^tx-(bt|fl)-/, '');
+  const refDisplay = op.note ? op.note : `Ref. #${cleanId}`;
+
+  if (title) title.textContent = `Operação: ${op.truck || '—'} (${refDisplay})`;
+  if (subtitle) subtitle.textContent = `Data: ${op.date} — ${op.driver || 'Sem motorista'}`;
+
+  // View Details Handler
+  btnView.onclick = () => {
+    modal.classList.remove('show');
+    window.location.href = `operation-details.html?id=${encodeURIComponent(op.id)}`;
+  };
+
+  // Edit Handler
+  if (btnEdit) {
+    if (isVoided) {
+      btnEdit.style.display = 'none';
+    } else {
+      btnEdit.style.display = 'flex';
+      btnEdit.onclick = () => {
+        modal.classList.remove('show');
+        openEditModal(op);
+      };
+    }
+  }
+
+  // Delete Handler
+  if (btnDelete) {
+    if (isVoided) {
+      btnDelete.style.display = 'none';
+    } else {
+      btnDelete.style.display = 'flex';
+      btnDelete.onclick = async () => {
+        modal.classList.remove('show');
+        await executeDeleteOperation(op.id);
+      };
+    }
+  }
+
+  // Close Handlers
+  if (btnClose) btnClose.onclick = () => modal.classList.remove('show');
+
+  modal.classList.add('show');
+}
+
+function openEditModal(op) {
+  const isBakers = currentSession.role === 'bakers';
+  editingTransactionId = op.id;
+
+  document.getElementById('modalTitleText').textContent = t('modalTitleEdit');
+  document.getElementById('btnSubmitOp').textContent = t('saveChanges');
+
+  document.getElementById('newOpDate').value = op.date;
+  document.getElementById('newOpTruck').value = op.truck || '';
+  document.getElementById('newOpDriver').value = op.driver || '';
+  document.getElementById('newOpTrailer').value = op.trailer || '';
+  document.getElementById('newOpNote').value = op.note || '';
+
+  if (isBakers) {
+    if (document.getElementById('newOpOrderAmount')) {
+      document.getElementById('newOpOrderAmount').value = op.orderAmount || op.litres || '';
+    }
+    if (document.getElementById('newOpLoadedAmount')) {
+      document.getElementById('newOpLoadedAmount').value = op.loadedAmount || op.litres || '';
+    }
+    if (document.getElementById('newOpOffloadedAmount')) {
+      document.getElementById('newOpOffloadedAmount').value = op.offloadedAmount || op.litres || '';
+    }
+    if (document.getElementById('newOpRoute') && op.routeId) {
+      document.getElementById('newOpRoute').value = op.routeId;
+    }
+  } else {
+    document.getElementById('newOpLitres').value = op.litres;
+  }
+
+  document.getElementById('newOperationModal')?.classList.add('show');
+}
+
+async function executeDeleteOperation(id) {
+  const confirmDelete = confirm(t('deleteConfirm'));
+  if (!confirmDelete) return;
+
+  try {
+    const targetOp = rawData.transactions.find(t => t.id === id);
+    if (!targetOp) return;
+
+    // Invert balance delta for reversal/deletion tracking
+    const reversalPayload = {
+      date: new Date().toISOString().split('T')[0],
+      type: targetOp.type,
+      amount: targetOp.amount,
+      balance_delta: -targetOp.balanceDelta,
+      litres: targetOp.litres,
+      order_amount: targetOp.orderAmount,
+      loaded_amount: targetOp.loadedAmount,
+      offloaded_amount: targetOp.offloadedAmount,
+      route_id: targetOp.routeId,
+      entered_by: currentSession.role,
+      truck: targetOp.truck,
+      driver: targetOp.driver,
+      trailer: targetOp.trailer,
+      note: `Deleção de ${targetOp.id}: ${targetOp.note || ''}`,
+      voids_id: targetOp.id,
+      voids_type: targetOp.type
+    };
+
+    if (sb) {
+      const { error } = await sb.from('transactions').insert([reversalPayload]);
+      if (error) throw error;
+    }
+
+    // Local state update
+    rawData.transactions.push({
+      ...reversalPayload,
+      id: `void-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      status: 'voided'
+    });
+    targetOp.status = 'voided';
+    targetOp.isVoided = true;
+
+    renderOperations();
+    alert(t('deleteSuccess'));
+  } catch (err) {
+    console.error('Error deleting transaction:', err);
+    alert(t('deleteError') + (err.message || err));
+  }
 }
 
 async function handleSaveOperation() {
@@ -688,32 +858,73 @@ async function handleSaveOperation() {
   const isBakers = role === 'bakers';
 
   const date = document.getElementById('newOpDate').value;
-  const litres = parseFloat(document.getElementById('newOpLitres').value) || 0;
   const truck = document.getElementById('newOpTruck').value.trim();
   const driver = document.getElementById('newOpDriver').value.trim();
   const trailer = document.getElementById('newOpTrailer').value.trim();
   const note = document.getElementById('newOpNote').value.trim();
-  const routeId = isBakers ? parseInt(document.getElementById('newOpRoute').value) : null;
-  const proofFile = document.getElementById('newOpProof').files[0];
 
-  if (!date || litres <= 0 || !truck || !driver) {
-    alert(t('fillRequired'));
-    return;
+  let litres = 0;
+  let orderAmount = 0;
+  let loadedAmount = 0;
+  let offloadedAmount = 0;
+  let routeId = null;
+
+  if (isBakers) {
+    orderAmount = parseFloat(document.getElementById('newOpOrderAmount').value) || 0;
+    loadedAmount = parseFloat(document.getElementById('newOpLoadedAmount').value) || 0;
+    offloadedAmount = parseFloat(document.getElementById('newOpOffloadedAmount').value) || 0;
+    litres = offloadedAmount || loadedAmount || 0;
+    routeId = parseInt(document.getElementById('newOpRoute').value) || 1;
+
+    if (!date || loadedAmount <= 0 || offloadedAmount <= 0 || !truck || !driver) {
+      alert(t('fillRequired'));
+      return;
+    }
+  } else {
+    litres = parseFloat(document.getElementById('newOpLitres').value) || 0;
+    if (!date || litres <= 0 || !truck || !driver) {
+      alert(t('fillRequired'));
+      return;
+    }
   }
 
   submitBtn.disabled = true;
   submitBtn.textContent = t('saving');
 
   try {
+    let orderProofPath = null;
+    let orderProofName = null;
+    let loadedProofPath = null;
+    let loadedProofName = null;
+    let offloadedProofPath = null;
+    let offloadedProofName = null;
     let deliveryNotePath = null;
     let deliveryNoteName = null;
 
-    if (proofFile && sb) {
-      const ext = proofFile.name.split('.').pop();
-      const path = `${role}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-      const { error: uploadErr } = await sb.storage.from('delivery-notes').upload(path, proofFile);
-      if (!uploadErr) {
-        deliveryNotePath = path;
+    // Handle File Uploads (Mock / Supabase Storage)
+    if (isBakers) {
+      const orderFile = document.getElementById('newOpOrderProof')?.files[0];
+      const loadedFile = document.getElementById('newOpLoadedProof')?.files[0];
+      const offloadedFile = document.getElementById('newOpOffloadedProof')?.files[0];
+
+      if (orderFile) {
+        orderProofPath = `bakers/order_${Date.now()}_${orderFile.name}`;
+        orderProofName = orderFile.name;
+      }
+      if (loadedFile) {
+        loadedProofPath = `bakers/loaded_${Date.now()}_${loadedFile.name}`;
+        loadedProofName = loadedFile.name;
+      }
+      if (offloadedFile) {
+        offloadedProofPath = `bakers/offloaded_${Date.now()}_${offloadedFile.name}`;
+        offloadedProofName = offloadedFile.name;
+        deliveryNotePath = offloadedProofPath;
+        deliveryNoteName = offloadedProofName;
+      }
+    } else {
+      const proofFile = document.getElementById('newOpProof')?.files[0];
+      if (proofFile) {
+        deliveryNotePath = `fuellink/${Date.now()}_${proofFile.name}`;
         deliveryNoteName = proofFile.name;
       }
     }
@@ -723,9 +934,9 @@ async function handleSaveOperation() {
     let type = isBakers ? 'logistics' : 'diesel';
 
     if (isBakers) {
-      const route = rawData.routes.find(r => r.id === routeId);
-      const rate = route ? route.baseRate : 0;
-      amount = litres * rate;
+      const route = (rawData.routes || []).find(r => r.id === routeId);
+      const rate = route ? (route.baseRate || 0) : 1.45;
+      amount = offloadedAmount * rate;
       balanceDelta = amount;
     } else {
       const price = rawData.dieselPrice || 27.61;
@@ -739,6 +950,9 @@ async function handleSaveOperation() {
       amount,
       balance_delta: balanceDelta,
       litres,
+      order_amount: orderAmount,
+      loaded_amount: loadedAmount,
+      offloaded_amount: offloadedAmount,
       route_id: routeId,
       entered_by: role,
       truck,
@@ -746,7 +960,13 @@ async function handleSaveOperation() {
       trailer,
       note,
       delivery_note_path: deliveryNotePath,
-      delivery_note_name: deliveryNoteName
+      delivery_note_name: deliveryNoteName,
+      order_proof_path: orderProofPath,
+      order_proof_name: orderProofName,
+      loaded_proof_path: loadedProofPath,
+      loaded_proof_name: loadedProofName,
+      offloaded_proof_path: offloadedProofPath,
+      offloaded_proof_name: offloadedProofName
     };
 
     if (editingTransactionId) {
@@ -755,7 +975,23 @@ async function handleSaveOperation() {
         await sb.from('transactions').update(payload).eq('id', editingTransactionId);
       }
       const existing = rawData.transactions.find(t => t.id === editingTransactionId);
-      if (existing) Object.assign(existing, payload);
+      if (existing) {
+        Object.assign(existing, {
+          ...payload,
+          orderAmount,
+          loadedAmount,
+          offloadedAmount,
+          diffAmount: loadedAmount - offloadedAmount,
+          deliveryNotePath: deliveryNotePath || existing.deliveryNotePath,
+          deliveryNoteName: deliveryNoteName || existing.deliveryNoteName,
+          orderProofPath: orderProofPath || existing.orderProofPath,
+          orderProofName: orderProofName || existing.orderProofName,
+          loadedProofPath: loadedProofPath || existing.loadedProofPath,
+          loadedProofName: loadedProofName || existing.loadedProofName,
+          offloadedProofPath: offloadedProofPath || existing.offloadedProofPath,
+          offloadedProofName: offloadedProofName || existing.offloadedProofName
+        });
+      }
     } else {
       // Create new transaction
       if (sb) {
@@ -764,6 +1000,16 @@ async function handleSaveOperation() {
       rawData.transactions.unshift({
         ...payload,
         id: `tx-${Date.now()}`,
+        orderAmount,
+        loadedAmount,
+        offloadedAmount,
+        diffAmount: loadedAmount - offloadedAmount,
+        orderProofPath,
+        orderProofName,
+        loadedProofPath,
+        loadedProofName,
+        offloadedProofPath,
+        offloadedProofName,
         status: 'active',
         createdAt: new Date().toISOString()
       });
@@ -778,7 +1024,7 @@ async function handleSaveOperation() {
     alert('Erro ao processar: ' + (err.message || err));
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Gravar Registo';
+    submitBtn.textContent = isBakers ? t('save') : 'Gravar Registo';
   }
 }
 
@@ -793,30 +1039,42 @@ function handleExportData(format) {
     // Generate CSV for Excel
     let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
     csvContent += isBakers
-      ? 'Data;Camiao;Motorista;Trailer;Rota;Litros;Valor (R);Guia;Estado;Nota\r\n'
+      ? 'Data;Camiao;Motorista;Trailer;Rota;Ordem (L);Carregado (L);Descarregado (L);Diferenca (L);Valor a Entregar (R);Estado;Nota\r\n'
       : 'Data;Camiao;Motorista;Trailer;Litros Vendidos;Valor (R);Comprovativo;Estado;Nota\r\n';
 
     operations.forEach(t => {
-      const row = [
+      const diffVal = (t.loadedAmount || 0) - (t.offloadedAmount || 0);
+      const row = isBakers ? [
         t.date,
         t.truck,
         t.driver,
         t.trailer || '',
-        isBakers ? (t.routeId || '') : '',
+        t.routeId || '',
+        t.orderAmount || t.litres || 0,
+        t.loadedAmount || t.litres || 0,
+        t.offloadedAmount || t.litres || 0,
+        diffVal,
+        t.amount,
+        t.status,
+        (t.note || '').replace(/;/g, ',')
+      ] : [
+        t.date,
+        t.truck,
+        t.driver,
+        t.trailer || '',
         t.litres,
-        t.amount.toFixed(2),
+        t.amount,
         t.deliveryNotePath ? 'Sim' : 'Nao',
-        t.status === 'active' ? 'Ativo' : 'Anulado',
-        `"${(t.note || '').replace(/"/g, '""')}"`
-      ].filter((val, i) => isBakers || i !== 4);
-
+        t.status,
+        (t.note || '').replace(/;/g, ',')
+      ];
       csvContent += row.join(';') + '\r\n';
     });
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Relatorio_${roleName}_${dateStr}.csv`);
+    link.setAttribute('download', `Operacoes_${roleName}_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

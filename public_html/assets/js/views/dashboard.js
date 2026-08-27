@@ -63,6 +63,7 @@ function setupHeader(session) {
   const email = session.session?.user?.email || '';
   const userName = email.split('@')[0] || (role === 'bakers' ? 'Bakers Admin' : 'FuelLink Admin');
 
+  document.documentElement.setAttribute('data-company', role);
   if (role === 'bakers') {
     document.body.classList.add('role-bakers');
     document.body.classList.remove('role-fuellink');
@@ -203,7 +204,7 @@ function populateTruckFilter(trucks) {
   if (!truckFilter) return;
 
   const currentVal = truckFilter.value;
-  truckFilter.innerHTML = '<option value="">Todos os Camiões</option>';
+  truckFilter.innerHTML = `<option value="">${t('allTrucks')}</option>`;
 
   (trucks || []).forEach(t => {
     const opt = document.createElement('option');
@@ -415,11 +416,11 @@ function renderCharts(transactions, role) {
   const donutLabels = Object.keys(truckMap);
   const donutData = Object.values(truckMap);
 
-  const themePrimary = role === 'bakers' ? '#EB6834' : '#185FA5';
-  const themeSecondary = role === 'bakers' ? '#F97316' : '#2A78D6';
+  const themePrimary = role === 'bakers' ? '#DB7806' : '#104CCF';
+  const themeSecondary = role === 'bakers' ? '#F58E18' : '#6792F1';
   const themePalette = role === 'bakers'
-    ? ['#EB6834', '#F97316', '#FB923C', '#FDBA74', '#D05321', '#9A3412']
-    : ['#185FA5', '#2A78D6', '#38BDF8', '#60A5FA', '#1E40AF', '#0284C7'];
+    ? ['#DB7806', '#F58E18', '#FBBF24', '#FCD34D', '#B86303', '#78350F']
+    : ['#104CCF', '#2A67ED', '#6792F1', '#89ABF5', '#A6C0F8', '#0C3BA4'];
 
   if (donutChartInstance) donutChartInstance.destroy();
 
@@ -461,8 +462,8 @@ function renderCharts(transactions, role) {
 
   if (trendChartInstance) trendChartInstance.destroy();
 
-  const themeColor = role === 'bakers' ? '#EB6834' : '#185FA5';
-  const themeBg = role === 'bakers' ? 'rgba(235, 104, 52, 0.14)' : 'rgba(24, 95, 165, 0.14)';
+  const themeColor = role === 'bakers' ? '#DB7806' : '#104CCF';
+  const themeBg = role === 'bakers' ? 'rgba(219, 120, 6, 0.14)' : 'rgba(16, 76, 207, 0.14)';
 
   trendChartInstance = new Chart(trendCanvas, {
     type: 'line',

@@ -7,3 +7,12 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
+# Sprint Documentation
+FASE_1_FRONTEND.md
+FASE_2_FRONTEND.md
+Fase 1.md
+Fase 2.md
+Fase*.md
+FASE*.md
+

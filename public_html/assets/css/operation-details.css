@@ -1,0 +1,453 @@
+/**
+ * Operation Details Page Stylesheet
+ * Elevated, dark/light responsive layout with documents gallery and modal file previewer.
+ */
+
+.details-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.details-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-icon-back {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-main);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.btn-icon-back:hover {
+  background: var(--bg-surface-subtle);
+  border-color: var(--theme-fl);
+  color: var(--theme-fl);
+  transform: translateX(-3px);
+}
+
+body.role-bakers .btn-icon-back:hover,
+[data-company="bakers"] .btn-icon-back:hover {
+  border-color: var(--theme-bt);
+  color: var(--theme-bt);
+}
+
+.btn-icon-back .custom-tooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  background: #0F172A;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all var(--transition-fast);
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-icon-back:hover .custom-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.details-title-wrap h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.03em;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-title-wrap p {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.details-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Two Column Layout for Details */
+.details-main-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 1024px) {
+  .details-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Section Card Container */
+.details-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.details-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.details-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.details-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.details-data-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.details-data-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.details-data-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.details-data-value.highlight-danger {
+  color: #E2334D !important;
+  font-weight: 800;
+}
+
+[data-theme="dark"] .details-data-value.highlight-danger {
+  color: #FF5A70 !important;
+}
+
+.details-data-value.highlight-amount {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--theme-fl);
+}
+
+body.role-bakers .details-data-value.highlight-amount,
+[data-company="bakers"] .details-data-value.highlight-amount {
+  color: var(--theme-bt);
+}
+
+/* Documents & Proofs Gallery */
+.docs-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.doc-card {
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all var(--transition-fast);
+}
+
+.doc-card:hover {
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+.doc-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doc-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(103, 146, 241, 0.12);
+  color: var(--theme-fl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.role-bakers .doc-icon-wrap,
+[data-company="bakers"] .doc-icon-wrap {
+  background: rgba(219, 120, 6, 0.12);
+  color: var(--theme-bt);
+}
+
+.doc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-type-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.doc-filename {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-doc-action {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.btn-doc-action:hover {
+  background: var(--bg-surface-subtle);
+  border-color: var(--text-muted);
+}
+
+.btn-doc-action.primary {
+  background: var(--theme-fl);
+  color: #FFFFFF;
+  border-color: var(--theme-fl);
+}
+
+body.role-bakers .btn-doc-action.primary,
+[data-company="bakers"] .btn-doc-action.primary {
+  background: var(--theme-bt);
+  border-color: var(--theme-bt);
+}
+
+/* Missing Document State */
+.doc-card.missing-doc {
+  background: var(--bg-surface-subtle);
+  border: 1px dashed var(--border-subtle);
+  opacity: 0.85;
+}
+
+.doc-card.missing-doc:hover {
+  border-color: var(--text-muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.doc-card.missing-doc .doc-icon-wrap {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-muted);
+}
+
+.doc-missing-notice {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.doc-empty-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg-surface-subtle);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 14px;
+}
+
+/* File Viewer Modal */
+.preview-modal-dialog {
+  max-width: 800px;
+  width: 90%;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-modal-body {
+  flex: 1;
+  background: #0F172A;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #94A3B8;
+}
+
+.preview-modal-body iframe,
+.preview-modal-body img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border: none;
+}
+
+/* Dark Theme Refinements for FuelLink & Bankers */
+[data-theme="dark"] .details-title-wrap h1,
+[data-theme="dark"] .details-card-title,
+[data-theme="dark"] .details-data-value,
+[data-theme="dark"] .doc-filename,
+[data-theme="dark"] #opDetailsPageTitle {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .details-title-wrap p,
+[data-theme="dark"] .details-data-label,
+[data-theme="dark"] .doc-type-tag,
+[data-theme="dark"] #opDetailsPageSubtitle,
+[data-theme="dark"] #opRefText {
+  color: #BEC0C6 !important;
+}
+
+[data-theme="dark"] .details-card {
+  background: #1F2228 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.role-bakers[data-theme="dark"] .details-card,
+[data-company="bakers"][data-theme="dark"] .details-card,
+[data-theme="dark"] body.role-bakers .details-card {
+  background: #28241F !important;
+  border: 1px solid rgba(223, 123, 6, 0.22) !important;
+}
+
+[data-theme="dark"] .doc-card {
+  background: #282A30 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.role-bakers[data-theme="dark"] .doc-card,
+[data-company="bakers"][data-theme="dark"] .doc-card,
+[data-theme="dark"] body.role-bakers .doc-card {
+  background: #332D27 !important;
+  border: 1px solid rgba(223, 123, 6, 0.25) !important;
+}
+
+[data-theme="dark"] .btn-doc-action {
+  background: #282A30 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .btn-doc-action:hover {
+  background: #32353D !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.role-bakers[data-theme="dark"] .btn-doc-action,
+[data-company="bakers"][data-theme="dark"] .btn-doc-action,
+[data-theme="dark"] body.role-bakers .btn-doc-action {
+  background: #332D27 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #FFFFFF !important;
+}
+
+body.role-bakers[data-theme="dark"] .btn-doc-action:hover,
+[data-company="bakers"][data-theme="dark"] .btn-doc-action:hover,
+[data-theme="dark"] body.role-bakers .btn-doc-action:hover {
+  background: #3E362E !important;
+}
+
+[data-theme="dark"] .btn-icon-back {
+  background: #1F2228 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+}
+
+body.role-bakers[data-theme="dark"] .btn-icon-back,
+[data-company="bakers"][data-theme="dark"] .btn-icon-back,
+[data-theme="dark"] body.role-bakers .btn-icon-back {
+  background: #28241F !important;
+  border-color: rgba(223, 123, 6, 0.25) !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .doc-card.missing-doc {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .doc-missing-notice {
+  color: #94A3B8 !important;
+}
+
+
