@@ -708,10 +708,11 @@ function renderVolumeTrendChart(canvas, activeTxs, role) {
  * Real Net Balance over time — one point per transaction, both companies
  * combined chronologically (LedgerController::buildLedger()'s exact order,
  * reconstructed by merging its already-split fuellink/bakers arrays back
- * together and re-sorting with the same comparator). Single blue line,
- * matching the rest of the dashboard's chart palette; hovering a point
- * shows date/type/detail/balance, same 4 lines as the old dashboard's
- * tooltip.
+ * together and re-sorting with the same comparator). Blue while the
+ * balance is positive, red where it dips negative — same divergence idea
+ * as the old dashboard's SVG chart, using the app's own blue instead of
+ * green. Hovering a point shows date/type/detail/balance, same 4 lines as
+ * the old dashboard's tooltip.
  */
 function renderNetBalanceChart(canvas) {
   const entries = [...(ledgerData.fuellink || []), ...(ledgerData.bakers || [])]
@@ -721,7 +722,12 @@ function renderNetBalanceChart(canvas) {
     });
 
   const balances = entries.map(e => Number(e.running_balance || 0));
-  const lineColor = '#104CCF';
+  const positiveColor = '#104CCF';
+  const negativeColor = '#E2334D';
+  const segmentColor = (ctx, posColor, negColor) => {
+    const avg = ((ctx.p0.parsed.y || 0) + (ctx.p1.parsed.y || 0)) / 2;
+    return avg >= 0 ? posColor : negColor;
+  };
 
   return new Chart(canvas, {
     type: 'line',
@@ -730,13 +736,17 @@ function renderNetBalanceChart(canvas) {
       datasets: [{
         label: t('netBalanceTrendTitle'),
         data: balances.length > 0 ? balances : [0],
-        borderColor: lineColor,
+        borderColor: positiveColor,
         backgroundColor: 'rgba(16, 76, 207, 0.14)',
         borderWidth: 2.5,
         tension: 0,
         fill: 'origin',
-        pointBackgroundColor: lineColor,
-        pointRadius: 3
+        pointBackgroundColor: (ctx) => (balances[ctx.dataIndex] >= 0 ? positiveColor : negativeColor),
+        pointRadius: 3,
+        segment: {
+          borderColor: (ctx) => segmentColor(ctx, positiveColor, negativeColor),
+          backgroundColor: (ctx) => segmentColor(ctx, 'rgba(16, 76, 207, 0.14)', 'rgba(226, 51, 77, 0.14)')
+        }
       }]
     },
     options: {
