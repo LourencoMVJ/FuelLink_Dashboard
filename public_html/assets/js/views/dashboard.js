@@ -53,10 +53,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 4. Fetch & Render Data
   await loadAndRender();
+  await renderNetPositionBanner();
 
   // 5. Setup Listeners
   setupEventListeners();
 });
+
+/**
+ * Cross-company Net Position banner (GET /api/ledger) — admin-only
+ * (LedgerController::index() 403s for anyone else), so this stays hidden
+ * for every non-admin session, including every local mock account. Not
+ * reactive to the period filter: the endpoint itself takes no date range,
+ * it's a running balance across every transaction ever recorded.
+ */
+async function renderNetPositionBanner() {
+  const section = document.getElementById('netPositionSection');
+  if (!section) return;
+
+  if (!currentSession?.isAdmin) {
+    section.style.display = 'none';
+    return;
+  }
+
+  try {
+    const ledger = await api.get('ledger');
+    const valueEl = document.getElementById('netPositionValue');
+    const descEl = document.getElementById('netPositionDesc');
+
+    if (valueEl) {
+      valueEl.textContent = `R ${Math.abs(ledger.net_balance).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      valueEl.classList.remove('fuellink', 'bakers');
+      valueEl.classList.add(currentSession.role === 'bakers' ? 'bakers' : 'fuellink');
+    }
+    if (descEl) descEl.textContent = netPositionMessage(ledger.net_balance);
+
+    section.style.display = 'flex';
+  } catch (err) {
+    console.warn('Net position unavailable:', err);
+    section.style.display = 'none';
+  }
+}
+
+function netPositionMessage(netBalance) {
+  if (netBalance > 0.005) return t('netPositionOwedToFuelLink');
+  if (netBalance < -0.005) return t('netPositionOwedToBakers');
+  return t('netPositionSettled');
+}
 
 function setupHeader(session) {
   const role = session.role || 'fuellink';

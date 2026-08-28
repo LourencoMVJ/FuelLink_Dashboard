@@ -97,7 +97,7 @@ export async function fetchProfile(accessToken) {
 
 /**
  * Get current session and role if signed in
- * @returns {Promise<{session: object, role: string}|null>}
+ * @returns {Promise<{session: object, role: string, isAdmin: boolean}|null>}
  */
 export async function getSession() {
   // Check local mock session first
@@ -106,7 +106,7 @@ export async function getSession() {
     try {
       const parsed = JSON.parse(localSaved);
       if (parsed && parsed.user && parsed.role) {
-        return { session: { user: parsed.user }, role: parsed.role };
+        return { session: { user: parsed.user }, role: parsed.role, isAdmin: false };
       }
     } catch (e) {
       console.warn('Local session parse error:', e);
@@ -120,10 +120,10 @@ export async function getSession() {
 
   try {
     const profile = await fetchProfile(session.access_token);
-    return { session, role: profile.role };
+    return { session, role: profile.role, isAdmin: !!profile.is_admin };
   } catch (err) {
     console.warn('Session found but profile lookup failed:', err);
-    return { session, role: null };
+    return { session, role: null, isAdmin: false };
   }
 }
 
