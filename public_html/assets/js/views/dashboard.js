@@ -13,6 +13,7 @@ let rawData = null;
 let currentSession = null;
 let donutChartInstance = null;
 let trendChartInstance = null;
+let ledgerData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Auth Guard (with graceful local fallback)
@@ -51,53 +52,92 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 3. Setup Default Filter Dates (e.g. Current Month)
   setupDefaultDates();
 
-  // 4. Fetch & Render Data
+  // 4. Fetch & Render Data — ledger loads first (if admin) so the
+  // cross-company KPI card below can use it on the same render pass.
+  await loadLedgerIfAdmin();
   await loadAndRender();
-  await renderNetPositionBanner();
+  renderNetPositionBanner();
 
   // 5. Setup Listeners
   setupEventListeners();
 });
 
 /**
- * Cross-company Net Position banner (GET /api/ledger) — admin-only
- * (LedgerController::index() 403s for anyone else), so this stays hidden
- * for every non-admin session, including every local mock account. Not
- * reactive to the period filter: the endpoint itself takes no date range,
- * it's a running balance across every transaction ever recorded.
+ * Cross-company data (GET /api/ledger) — admin-only (LedgerController::
+ * index() 403s for anyone else), fetched once per page load and shared by
+ * the Net Position banner and the FuelLink "Logistics fees" KPI card below.
+ * Stays null for every non-admin session, including every local mock
+ * account.
  */
-async function renderNetPositionBanner() {
-  const section = document.getElementById('netPositionSection');
-  if (!section) return;
-
+async function loadLedgerIfAdmin() {
   if (!currentSession?.isAdmin) {
-    section.style.display = 'none';
+    ledgerData = null;
     return;
   }
 
   try {
-    const ledger = await api.get('ledger');
-    const valueEl = document.getElementById('netPositionValue');
-    const descEl = document.getElementById('netPositionDesc');
-
-    if (valueEl) {
-      valueEl.textContent = `R ${Math.abs(ledger.net_balance).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      valueEl.classList.remove('fuellink', 'bakers');
-      valueEl.classList.add(currentSession.role === 'bakers' ? 'bakers' : 'fuellink');
-    }
-    if (descEl) descEl.textContent = netPositionMessage(ledger.net_balance);
-
-    section.style.display = 'flex';
+    ledgerData = await api.get('ledger');
   } catch (err) {
-    console.warn('Net position unavailable:', err);
-    section.style.display = 'none';
+    console.warn('Ledger data unavailable:', err);
+    ledgerData = null;
   }
+}
+
+/**
+ * Net Position banner — not reactive to the period filter: the endpoint
+ * itself takes no date range, it's a running balance across every
+ * transaction ever recorded.
+ */
+function renderNetPositionBanner() {
+  const section = document.getElementById('netPositionSection');
+  if (!section) return;
+
+  if (!ledgerData) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const valueEl = document.getElementById('netPositionValue');
+  const descEl = document.getElementById('netPositionDesc');
+
+  if (valueEl) {
+    valueEl.textContent = `R ${Math.abs(ledgerData.net_balance).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    valueEl.classList.remove('fuellink', 'bakers');
+    valueEl.classList.add(currentSession.role === 'bakers' ? 'bakers' : 'fuellink');
+  }
+  if (descEl) descEl.textContent = netPositionMessage(ledgerData.net_balance);
+
+  section.style.display = 'flex';
 }
 
 function netPositionMessage(netBalance) {
   if (netBalance > 0.005) return t('netPositionOwedToFuelLink');
   if (netBalance < -0.005) return t('netPositionOwedToBakers');
   return t('netPositionSettled');
+}
+
+/**
+ * Total Bakers logistics fees, net of voids — same accumulation as the old
+ * dashboard's renderStatsAndChart() (logisticsTotal/logisticsLitres):
+ * 'logistics' rows add, their 'void' reversal rows (voids_type ===
+ * 'logistics') subtract back out.
+ * @param {{bakers: Array<object>}} ledger
+ */
+function computeLogisticsFees(ledger) {
+  let total = 0;
+  let litres = 0;
+
+  (ledger.bakers || []).forEach(tx => {
+    if (tx.type === 'logistics') {
+      total += Number(tx.amount || 0);
+      litres += Number(tx.litres || 0);
+    } else if (tx.type === 'void' && tx.voids_type === 'logistics') {
+      total -= Number(tx.amount || 0);
+      litres -= Number(tx.litres || 0);
+    }
+  });
+
+  return { total, litres };
 }
 
 function setupHeader(session) {
@@ -427,6 +467,41 @@ function renderKpiCards(container, data, role) {
     const totalValue = data.value || 0;
     const avgPrice = data.avgPrice || 0;
 
+    // KPI 3 shows the old dashboard's cross-company "Logistics fees (Bakers
+    // owed)" figure when the cross-company ledger is available (admins
+    // only, see loadLedgerIfAdmin()); a non-admin FuelLink session has no
+    // access to Bakers' data at all, so it keeps the operations-count card
+    // instead.
+    const kpi3Html = ledgerData
+      ? (() => {
+          const fees = computeLogisticsFees(ledgerData);
+          return `
+      <div class="kpi-card fuellink">
+        <div class="kpi-card-header">
+          <span class="kpi-label">${t('logisticsFeesLabel')}</span>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value">R ${fees.total.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <div class="kpi-footer">
+          <span>${fees.litres.toLocaleString('pt-PT')} ${t('litres')} ${t('kpiHauled')}</span>
+        </div>
+      </div>`;
+        })()
+      : `
+      <div class="kpi-card fuellink">
+        <div class="kpi-card-header">
+          <span class="kpi-label">${t('operationsCount')}</span>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value">${count}</span>
+          <span class="kpi-unit">${t('operations')}</span>
+        </div>
+        <div class="kpi-footer">
+          <span>${t('kpiActiveOps')}</span>
+        </div>
+      </div>`;
+
     container.innerHTML = `
       <!-- KPI 1: Litres Sold (Dynamic to filters) -->
       <div class="kpi-card fuellink">
@@ -455,19 +530,8 @@ function renderKpiCards(container, data, role) {
         </div>
       </div>
 
-      <!-- KPI 3: Number of Operations -->
-      <div class="kpi-card fuellink">
-        <div class="kpi-card-header">
-          <span class="kpi-label">${t('operationsCount')}</span>
-        </div>
-        <div class="kpi-value-row">
-          <span class="kpi-value">${count}</span>
-          <span class="kpi-unit">${t('operations')}</span>
-        </div>
-        <div class="kpi-footer">
-          <span>${t('kpiActiveOps')}</span>
-        </div>
-      </div>
+      <!-- KPI 3: Operations Count, or Logistics Fees (Bakers owed) for admins -->
+      ${kpi3Html}
 
       <!-- KPI 4: Average Diesel Price -->
       <div class="kpi-card fuellink">
