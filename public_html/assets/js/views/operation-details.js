@@ -6,8 +6,10 @@
 import { getSession } from '../core/auth.js';
 import { initSidebar } from '../core/sidebar.js';
 import { initHeaderControls, t, getCurrentLanguage, applyTheme, getCurrentTheme } from '../core/i18n.js';
-import { fetchCompanyData } from '../models/transactions.js';
-import { sb } from '../config/supabase-client.js';
+import { fetchCompanyData, mapTransactionRow } from '../models/transactions.js';
+import { api, downloadFile } from '../core/api.js';
+
+const DOWNLOADABLE_PROOF_FIELDS = ['order', 'loaded', 'offloaded'];
 
 let currentSession = null;
 let currentOperation = null;
@@ -72,29 +74,35 @@ function setupEventListeners() {
 }
 
 /**
- * Service Method: Fetch operation by ID from Supabase or Company Dataset
- * (Prepared for Backend API integration)
- * @param {string} opId 
+ * Fetches one operation via GET /api/operations/{id} (OperationController::show()),
+ * mapped through the same field resolution as the list view. That endpoint
+ * doesn't report void status (it's a cross-reference over the whole
+ * company's transactions, not a single row), so status/isVoided are
+ * overlaid from the already-fetched companyDataset. Falls back to the
+ * dataset entry entirely if the API call fails (e.g. a local mock session
+ * with no real Supabase JWT).
+ * @param {string} opId
  */
 export async function getOperationById(opId, role) {
-  // If Supabase client is connected, attempt direct single query
-  if (sb) {
-    try {
-      const { data, error } = await sb.from('transactions').select('*').eq('id', opId).maybeSingle();
-      if (data && !error) {
-        return data;
-      }
-    } catch (e) {
-      console.warn('Supabase query failed, searching dataset:', e);
-    }
-  }
-
-  // Fallback / standard dataset query
   if (!companyDataset) {
     companyDataset = await fetchCompanyData(role);
   }
 
-  return (companyDataset.transactions || []).find(t => t.id === opId) || null;
+  const fallback = (companyDataset.transactions || []).find(t => t.id === opId) || null;
+
+  try {
+    const raw = await api.get(`operations/${encodeURIComponent(opId)}`);
+    const mapped = mapTransactionRow(raw, companyDataset.trucks, companyDataset.drivers);
+    return {
+      ...mapped,
+      status: fallback?.status || 'active',
+      isVoided: fallback?.isVoided || false
+    };
+  } catch (err) {
+    console.warn('API fetch failed, falling back to dataset:', err);
+  }
+
+  return fallback;
 }
 
 async function loadOperationDetails() {
@@ -263,49 +271,52 @@ function renderDocumentsGallery(op, isBakers) {
   const docs = [];
 
   if (isBakers) {
-    // 1. Order Proof
+    // 1. Order Proof — downloadable via GET /api/operations/{id}/proof/order
     const hasOrder = !!(op.orderProofPath || op.orderProofName);
     docs.push({
       type: t('orderProof') || 'Comprovativo de Ordem',
       attached: hasOrder,
       name: op.orderProofName || (hasOrder ? 'Ordem_Transporte.pdf' : null),
-      path: op.orderProofPath || (hasOrder ? 'mock/path/ordem.pdf' : null)
+      field: 'order'
     });
 
-    // 2. Loading Proof
+    // 2. Loading Proof — downloadable via .../proof/loaded
     const hasLoaded = !!(op.loadedProofPath || op.loadedProofName);
     docs.push({
       type: t('loadedProof') || 'Comprovativo de Carregamento',
       attached: hasLoaded,
       name: op.loadedProofName || (hasLoaded ? 'Guia_Carregamento.pdf' : null),
-      path: op.loadedProofPath || (hasLoaded ? 'mock/path/carregamento.pdf' : null)
+      field: 'loaded'
     });
 
-    // 3. Offloading Proof
+    // 3. Offloading Proof — downloadable via .../proof/offloaded
     const hasOffloaded = !!(op.offloadedProofPath || op.offloadedProofName);
     docs.push({
       type: t('offloadedProof') || 'Comprovativo de Descarregamento',
       attached: hasOffloaded,
       name: op.offloadedProofName || (hasOffloaded ? 'Comprovativo_Descarregamento.pdf' : null),
-      path: op.offloadedProofPath || (hasOffloaded ? 'mock/path/descarregamento.pdf' : null)
+      field: 'offloaded'
     });
 
-    // 4. Delivery Note / Guia de Entrega (POD)
+    // 4. Delivery Note / Guia de Entrega (POD) — mirrors the offloaded proof
+    // in the current schema (see mapTransactionRow()); no dedicated backend
+    // field/endpoint of its own, so it isn't independently downloadable.
     const hasDeliveryNote = !!(op.deliveryNotePath || op.deliveryNoteName);
     docs.push({
       type: t('proofDelivery') || 'Guia de Entrega (Delivery Note / POD)',
       attached: hasDeliveryNote,
       name: op.deliveryNoteName || (hasDeliveryNote ? 'Delivery_Note_Guia.pdf' : null),
-      path: op.deliveryNotePath || (hasDeliveryNote ? 'mock/path/pod.pdf' : null)
+      field: null
     });
   } else {
-    // FuelLink Delivery Note / Proof
+    // FuelLink Delivery Note / Proof — no backend upload/download endpoint
+    // exists yet for this field (only Bankers order/loaded/offloaded do).
     const hasDeliveryNote = !!(op.deliveryNotePath || op.deliveryNoteName);
     docs.push({
       type: t('proofDelivery') || 'Guia de Entrega / Fatura Comercial',
       attached: hasDeliveryNote,
       name: op.deliveryNoteName || (hasDeliveryNote ? 'Guia_Venda.pdf' : null),
-      path: op.deliveryNotePath || (hasDeliveryNote ? 'mock/path/venda.pdf' : null)
+      field: null
     });
   }
 
@@ -333,14 +344,23 @@ function renderDocumentsGallery(op, isBakers) {
               </svg>
               ${t('viewFile')}
             </button>
-            <a href="#download" class="btn-doc-action" data-download-doc="${doc.name}" download="${doc.name}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              ${t('downloadFile')}
-            </a>
+            ${doc.field
+              ? `<button type="button" class="btn-doc-action" data-download-field="${doc.field}" data-download-name="${doc.name}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  ${t('downloadFile')}
+                </button>`
+              : `<a href="#download" class="btn-doc-action" data-download-doc="${doc.name}" download="${doc.name}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  ${t('downloadFile')}
+                </a>`}
           </div>
         </div>
       `;
@@ -380,6 +400,39 @@ function renderDocumentsGallery(op, isBakers) {
       openDocumentPreviewModal(targetDoc);
     });
   });
+
+  // Attach Real Download Handlers (Bankers order/loaded/offloaded proofs)
+  container.querySelectorAll('[data-download-field]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const field = btn.getAttribute('data-download-field');
+      const name = btn.getAttribute('data-download-name') || field;
+      handleProofDownload(field, name);
+    });
+  });
+}
+
+/**
+ * Fetches a proof file via GET /api/operations/{id}/proof/{field}
+ * (authenticated — the download needs the Authorization header, so a plain
+ * `<a href>` can't be used) and triggers a browser download from the blob.
+ */
+async function handleProofDownload(field, filename) {
+  if (!DOWNLOADABLE_PROOF_FIELDS.includes(field) || !currentOperation) return;
+
+  try {
+    const blob = await downloadFile(`operations/${encodeURIComponent(currentOperation.id)}/proof/${field}`);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(`Error downloading ${field} proof:`, err);
+    alert('Erro ao transferir: ' + (err.message || err));
+  }
 }
 
 function openDocumentPreviewModal(doc) {
@@ -408,7 +461,7 @@ function openDocumentPreviewModal(doc) {
         <h3 style="font-size: 16px; color: #FFFFFF; margin-bottom: 6px;">${doc.name}</h3>
         <p style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">Documento digitalizado anexado à transação</p>
         <div style="display: inline-flex; gap: 8px; font-size: 11px; padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 20px;">
-          <span>Estado: Verificado</span> • <span>Formato: PDF / Scan</span> • <span>Criptografia: SHA-256</span>
+          <span>Estado: Verificado</span> - <span>Formato: PDF / Scan</span> - <span>Criptografia: SHA-256</span>
         </div>
       </div>
     `;

@@ -7,6 +7,7 @@ import { getSession } from '../core/auth.js';
 import { initSidebar } from '../core/sidebar.js';
 import { initHeaderControls, t, getCurrentLanguage } from '../core/i18n.js';
 import { fetchCompanyData } from '../models/transactions.js';
+import { api } from '../core/api.js';
 
 let rawData = null;
 let currentSession = null;
@@ -193,7 +194,7 @@ async function loadAndRender() {
   try {
     rawData = await fetchCompanyData(currentSession.role);
     populateTruckFilter(rawData.trucks);
-    renderDashboard();
+    await renderDashboard();
   } catch (err) {
     console.error('Error loading company data:', err);
   }
@@ -242,33 +243,92 @@ function getFilteredTransactions() {
   });
 }
 
-function renderDashboard() {
+async function renderDashboard() {
   const filtered = getFilteredTransactions();
   const role = currentSession.role || 'fuellink';
 
-  renderKPIs(filtered, role);
+  await renderKPIs(role);
   renderCharts(filtered, role);
   renderRecentTable(filtered, role);
 }
 
-function renderKPIs(transactions, role) {
+/**
+ * Server-calculated KPIs (GET /api/operations/summary) — reacts to the
+ * period filter only, same as documented in docs/API_CONTRACT.md Section 7
+ * (the truck filter stays client-side for the charts/table below, not part
+ * of the summary contract). Falls back to a local reduce() over the
+ * truck+date filtered dataset when the API call fails — e.g. a local mock
+ * session with no real Supabase JWT to authenticate the request with.
+ */
+async function renderKPIs(role) {
   const container = document.getElementById('kpiContainer');
   if (!container) return;
 
-  const activeTxs = transactions.filter(t => t.status === 'active');
-  const count = activeTxs.length;
+  let data;
+  try {
+    data = await fetchKpiSummary(role);
+  } catch (err) {
+    console.warn('KPI summary API unavailable, using local calculation:', err);
+    data = computeLocalKpiData(role);
+  }
+
+  renderKpiCards(container, data, role);
+}
+
+async function fetchKpiSummary(role) {
+  const startDate = document.getElementById('startDate')?.value;
+  const endDate = document.getElementById('endDate')?.value;
+
+  const params = new URLSearchParams();
+  if (startDate) params.set('from', startDate);
+  if (endDate) params.set('to', endDate);
+
+  const qs = params.toString();
+  const summary = await api.get(`operations/summary${qs ? '?' + qs : ''}`);
 
   if (role === 'bakers') {
-    // Bankers Tankers KPIs
-    const totalLitres = activeTxs.reduce((sum, t) => sum + (t.litres || 0), 0);
-    const totalValue = activeTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+    return {
+      volume: summary.litres_transported,
+      value: summary.total_supply_value,
+      count: summary.deliveries_count
+    };
+  }
+
+  return {
+    volume: summary.litres_sold,
+    value: summary.total_sold,
+    count: summary.operations_count,
+    avgPrice: summary.avg_diesel_price
+  };
+}
+
+function computeLocalKpiData(role) {
+  const filtered = getFilteredTransactions();
+  const activeTxs = filtered.filter(t => t.status === 'active');
+  const count = activeTxs.length;
+  const totalLitres = activeTxs.reduce((sum, t) => sum + (t.litres || 0), 0);
+  const totalValue = activeTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+  if (role === 'bakers') {
+    return { volume: totalLitres, value: totalValue, count };
+  }
+
+  const avgPrice = totalLitres > 0 ? (totalValue / totalLitres) : (rawData?.dieselPrice || 27.61);
+  return { volume: totalLitres, value: totalValue, count, avgPrice };
+}
+
+function renderKpiCards(container, data, role) {
+  const count = data.count || 0;
+
+  if (role === 'bakers') {
+    const totalLitres = data.volume || 0;
+    const totalValue = data.value || 0;
 
     container.innerHTML = `
       <!-- KPI 1: Litres Hauled -->
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('litresHauled')}</span>
-          <span class="kpi-status-pill">${t('kpiNormalTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${totalLitres.toLocaleString('pt-PT')}</span>
@@ -276,7 +336,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiSelectedPeriod')}</span>
-          <span class="kpi-trend positive">↑ ${t('activeStatus')}</span>
         </div>
       </div>
 
@@ -284,14 +343,12 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('totalSupplyValue')}</span>
-          <span class="kpi-status-pill high">${t('kpiRandsTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">R ${totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
         <div class="kpi-footer">
           <span>${t('kpiAccumulatedTotal')}</span>
-          <span class="kpi-trend positive">Total</span>
         </div>
       </div>
 
@@ -299,7 +356,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('deliveriesCount')}</span>
-          <span class="kpi-status-pill optimal">${t('kpiTripsTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${count}</span>
@@ -307,7 +363,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiRegisteredDeliveries')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
 
@@ -315,29 +370,26 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('fuelDiff')}</span>
-          <span class="kpi-status-pill">${t('kpiMonth4')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">—</span>
         </div>
         <div class="kpi-footer">
           <span>${t('kpiAwaitingDelivered')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
     `;
   } else {
     // FuelLink KPIs
-    const totalLitres = activeTxs.reduce((sum, t) => sum + (t.litres || 0), 0);
-    const totalValue = activeTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
-    const avgPrice = totalLitres > 0 ? (totalValue / totalLitres) : (rawData?.dieselPrice || 27.61);
+    const totalLitres = data.volume || 0;
+    const totalValue = data.value || 0;
+    const avgPrice = data.avgPrice || 0;
 
     container.innerHTML = `
       <!-- KPI 1: Litres Sold (Dynamic to filters) -->
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('litresSold')}</span>
-          <span class="kpi-status-pill">${t('kpiVolumeTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${totalLitres.toLocaleString('pt-PT')}</span>
@@ -345,7 +397,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiReactiveDate')}</span>
-          <span class="kpi-trend positive">↑ ${t('kpiVolumeTag')}</span>
         </div>
       </div>
 
@@ -353,14 +404,12 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('totalSoldValue')}</span>
-          <span class="kpi-status-pill high">${t('kpiRandsTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">R ${totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
         <div class="kpi-footer">
           <span>${t('kpiCalculatedBilling')}</span>
-          <span class="kpi-trend positive">Total</span>
         </div>
       </div>
 
@@ -368,7 +417,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('operationsCount')}</span>
-          <span class="kpi-status-pill optimal">${t('kpiSalesTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${count}</span>
@@ -376,7 +424,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiActiveOps')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
 
@@ -384,7 +431,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('avgDieselPrice')}</span>
-          <span class="kpi-status-pill">${t('kpiPriceTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">R ${avgPrice.toFixed(2)}</span>
@@ -392,7 +438,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiAvgPeriod')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
     `;
