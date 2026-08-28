@@ -495,7 +495,12 @@ function renderCharts(transactions, role) {
     }
   });
 
-  // 2. Timeline Aggregation for Trend Chart
+  // 2. Timeline Aggregation for Trend Chart — running total (cumulative
+  // volume up to and including each date), same "running total after each
+  // transaction" behavior as the old dashboard's Net Balance chart
+  // (Antigo dashboard/fuellink-dashboard/index.html renderChart()), just
+  // applied to this company's own volume instead of the cross-company
+  // balance_delta.
   const dateMap = {};
   const sorted = [...activeTxs].sort((a, b) => (a.date > b.date ? 1 : -1));
   sorted.forEach(tItem => {
@@ -503,7 +508,11 @@ function renderCharts(transactions, role) {
   });
 
   const trendLabels = Object.keys(dateMap);
-  const trendData = Object.values(dateMap);
+  let runningVolume = 0;
+  const trendData = trendLabels.map(date => {
+    runningVolume += dateMap[date];
+    return runningVolume;
+  });
 
   if (trendChartInstance) trendChartInstance.destroy();
 
