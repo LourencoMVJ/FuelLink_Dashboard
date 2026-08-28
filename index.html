@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FuelLink & Bankers Tankers</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0F172A;
+      color: #E2E8F0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+  </style>
+
+  <!-- Supabase JS CDN — must load before the module script below, so
+       supabase-client.js's `typeof supabase !== 'undefined'` check sees it. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+  <noscript>
+    <p>JavaScript é necessário. <a href="public_html/pages/login.html">Aceder ao login</a>.</p>
+  </noscript>
+
+  <script type="module">
+    import { getSession } from './public_html/assets/js/core/auth.js';
+
+    // Registo central das páginas do projeto — ponto único de entrada para
+    // decidir para onde reencaminhar consoante o estado de sessão.
+    const PAGES = {
+      login: 'public_html/pages/login.html',
+      dashboard: 'public_html/pages/dashboard.html',
+      operations: 'public_html/pages/operations.html',
+      operationDetails: 'public_html/pages/operation-details.html'
+    };
+
+    (async () => {
+      let destination = PAGES.login;
+
+      try {
+        const active = await getSession();
+        if (active && active.session) {
+          destination = PAGES.dashboard;
+        }
+      } catch (err) {
+        console.warn('Verificação de sessão falhou:', err);
+      }
+
+      window.location.replace(destination);
+    })();
+  </script>
+</body>
+</html>
