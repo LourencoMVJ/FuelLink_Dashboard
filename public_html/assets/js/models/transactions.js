@@ -136,43 +136,7 @@ export async function fetchCompanyData(companyRole) {
   }));
 
   // Map and calculate effective rates and voids
-  const mappedTransactions = (transactions || []).map(t => {
-    const orderAmt = t.order_amount != null ? Number(t.order_amount) : Number(t.litres || 0);
-    const loadedAmt = t.loaded_amount != null ? Number(t.loaded_amount) : Number(t.litres || 0);
-    const offloadedAmt = t.offloaded_amount != null ? Number(t.offloaded_amount) : Number(t.litres || 0);
-    const diffAmt = loadedAmt - offloadedAmt;
-
-    return {
-      id: t.id,
-      date: t.date,
-      type: t.type, // 'diesel', 'logistics', 'settlement'
-      amount: Number(t.amount || 0),
-      balanceDelta: Number(t.balance_delta || 0),
-      litres: t.litres != null ? Number(t.litres) : (offloadedAmt || loadedAmt || 0),
-      orderAmount: orderAmt,
-      loadedAmount: loadedAmt,
-      offloadedAmount: offloadedAmt,
-      diffAmount: diffAmt,
-      routeId: t.route_id,
-      enteredBy: t.entered_by,
-      note: t.note || '',
-      detail: t.detail || '',
-      voidsId: t.voids_id,
-      voidsType: t.voids_type,
-      truck: t.truck || '',
-      driver: t.driver || '',
-      trailer: t.trailer || '',
-      deliveryNotePath: t.delivery_note_path || t.offloaded_proof_path || null,
-      deliveryNoteName: t.delivery_note_name || t.offloaded_proof_name || null,
-      orderProofPath: t.order_proof_path || null,
-      orderProofName: t.order_proof_name || null,
-      loadedProofPath: t.loaded_proof_path || null,
-      loadedProofName: t.loaded_proof_name || null,
-      offloadedProofPath: t.offloaded_proof_path || t.delivery_note_path || null,
-      offloadedProofName: t.offloaded_proof_name || t.delivery_note_name || null,
-      createdAt: t.created_at
-    };
-  });
+  const mappedTransactions = (transactions || []).map(t => mapTransactionRow(t, trucks, drivers));
 
   // Calculate status (isVoided if another transaction has voidsId === this.id)
   const voidedIds = new Set(
@@ -193,5 +157,66 @@ export async function fetchCompanyData(companyRole) {
     transactions: transactionsWithStatus,
     trucks: trucks || [],
     drivers: drivers || []
+  };
+}
+
+/**
+ * Resolves a Fleet display label from a real schema row (truck_id/truck_text,
+ * driver_id/driver_text — migration 0002) — same precedence as the backend's
+ * OperationController::currentFleetLabel(): prefer the live Fleet row's label
+ * if the id still resolves, otherwise fall back to the free-text value stored
+ * at entry time. Also accepts the flat legacy field (e.g. `truck`) used by
+ * the offline/mock dataset below, so both shapes render correctly.
+ */
+function resolveFleetLabel(id, text, list, matchColumn) {
+  if (id != null) {
+    const match = (list || []).find(item => String(item.id) === String(id));
+    if (match) return match[matchColumn] || '';
+  }
+  return text || '';
+}
+
+/**
+ * Maps one raw `transactions` row (real Supabase schema or the offline mock
+ * dataset) into the shape every view consumes. Does not compute
+ * status/isVoided — that requires cross-referencing the full transaction
+ * list for void rows, done once in fetchCompanyData() above.
+ */
+export function mapTransactionRow(t, trucks, drivers) {
+  const orderAmt = t.order_amount != null ? Number(t.order_amount) : Number(t.litres || 0);
+  const loadedAmt = t.loaded_amount != null ? Number(t.loaded_amount) : Number(t.litres || 0);
+  const offloadedAmt = t.offloaded_amount != null ? Number(t.offloaded_amount) : Number(t.litres || 0);
+  const diffAmt = loadedAmt - offloadedAmt;
+
+  return {
+    id: t.id,
+    date: t.date,
+    type: t.type, // 'diesel', 'logistics', 'settlement', 'void'
+    amount: Number(t.amount || 0),
+    balanceDelta: Number(t.balance_delta || 0),
+    unitRate: t.unit_rate != null ? Number(t.unit_rate) : null,
+    litres: t.litres != null ? Number(t.litres) : (offloadedAmt || loadedAmt || 0),
+    orderAmount: orderAmt,
+    loadedAmount: loadedAmt,
+    offloadedAmount: offloadedAmt,
+    diffAmount: diffAmt,
+    routeId: t.route_id,
+    enteredBy: t.entered_by,
+    note: t.note || '',
+    detail: t.detail || '',
+    voidsId: t.voids_id,
+    voidsType: t.voids_type,
+    truck: resolveFleetLabel(t.truck_id, t.truck_text ?? t.truck, trucks, 'reg_number'),
+    driver: resolveFleetLabel(t.driver_id, t.driver_text ?? t.driver, drivers, 'name'),
+    trailer: t.trailer_reg ?? t.trailer ?? '',
+    deliveryNotePath: t.delivery_note_path || t.offloaded_proof_path || null,
+    deliveryNoteName: t.delivery_note_name || t.offloaded_proof_name || null,
+    orderProofPath: t.order_proof_path || null,
+    orderProofName: t.order_proof_name || null,
+    loadedProofPath: t.loaded_proof_path || null,
+    loadedProofName: t.loaded_proof_name || null,
+    offloadedProofPath: t.offloaded_proof_path || t.delivery_note_path || null,
+    offloadedProofName: t.offloaded_proof_name || t.delivery_note_name || null,
+    createdAt: t.created_at
   };
 }

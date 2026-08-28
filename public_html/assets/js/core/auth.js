@@ -62,32 +62,37 @@ export async function signIn(email, password) {
 
     if (error) throw error;
 
-    const role = await fetchUserRole(data.user.id);
-    return { user: data.user, role };
+    const profile = await fetchProfile(data.session.access_token);
+    return { user: data.user, role: profile.role };
   }
 
   throw new Error('Credenciais inválidas.');
 }
 
 /**
- * Fetch role for a specific user ID
- * @param {string} userId
- * @returns {Promise<string>}
+ * Fetch the caller's app-level profile (role, permissions, is_admin) via
+ * GET /api/me — the PHP endpoint that joins user_roles + user_permissions,
+ * replacing a direct client-side query against those tables.
+ * @param {string} accessToken
+ * @returns {Promise<object>}
  */
-export async function fetchUserRole(userId) {
-  if (!sb) return null;
+export async function fetchProfile(accessToken) {
+  const res = await fetch('../api/me', {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
 
-  const { data, error } = await sb
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !data) {
-    throw new Error('Conta sem perfil/empresa atribuída no sistema. Contacte o administrador.');
+  let envelope = null;
+  try {
+    envelope = await res.json();
+  } catch {
+    // No JSON body — envelope stays null, handled below.
   }
 
-  return data.role;
+  if (!envelope || !envelope.success) {
+    throw new Error(envelope?.error || 'Conta sem perfil/empresa atribuída no sistema. Contacte o administrador.');
+  }
+
+  return envelope.data;
 }
 
 /**
@@ -114,10 +119,10 @@ export async function getSession() {
   if (error || !session) return null;
 
   try {
-    const role = await fetchUserRole(session.user.id);
-    return { session, role };
+    const profile = await fetchProfile(session.access_token);
+    return { session, role: profile.role };
   } catch (err) {
-    console.warn('Session found but role lookup failed:', err);
+    console.warn('Session found but profile lookup failed:', err);
     return { session, role: null };
   }
 }
