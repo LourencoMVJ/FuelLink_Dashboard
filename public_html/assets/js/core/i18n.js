@@ -74,8 +74,8 @@ export const translations = {
     // Dashboard Sections & Charts
     netPositionTitle: "Posição Líquida Cruzada (Compensação)",
     netPositionDesc: "Balanço corrente entre FuelLink e Bankers Tankers",
-    donutTitle: "Distribuição de Volume",
-    donutSubtitle: "Proporção de litros por unidade/rota no período",
+    donutTitle: "Volume por Mês",
+    donutSubtitle: "Litros vendidos em cada mês do ano",
     trendTitle: "Tendência Temporal",
     trendSubtitle: "Evolução do volume ao longo do período selecionado",
     recentOpsTitle: "Últimas 5 Operações",
@@ -276,8 +276,8 @@ export const translations = {
     // Dashboard Sections & Charts
     netPositionTitle: "Cross Net Settlement Position",
     netPositionDesc: "Current ledger balance between FuelLink and Bankers Tankers",
-    donutTitle: "Volume Distribution",
-    donutSubtitle: "Litres proportion by truck/route in selected period",
+    donutTitle: "Volume by Month",
+    donutSubtitle: "Litres sold in each month of the year",
     trendTitle: "Time Trend",
     trendSubtitle: "Volume evolution over the selected period",
     recentOpsTitle: "Latest 5 Operations",

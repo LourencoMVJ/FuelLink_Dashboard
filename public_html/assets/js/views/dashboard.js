@@ -444,51 +444,67 @@ function renderKpiCards(container, data, role) {
   }
 }
 
+const MONTH_LABELS = {
+  pt: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+};
+
 function renderCharts(transactions, role) {
-  const donutCanvas = document.getElementById('donutChart');
+  const monthlyCanvas = document.getElementById('donutChart');
   const trendCanvas = document.getElementById('trendChart');
-  if (!donutCanvas || !trendCanvas || typeof Chart === 'undefined') return;
+  if (!monthlyCanvas || !trendCanvas || typeof Chart === 'undefined') return;
 
   const activeTxs = transactions.filter(t => t.status === 'active');
 
-  // 1. Group Volume by Truck for Donut Chart
-  const truckMap = {};
+  // 1. Group Volume by Calendar Month (Jan-Dec) for the Monthly Volume bar
+  // chart — parsed from the YYYY-MM-DD string directly (not via `new
+  // Date().getMonth()`) so the bucket never shifts with the viewer's
+  // timezone.
+  const monthTotals = new Array(12).fill(0);
   activeTxs.forEach(t => {
-    const key = t.truck || 'Sem Camião';
-    truckMap[key] = (truckMap[key] || 0) + (t.litres || 0);
+    if (!t.date) return;
+    const monthIndex = Number(t.date.slice(5, 7)) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      monthTotals[monthIndex] += (t.litres || 0);
+    }
   });
 
-  const donutLabels = Object.keys(truckMap);
-  const donutData = Object.values(truckMap);
-
+  const monthLabels = MONTH_LABELS[getCurrentLanguage() === 'en' ? 'en' : 'pt'];
   const themePrimary = role === 'bakers' ? '#DB7806' : '#104CCF';
-  const themeSecondary = role === 'bakers' ? '#F58E18' : '#6792F1';
-  const themePalette = role === 'bakers'
-    ? ['#DB7806', '#F58E18', '#FBBF24', '#FCD34D', '#B86303', '#78350F']
-    : ['#104CCF', '#2A67ED', '#6792F1', '#89ABF5', '#A6C0F8', '#0C3BA4'];
 
   if (donutChartInstance) donutChartInstance.destroy();
 
-  donutChartInstance = new Chart(donutCanvas, {
-    type: 'doughnut',
+  donutChartInstance = new Chart(monthlyCanvas, {
+    type: 'bar',
     data: {
-      labels: donutLabels.length > 0 ? donutLabels : [t('noChartData')],
+      labels: monthLabels,
       datasets: [{
-        data: donutData.length > 0 ? donutData : [1],
-        backgroundColor: themePalette,
-        borderWidth: 2,
-        borderColor: '#FFFFFF'
+        label: t('chartVolumeLabel'),
+        data: monthTotals,
+        backgroundColor: themePrimary,
+        borderRadius: 6,
+        maxBarThickness: 32
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '72%',
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(226, 232, 240, 0.6)' },
+          ticks: { font: { size: 11 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        }
+      },
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+        legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-PT')} L`
+            label: (ctx) => ` ${ctx.raw.toLocaleString('pt-PT')} ${t('litres')}`
           }
         }
       }
