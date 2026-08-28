@@ -617,12 +617,35 @@ function renderCharts(transactions, role) {
     }
   });
 
-  // 2. Timeline Aggregation for Trend Chart — running total (cumulative
-  // volume up to and including each date), same "running total after each
-  // transaction" behavior as the old dashboard's Net Balance chart
-  // (Antigo dashboard/fuellink-dashboard/index.html renderChart()), just
-  // applied to this company's own volume instead of the cross-company
-  // balance_delta.
+  // 2. Trend Chart — the real, cross-company "Net balance over time" (same
+  // running total after each transaction as the old dashboard's chart)
+  // when the ledger is available (admin sessions only, see
+  // loadLedgerIfAdmin()); otherwise falls back to this company's own
+  // cumulative volume, since a non-admin session has no access to the
+  // cross-company balance at all.
+  if (trendChartInstance) trendChartInstance.destroy();
+
+  const trendTitleEl = document.getElementById('trendTitle');
+  const trendSubtitleEl = document.getElementById('trendSubtitle');
+
+  if (ledgerData) {
+    if (trendTitleEl) trendTitleEl.textContent = t('netBalanceTrendTitle');
+    if (trendSubtitleEl) trendSubtitleEl.textContent = t('netBalanceTrendSubtitle');
+    trendChartInstance = renderNetBalanceChart(trendCanvas);
+  } else {
+    if (trendTitleEl) trendTitleEl.textContent = t('trendTitle');
+    if (trendSubtitleEl) trendSubtitleEl.textContent = t('trendSubtitle');
+    trendChartInstance = renderVolumeTrendChart(trendCanvas, activeTxs, role);
+  }
+}
+
+/**
+ * Cumulative volume trend (this company's own transactions only) — the
+ * fallback for non-admin sessions, who can't reach the cross-company
+ * ledger. Same "running total after each date" mechanic, applied to
+ * litres instead of the balance.
+ */
+function renderVolumeTrendChart(canvas, activeTxs, role) {
   const dateMap = {};
   const sorted = [...activeTxs].sort((a, b) => (a.date > b.date ? 1 : -1));
   sorted.forEach(tItem => {
@@ -636,12 +659,10 @@ function renderCharts(transactions, role) {
     return runningVolume;
   });
 
-  if (trendChartInstance) trendChartInstance.destroy();
-
   const themeColor = role === 'bakers' ? '#DB7806' : '#104CCF';
   const themeBg = role === 'bakers' ? 'rgba(219, 120, 6, 0.14)' : 'rgba(16, 76, 207, 0.14)';
 
-  trendChartInstance = new Chart(trendCanvas, {
+  return new Chart(canvas, {
     type: 'line',
     data: {
       labels: trendLabels.length > 0 ? trendLabels : [t('noChartData')],
@@ -681,6 +702,94 @@ function renderCharts(transactions, role) {
       }
     }
   });
+}
+
+/**
+ * Real Net Balance over time — one point per transaction, both companies
+ * combined chronologically (LedgerController::buildLedger()'s exact order,
+ * reconstructed by merging its already-split fuellink/bakers arrays back
+ * together and re-sorting with the same comparator). Segment color flips
+ * green/red by sign, same as the old dashboard's SVG chart; hovering a
+ * point shows date/type/detail/balance, same 4 lines as the old tooltip.
+ */
+function renderNetBalanceChart(canvas) {
+  const entries = [...(ledgerData.fuellink || []), ...(ledgerData.bakers || [])]
+    .sort((a, b) => {
+      const dateCmp = (a.date || '').localeCompare(b.date || '');
+      return dateCmp !== 0 ? dateCmp : (a.created_at || '').localeCompare(b.created_at || '');
+    });
+
+  const balances = entries.map(e => Number(e.running_balance || 0));
+  const positiveColor = '#10B981';
+  const negativeColor = '#E2334D';
+  const segmentColor = (ctx, posColor, negColor) => {
+    const avg = ((ctx.p0.parsed.y || 0) + (ctx.p1.parsed.y || 0)) / 2;
+    return avg >= 0 ? posColor : negColor;
+  };
+
+  return new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: entries.length > 0 ? entries.map((_, i) => i + 1) : [t('noChartData')],
+      datasets: [{
+        label: t('netBalanceTrendTitle'),
+        data: balances.length > 0 ? balances : [0],
+        borderColor: positiveColor,
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        borderWidth: 2.5,
+        tension: 0,
+        fill: 'origin',
+        pointBackgroundColor: (ctx) => (balances[ctx.dataIndex] >= 0 ? positiveColor : negativeColor),
+        pointRadius: 3,
+        segment: {
+          borderColor: (ctx) => segmentColor(ctx, positiveColor, negativeColor),
+          backgroundColor: (ctx) => segmentColor(ctx, 'rgba(16, 185, 129, 0.12)', 'rgba(226, 51, 77, 0.12)')
+        }
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          grid: { color: 'rgba(226, 232, 240, 0.6)' },
+          ticks: {
+            font: { size: 11 },
+            callback: (value) => `R ${Number(value).toLocaleString('en-ZA')}`
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { display: false }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => entries[items[0].dataIndex]?.date || '',
+            label: (ctx) => {
+              const entry = entries[ctx.dataIndex];
+              if (!entry) return '';
+              const balance = Number(entry.running_balance || 0);
+              return [
+                typeLabel(entry.type),
+                entry.detail || '',
+                `${t('balanceLabel')}: R ${balance.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function typeLabel(type) {
+  if (type === 'diesel') return t('typeDiesel');
+  if (type === 'logistics') return t('typeLogistics');
+  if (type === 'void') return t('typeVoid');
+  return t('typeSettlement');
 }
 
 function renderRecentTable(transactions, role) {
