@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operações | FuelLink & Bankers Tankers</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Core & Page Stylesheets -->
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/operations.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Global Shared Sidebar -->
+    <aside class="sidebar-container" id="globalSidebar" aria-label="Navegação Principal"></aside>
+
+    <!-- Main Dynamic Content -->
+    <main class="main-content" id="mainOperations">
+
+      <!-- Header Presentation Row with Theme/Language Controls & Primary Action Buttons -->
+      <header class="page-header-row">
+        <div class="greeting-block">
+          <h1 id="opsTitle">Gestão de Operações</h1>
+          <p id="opsSubtitle">Histórico detalhado e registo de novas transações</p>
+        </div>
+
+        <div class="operations-header-action">
+          <div id="headerControls" class="header-controls-container"></div>
+        </div>
+      </header>
+
+      <!-- Operations KPIs Summary (Styled to match Dashboard Elevated Pattern) -->
+      <section class="kpi-grid" id="opsSummaryContainer" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+        <div class="kpi-card" id="opsKpiCard1">
+          <div class="kpi-card-header">
+            <span class="kpi-label" id="lblKpiVolume">Volume Total</span>
+            <span class="kpi-status-pill" id="tagKpiVolume">Volume</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="summaryTotalLitres">0</span>
+            <span class="kpi-unit" id="unitKpiLitres">Litros</span>
+          </div>
+          <div class="kpi-footer">
+            <span id="footKpiVolume">No período filtrado</span>
+            <span class="kpi-trend positive">↑ Ativo</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" id="opsKpiCard2">
+          <div class="kpi-card-header">
+            <span class="kpi-label" id="lblKpiBilling">Faturação Acumulada</span>
+            <span class="kpi-status-pill high" id="tagKpiRands">Rands</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="summaryTotalValue">R 0,00</span>
+          </div>
+          <div class="kpi-footer">
+            <span id="footKpiBilling">Total calculado</span>
+            <span class="kpi-trend positive">Total</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" id="opsKpiCard3">
+          <div class="kpi-card-header">
+            <span class="kpi-label" id="lblKpiRecords">Total de Registos</span>
+            <span class="kpi-status-pill optimal" id="tagKpiTrips">Operações</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="summaryTotalCount">0</span>
+            <span class="kpi-unit" id="unitKpiOps">Registos</span>
+          </div>
+          <div class="kpi-footer">
+            <span id="footKpiRecords">Operações listadas</span>
+            <span class="kpi-trend neutral">—</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Centered Live Search Bar -->
+      <section class="ops-search-center-wrap" aria-label="Pesquisa">
+        <div class="search-bar-wrap centered-search">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="opsSearchInput" class="search-input" placeholder="Pesquisar operações por camião, motorista, rota ou nota...">
+        </div>
+      </section>
+
+      <!-- Clean Date & State Filter Bar -->
+      <section class="filter-card" aria-label="Filtros de Operações">
+
+        <div class="filter-group">
+          <label for="opsStartDate" id="lblOpsStartDate">Data Início</label>
+          <input type="date" id="opsStartDate" class="filter-control">
+        </div>
+
+        <div class="filter-group">
+          <label for="opsEndDate" id="lblOpsEndDate">Data Fim</label>
+          <input type="date" id="opsEndDate" class="filter-control">
+        </div>
+
+        <div class="filter-group">
+          <label for="opsTruckFilter" id="lblOpsTruck">Camião</label>
+          <select id="opsTruckFilter" class="filter-control">
+            <option value="">Todos os Camiões</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="opsStatusFilter" id="lblOpsStatus">Estado</label>
+          <select id="opsStatusFilter" class="filter-control">
+            <option value="all" id="optStatusAll">Todos os Estados</option>
+            <option value="active" id="optStatusActive" selected>Apenas Ativos</option>
+            <option value="voided" id="optStatusVoided">Deletados</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-filter-apply" id="btnApplyOpsFilters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          <span id="btnFilterText">Filtrar</span>
+        </button>
+
+        <button type="button" class="btn-filter-reset" id="btnResetOpsFilters">
+          Limpar
+        </button>
+      </section>
+
+      <!-- Complete Operations Table with Action Header and Pagination -->
+      <section class="section-card" aria-label="Tabela Completa de Operações">
+        <div class="table-header-action-row">
+          <h3 class="table-section-title" id="tableSectionTitle">Tabela de Registos</h3>
+          
+          <div class="table-actions-toolbar">
+            <!-- Refresh Icon-only Button with Custom Hover Tooltip -->
+            <button type="button" class="btn-icon-refresh" id="btnRefreshOps" aria-label="Atualizar dados">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span class="custom-tooltip" id="refreshTooltipText">Atualizar Dados</span>
+            </button>
+
+            <!-- Export Button (Dark / Elegant Slate Tone) -->
+            <button type="button" class="btn-export-action" id="btnOpenExportModal" title="Exportar dados">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span id="btnExportText">Exportar</span>
+            </button>
+
+            <!-- New Operation Primary Action Button -->
+            <button type="button" class="btn-primary-action" id="btnOpenNewOpModal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span id="btnNewOpText">Nova Operação</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table" id="operationsTable">
+            <thead>
+              <tr id="operationsTableHead">
+                <!-- Dynamically generated per company -->
+              </tr>
+            </thead>
+            <tbody id="operationsTableBody">
+              <tr>
+                <td colspan="11" style="text-align: center; color: #94A3B8; padding: 32px;">A carregar registos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls (10 records per page) -->
+        <div class="pagination-wrapper" id="paginationWrapper">
+          <div class="pagination-info" id="paginationInfo">A mostrar 0 a 0 de 0 registos</div>
+          <div class="pagination-controls" id="paginationControls"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal: Export Data (Using real image assets excel.png, pdf.png, word.png) -->
+  <div class="modal-backdrop" id="exportModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog export-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="exportModalTitle">Exportar Relatório de Operações</h2>
+        <button type="button" class="btn-close-modal" id="btnCloseExportModal" aria-label="Fechar">✕</button>
+      </div>
+      <p id="exportModalSubtitle" style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+        Selecione o formato para exportar os registos atualmente filtrados na tabela:
+      </p>
+
+      <div class="export-formats-grid">
+        <!-- Real Excel Asset Image -->
+        <div class="export-format-card selected" data-format="excel">
+          <div class="export-icon-box excel-box">
+            <img src="../assets/img/excel.png" alt="Microsoft Excel" class="export-brand-img" />
+          </div>
+          <div class="export-details">
+            <h4 id="lblExportExcel">Ficheiro Excel (.csv / .xlsx)</h4>
+            <p id="lblExportExcelDesc">Planilha detalhada formatada para cálculos e conciliação.</p>
+          </div>
+        </div>
+
+        <!-- Real PDF Asset Image -->
+        <div class="export-format-card" data-format="pdf">
+          <div class="export-icon-box pdf-box">
+            <img src="../assets/img/pdf.png" alt="Adobe PDF" class="export-brand-img" />
+          </div>
+          <div class="export-details">
+            <h4 id="lblExportPdf">Documento PDF (.pdf)</h4>
+            <p id="lblExportPdfDesc">Layout profissional pronto para impressão e auditoria.</p>
+          </div>
+        </div>
+
+        <!-- Real Word Asset Image -->
+        <div class="export-format-card" data-format="word">
+          <div class="export-icon-box word-box">
+            <img src="../assets/img/word.png" alt="Microsoft Word" class="export-brand-img" />
+          </div>
+          <div class="export-details">
+            <h4 id="lblExportWord">Documento Word (.doc)</h4>
+            <p id="lblExportWordDesc">Relatório corporativo editável estruturado em tabelas.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-modal-actions">
+        <button type="button" class="btn-filter-reset" id="btnCancelExport">Cancelar</button>
+        <button type="button" class="btn-primary-action" id="btnExecuteExport">Transferir Ficheiro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nova Operação / Entrega (Ajustado, sem corte de dados) -->
+  <div class="modal-backdrop" id="newOperationModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog op-modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitleText">Registar Nova Operação</h2>
+        <button type="button" class="btn-close-modal" id="btnCloseModal" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="newOperationForm" autocomplete="off" class="op-modal-form">
+        <!-- Common Row 1: Date & Route -->
+        <div class="form-grid-responsive">
+          <div class="form-field">
+            <label for="newOpDate" id="lblOpDate">Data da Operação *</label>
+            <input type="date" id="newOpDate" class="form-input" required>
+          </div>
+          <div class="form-field" id="newOpRouteField" style="display: none;">
+            <label for="newOpRoute" id="lblOpRoute">Rota *</label>
+            <select id="newOpRoute" class="form-select"></select>
+          </div>
+          <!-- FuelLink Only: Litres Sold -->
+          <div class="form-field" id="newOpLitresField">
+            <label for="newOpLitres" id="newOpLitresLabel">Litros Vendidos *</label>
+            <input type="number" id="newOpLitres" class="form-input" placeholder="ex: 40000" min="1" step="1">
+          </div>
+        </div>
+
+        <!-- Bankers Tankers Only: 3 Pairs of Volume & Proof Aligned Row by Row -->
+        <div id="bakersVolumesFieldRow" style="display: none; flex-direction: column; gap: 14px;">
+          <!-- Pair 1: Order Amount (Left) & Order Proof (Right) -->
+          <div class="form-grid-responsive">
+            <div class="form-field">
+              <label for="newOpOrderAmount" id="lblOpOrderAmount">Volume Encomendado (Ordem) *</label>
+              <input type="number" id="newOpOrderAmount" class="form-input" placeholder="ex: 40000" min="0" step="1">
+            </div>
+            <div class="form-field">
+              <label for="newOpOrderProof" id="lblOpOrderProof">Comprovativo de Ordem</label>
+              <div class="file-upload-wrapper">
+                <input type="file" id="newOpOrderProof" class="form-input-file" accept="application/pdf,image/*">
+              </div>
+            </div>
+          </div>
+
+          <!-- Pair 2: Loaded Amount (Left) & Loaded Proof (Right) -->
+          <div class="form-grid-responsive">
+            <div class="form-field">
+              <label for="newOpLoadedAmount" id="lblOpLoadedAmount">Volume Carregado *</label>
+              <input type="number" id="newOpLoadedAmount" class="form-input" placeholder="ex: 40000" min="0" step="1">
+            </div>
+            <div class="form-field">
+              <label for="newOpLoadedProof" id="lblOpLoadedProof">Comprovativo de Carregamento</label>
+              <div class="file-upload-wrapper">
+                <input type="file" id="newOpLoadedProof" class="form-input-file" accept="application/pdf,image/*">
+              </div>
+            </div>
+          </div>
+
+          <!-- Pair 3: Offloaded Amount (Left) & Offloaded Proof (Right) -->
+          <div class="form-grid-responsive">
+            <div class="form-field">
+              <label for="newOpOffloadedAmount" id="lblOpOffloadedAmount">Volume Descarregado (Entregue) *</label>
+              <input type="number" id="newOpOffloadedAmount" class="form-input" placeholder="ex: 39800" min="0" step="1">
+            </div>
+            <div class="form-field">
+              <label for="newOpOffloadedProof" id="lblOpOffloadedProof">Comprovativo de Descarregamento</label>
+              <div class="file-upload-wrapper">
+                <input type="file" id="newOpOffloadedProof" class="form-input-file" accept="application/pdf,image/*">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Common Row 2: Truck & Driver -->
+        <div class="form-grid-responsive">
+          <div class="form-field">
+            <label for="newOpTruck" id="lblOpTruck">Camião (Matrícula) *</label>
+            <input type="text" id="newOpTruck" class="form-input" placeholder="ex: BT123GP" list="trucksList" required>
+          </div>
+          <div class="form-field">
+            <label for="newOpDriver" id="lblOpDriver">Motorista *</label>
+            <input type="text" id="newOpDriver" class="form-input" placeholder="Nome do motorista" list="driversList" required>
+          </div>
+        </div>
+
+        <!-- Common Row 3: Trailer & Note -->
+        <div class="form-grid-responsive">
+          <div class="form-field">
+            <label for="newOpTrailer" id="lblOpTrailer">Reboque / Trela (Opcional)</label>
+            <input type="text" id="newOpTrailer" class="form-input" placeholder="ex: TR456GP">
+          </div>
+          <div class="form-field">
+            <label for="newOpNote" id="lblOpNote">Nota / Referência</label>
+            <input type="text" id="newOpNote" class="form-input" placeholder="Fatura, Guia ou Comentário">
+          </div>
+        </div>
+
+        <!-- FuelLink Only: Single Proof Upload -->
+        <div class="form-field full-width" id="flProofField">
+          <label for="newOpProof" id="newOpProofLabel">Comprovativo / Guia de Entrega (Opcional)</label>
+          <div class="file-upload-wrapper">
+            <input type="file" id="newOpProof" class="form-input-file" accept="application/pdf,image/*">
+          </div>
+        </div>
+
+        <div class="form-modal-actions">
+          <button type="button" class="btn-filter-reset" id="btnCancelModal">Cancelar</button>
+          <button type="submit" class="btn-primary-action" id="btnSubmitOp">Gravar Registo</button>
+        </div>
+      </form>
+
+      <datalist id="trucksList"></datalist>
+      <datalist id="driversList"></datalist>
+    </div>
+  </div>
+
+  <!-- Modal: Ações Rápidas (Double-Click na Linha) -->
+  <div class="modal-backdrop" id="quickActionModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog quick-action-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="qaModalTitle" style="font-size: 16px;">Ações Rápidas</h3>
+          <p class="quick-action-subtitle" id="qaModalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Operação selecionada</p>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseQaModal" aria-label="Fechar">✕</button>
+      </div>
+      <div class="quick-actions-list">
+        <button type="button" class="btn-quick-action-item view" id="qaBtnView">
+          <span class="qa-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </span>
+          <div class="qa-item-content">
+            <span class="qa-item-title" id="qaTitleView">Ver Detalhes da Operação</span>
+            <span class="qa-item-desc" id="qaDescView">Abrir página com métricas, rotas e comprovativos</span>
+          </div>
+        </button>
+
+        <button type="button" class="btn-quick-action-item edit" id="qaBtnEdit">
+          <span class="qa-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </span>
+          <div class="qa-item-content">
+            <span class="qa-item-title" id="qaTitleEdit">Editar Dados da Operação</span>
+            <span class="qa-item-desc" id="qaDescEdit">Alterar valores, rotas ou comprovativos</span>
+          </div>
+        </button>
+
+        <button type="button" class="btn-quick-action-item delete" id="qaBtnDelete">
+          <span class="qa-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </span>
+          <div class="qa-item-content">
+            <span class="qa-item-title" id="qaTitleDelete">Eliminar Operação</span>
+            <span class="qa-item-desc" id="qaDescDelete">Remover este registo da base de dados</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operations Controller View -->
+  <script type="module" src="../assets/js/views/operations.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,324 @@
+/**
+ * Design Tokens & Base Styles
+ * FuelLink & Bankers Tankers Management Platform
+ * 4 Dedicated Color Themes: FuelLink (Light/Dark) & Bankers Tankers (Light/Dark)
+ */
+
+:root {
+  /* Brand Palettes - FuelLink (Default Brand) */
+  --primary-fuellink: #104CCF;
+  --primary-fuellink-hover: #0C3BA4;
+  --primary-fuellink-light: rgba(16, 76, 207, 0.14);
+  --primary-fuellink-glow: rgba(16, 76, 207, 0.35);
+
+  /* Brand Palettes - Bankers Tankers */
+  --primary-bakers: #DB7806;
+  --primary-bakers-hover: #B86303;
+  --primary-bakers-light: rgba(219, 120, 6, 0.14);
+  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+
+  /* Semantic Colors (Light Mode) */
+  --color-success: #06A977;
+  --color-success-light: rgba(6, 169, 119, 0.14);
+  --color-warning: #DB7806;
+  --color-warning-light: rgba(219, 120, 6, 0.14);
+  --color-danger: #C11A33;
+  --color-danger-light: rgba(193, 26, 51, 0.14);
+
+  /* Surfaces & Neutrals: FuelLink Light Mode */
+  --bg-body: #EFF2F8;
+  --bg-surface: #F7F9FE;
+  --bg-surface-subtle: #DFE0E4;
+  --bg-input: #FFFFFF;
+  
+  --text-main: #171A20;
+  --text-muted: #35373E;
+  --text-subtle: #5A5D67;
+
+  --border-subtle: #EBECEE;
+  --border-focus: #104CCF;
+  --grid-line: #DFE0E4;
+
+  /* Radii - Systematic */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Typography */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ==========================================================================
+   1. Bankers Tankers — Modo Claro (Clay Terminal Warm Palette)
+   ========================================================================== */
+[data-company="bakers"],
+body.role-bakers,
+body.bakers-theme {
+  --primary-fuellink: #DB7806;
+  --theme-fl: #DB7806;
+  --theme-fl-hover: #B86303;
+  --theme-fl-light: rgba(219, 120, 6, 0.14);
+  --theme-fl-glow: rgba(219, 120, 6, 0.35);
+
+  --primary-bakers: #DB7806;
+  --primary-bakers-hover: #B86303;
+  --primary-bakers-light: rgba(219, 120, 6, 0.14);
+  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+
+  --bg-body: #F8F4EF;
+  --bg-surface: #FCFBF9;
+  --bg-surface-subtle: #F3F4F6;
+  --bg-input: #FFFFFF;
+
+  --text-main: #161821;
+  --text-muted: #5A5D68;
+  --text-subtle: #92949D;
+
+  --border-subtle: #EBECEF;
+  --border-focus: #DB7806;
+  --grid-line: #DFE0E5;
+}
+
+/* ==========================================================================
+   2. FuelLink — Modo Escuro (Custom Palette)
+   ========================================================================== */
+[data-theme="dark"] {
+  --primary-fuellink: #6792F1;
+  --primary-fuellink-hover: #89ABF5;
+  --primary-fuellink-light: rgba(103, 146, 241, 0.18);
+  --primary-fuellink-glow: rgba(103, 146, 241, 0.35);
+
+  --primary-bakers: #DB7806;
+  --primary-bakers-hover: #F58E18;
+  --primary-bakers-light: rgba(219, 120, 6, 0.18);
+  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+
+  /* Semantic Colors (Dark Mode) */
+  --color-success: #08F1A9;
+  --color-success-light: rgba(8, 241, 169, 0.16);
+  --color-warning: #DB7806;
+  --color-warning-light: rgba(219, 120, 6, 0.16);
+  --color-danger: #E2334D;
+  --color-danger-light: rgba(226, 51, 77, 0.16);
+
+  /* FuelLink Dark Surfaces & Neutrals */
+  --bg-body: #171A20;
+  --bg-surface: #1F2228;
+  --bg-surface-subtle: #282A30;
+  --bg-input: #282A30;
+
+  --text-main: #FFFFFF;
+  --text-muted: #BEC0C6;
+  --text-subtle: #737680;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #6792F1;
+  --grid-line: #1F2126;
+}
+
+/* ==========================================================================
+   3. Bankers Tankers — Modo Escuro (Custom Palette)
+   ========================================================================== */
+[data-theme="dark"][data-company="bakers"],
+[data-theme="dark"] body.role-bakers,
+body.role-bakers[data-theme="dark"],
+[data-theme="dark"] body.bakers-theme,
+[data-theme="dark"] .sidebar-wrapper.bakers ~ .main-content {
+  --primary-fuellink: #DB7806;
+  --theme-fl: #DB7806;
+  --theme-fl-hover: #F58E18;
+  --theme-fl-light: rgba(219, 120, 6, 0.18);
+  --theme-fl-glow: rgba(219, 120, 6, 0.35);
+
+  --primary-bakers: #DB7806;
+  --primary-bakers-hover: #F58E18;
+  --primary-bakers-light: rgba(219, 120, 6, 0.18);
+  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+
+  /* Bankers Custom Dark Surfaces & Neutrals */
+  --bg-body: #27231D;
+  --bg-surface: #28241F;
+  --bg-surface-subtle: #332D27;
+  --bg-input: #332D27;
+
+  --text-main: #FFFFFF;
+  --text-muted: #C7BFB5;
+  --text-subtle: #8E8478;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #DB7806;
+  --grid-line: #353029;
+}
+
+/* Reset & Box Sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Universal Placeholders & Inputs Readability */
+::placeholder {
+  color: #94A3B8;
+  opacity: 1;
+}
+
+[data-company="bakers"] ::placeholder,
+body.role-bakers ::placeholder {
+  color: #A3836F;
+}
+
+[data-theme="dark"] ::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .search-input::placeholder,
+[data-theme="dark"] .pill-input::placeholder,
+[data-theme="dark"] .filter-control::placeholder {
+  color: rgba(241, 245, 249, 0.72) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"][data-company="bakers"] ::placeholder,
+[data-theme="dark"] body.role-bakers ::placeholder,
+body.role-bakers[data-theme="dark"] ::placeholder {
+  color: rgba(253, 243, 238, 0.72) !important;
+}
+
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] .filter-control[type="date"],
+[data-theme="dark"] .form-input[type="date"] {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] .filter-control[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] .form-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.85 !important;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator:hover,
+[data-theme="dark"] .filter-control[type="date"]::-webkit-calendar-picker-indicator:hover,
+[data-theme="dark"] .form-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1 !important;
+  transform: scale(1.1);
+}
+
+/* Universal Dark Mode Inputs & Focus States (Never Turn White When Typing) */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .filter-control,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .search-input {
+  background-color: #282A30 !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] input:active,
+[data-theme="dark"] select:active,
+[data-theme="dark"] .filter-control:focus,
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .search-input:focus {
+  background-color: #282A30 !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary-fuellink) !important;
+  box-shadow: 0 0 0 3px var(--primary-fuellink-glow) !important;
+}
+
+/* Bankers Tankers Dark Mode Inputs & Focus */
+[data-theme="dark"] body.role-bakers input,
+[data-theme="dark"] body.role-bakers select,
+[data-theme="dark"] body.role-bakers textarea,
+[data-theme="dark"] body.role-bakers .filter-control,
+[data-theme="dark"] body.role-bakers .form-input,
+[data-theme="dark"] body.role-bakers .form-select,
+[data-theme="dark"] body.role-bakers .search-input,
+[data-theme="dark"][data-company="bakers"] input,
+[data-theme="dark"][data-company="bakers"] select,
+[data-theme="dark"][data-company="bakers"] textarea,
+[data-theme="dark"][data-company="bakers"] .filter-control,
+[data-theme="dark"][data-company="bakers"] .form-input,
+[data-theme="dark"][data-company="bakers"] .form-select,
+[data-theme="dark"][data-company="bakers"] .search-input {
+  background-color: #332D27 !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] body.role-bakers input:focus,
+[data-theme="dark"] body.role-bakers select:focus,
+[data-theme="dark"] body.role-bakers textarea:focus,
+[data-theme="dark"] body.role-bakers input:active,
+[data-theme="dark"] body.role-bakers select:active,
+[data-theme="dark"] body.role-bakers .filter-control:focus,
+[data-theme="dark"] body.role-bakers .form-input:focus,
+[data-theme="dark"] body.role-bakers .form-select:focus,
+[data-theme="dark"] body.role-bakers .search-input:focus,
+[data-theme="dark"][data-company="bakers"] input:focus,
+[data-theme="dark"][data-company="bakers"] select:focus,
+[data-theme="dark"][data-company="bakers"] textarea:focus,
+[data-theme="dark"][data-company="bakers"] .filter-control:focus,
+[data-theme="dark"][data-company="bakers"] .form-input:focus,
+[data-theme="dark"][data-company="bakers"] .form-select:focus,
+[data-theme="dark"][data-company="bakers"] .search-input:focus {
+  background-color: #332D27 !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary-bakers) !important;
+  box-shadow: 0 0 0 3px var(--primary-bakers-glow) !important;
+}
+
+/* Webkit Autofill Override for Dark Mode */
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover, 
+[data-theme="dark"] input:-webkit-autofill:focus,
+[data-theme="dark"] select:-webkit-autofill,
+[data-theme="dark"] select:-webkit-autofill:hover,
+[data-theme="dark"] select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0px 1000px #282A30 inset !important;
+  box-shadow: 0 0 0px 1000px #282A30 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+[data-theme="dark"] body.role-bakers input:-webkit-autofill,
+[data-theme="dark"] body.role-bakers input:-webkit-autofill:hover, 
+[data-theme="dark"] body.role-bakers input:-webkit-autofill:focus,
+[data-theme="dark"][data-company="bakers"] input:-webkit-autofill {
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0px 1000px #332D27 inset !important;
+  box-shadow: 0 0 0px 1000px #332D27 inset !important;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+

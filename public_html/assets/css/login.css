@@ -1,0 +1,633 @@
+/**
+ * Login View Stylesheet
+ * Fullscreen Cinematic Photographic Background
+ * - Camiao e paisagem bem visiveis, iluminados e nitidos
+ * - Escurecimento nas bordas extremas da tela (moldura) e na area de fundo do formulario
+ * - Informacoes a esquerda com alta legibilidade
+ * - Card de login em Liquid Glass translúcido e refinado
+ */
+
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 48px clamp(32px, 6vw, 96px);
+  position: relative;
+  overflow: hidden;
+  background-color: #041220;
+}
+
+/* Floating Full Liquid Glass Language Toggle on Screen Top-Right */
+.login-screen-top-bar {
+  position: absolute;
+  top: 32px;
+  right: clamp(28px, 6vw, 84px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+}
+
+.login-top-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.45), 
+              0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+              0 0 20px rgba(56, 189, 248, 0.25) !important;
+  padding: 5px 6px !important;
+  border-radius: var(--radius-pill) !important;
+  transition: all var(--transition-bounce);
+}
+
+.login-top-toggle:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 20px 42px -4px rgba(0, 0, 0, 0.55), 
+              0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+              0 0 26px rgba(56, 189, 248, 0.4) !important;
+}
+
+.login-top-toggle .pill-toggle-btn {
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.login-top-toggle .pill-toggle-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.login-top-toggle .pill-toggle-btn.active {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
+  text-shadow: none;
+}
+
+/* ==========================================================================
+   Fullscreen Background (Clean Truck Visibility + Edge & Form Shading)
+   ========================================================================== */
+.fullscreen-bg {
+  position: absolute;
+  inset: 0;
+  background: url('../img/truck-hero.jpg') center center / cover no-repeat;
+  z-index: 1;
+}
+
+.fullscreen-overlay {
+  position: absolute;
+  inset: 0;
+  /* 
+   * Deixa o camião e paisagem claros (opacidade baixa no centro/esquerda 0.25 - 0.40)
+   * Escurece suavemente as bordas da tela e o lado direito (0.75 - 0.85) onde fica o card
+   */
+  background: 
+    radial-gradient(ellipse at 35% 50%, rgba(4, 22, 40, 0.20) 0%, rgba(2, 8, 18, 0.70) 90%),
+    linear-gradient(to right, rgba(2, 10, 20, 0.45) 0%, rgba(4, 18, 34, 0.15) 35%, rgba(2, 8, 18, 0.78) 100%);
+  z-index: 2;
+}
+
+/* ==========================================================================
+   Left Side: Platform Information
+   ========================================================================== */
+.info-section {
+  flex: 1 1 48%;
+  max-width: 540px;
+  position: relative;
+  z-index: 5;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 32px;
+}
+
+.info-content {
+  margin: 0;
+}
+
+.info-title {
+  font-size: clamp(34px, 3.6vw, 46px);
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+  color: #FFFFFF;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.info-title .accent-fl {
+  color: #7DD3FC;
+}
+
+.info-title .accent-bt {
+  color: #FDBA74;
+}
+
+.info-subtitle {
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  max-width: 440px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   Right Side: Ultra-Transparent Liquid Glass Form Card
+   ========================================================================== */
+.form-section {
+  flex: 0 0 440px;
+  position: relative;
+  z-index: 5;
+}
+
+.form-container {
+  width: 100%;
+  
+  /* Liquid Glass Translúcido */
+  background: linear-gradient(
+    135deg, 
+    rgba(255, 255, 255, 0.10) 0%, 
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.38);
+  border-left: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-radius: 28px;
+  
+  padding: 38px 34px;
+  color: #FFFFFF;
+  
+  box-shadow: 
+    0 30px 60px -15px rgba(0, 0, 0, 0.65),
+    0 0 1px 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.25);
+    
+  animation: cardFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Centered Form Header */
+.form-header.centered {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.welcome-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #7DD3FC;
+  margin-bottom: 4px;
+  transition: color var(--transition-fast);
+}
+
+.welcome-label.bakers-active {
+  color: #FDBA74;
+}
+
+.form-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.form-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   Pill Controls inside Liquid Glass
+   ========================================================================== */
+
+/* Toggle Switcher */
+.company-switch-section {
+  margin-bottom: 18px;
+}
+
+.switch-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.preset-selector {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.preset-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preset-btn:hover {
+  color: #FFFFFF;
+}
+
+.preset-btn.active.fuellink {
+  background: var(--primary-fuellink);
+  color: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(42, 120, 214, 0.45);
+}
+
+.preset-btn.active.bakers {
+  background: var(--primary-bakers);
+  color: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(235, 104, 52, 0.45);
+}
+
+/* Form Inputs */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.input-pill-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-pill-icon {
+  position: absolute;
+  left: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.pill-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 18px 0 48px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.pill-input:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.18);
+}
+
+.input-pill-wrapper:focus-within .input-pill-icon {
+  color: #38BDF8;
+}
+
+.pill-input.is-bakers:focus {
+  border-color: rgba(251, 146, 60, 0.7);
+  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.18);
+}
+
+.is-bakers-group:focus-within .input-pill-icon {
+  color: #FB923C;
+}
+
+.pill-input::placeholder {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  opacity: 1;
+}
+
+.pill-toggle-password {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  padding: 7px;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color var(--transition-fast);
+}
+
+.pill-toggle-password:hover {
+  color: #FFFFFF;
+}
+
+/* Secondary Options */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 12.5px;
+}
+
+.pill-checkbox-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.pill-checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.pill-checkmark {
+  height: 16px;
+  width: 16px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.pill-checkbox-container:hover input ~ .pill-checkmark {
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.pill-checkbox-container input:checked ~ .pill-checkmark {
+  background-color: var(--primary-fuellink);
+  border-color: var(--primary-fuellink);
+}
+
+.pill-checkbox-container.bakers-active input:checked ~ .pill-checkmark {
+  background-color: var(--primary-bakers);
+  border-color: var(--primary-bakers);
+}
+
+.pill-checkmark::after {
+  content: "";
+  display: none;
+  width: 3.5px;
+  height: 7px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.pill-checkbox-container input:checked ~ .pill-checkmark::after {
+  display: block;
+}
+
+.pill-forgot-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7DD3FC;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.pill-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.pill-forgot-link.bakers-active {
+  color: #FDBA74;
+}
+
+/* Submit Button */
+.pill-submit-btn {
+  height: 48px;
+  width: 100%;
+  margin-top: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #2A78D6 0%, #1D5AA8 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(42, 120, 214, 0.35);
+  transition: all var(--transition-fast);
+}
+
+.pill-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3B88E6 0%, #2064B8 100%);
+  box-shadow: 0 6px 20px rgba(42, 120, 214, 0.45);
+  transform: translateY(-1.5px);
+}
+
+.pill-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pill-submit-btn.theme-bakers {
+  background: linear-gradient(135deg, #EB6834 0%, #D05321 100%);
+  box-shadow: 0 4px 16px rgba(235, 104, 52, 0.35);
+}
+
+.pill-submit-btn.theme-bakers:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F07747 0%, #DD5E2B 100%);
+  box-shadow: 0 6px 20px rgba(235, 104, 52, 0.45);
+}
+
+.btn-arrow {
+  transition: transform var(--transition-fast);
+}
+
+.pill-submit-btn:hover:not(:disabled) .btn-arrow {
+  transform: translateX(3px);
+}
+
+.pill-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.pill-spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pill-submit-btn.is-loading .pill-spinner {
+  display: inline-block;
+}
+
+.pill-submit-btn.is-loading .btn-arrow {
+  display: none;
+}
+
+.pill-submit-btn.is-loading .btn-text {
+  opacity: 0.9;
+}
+
+/* Alert Error Banner */
+.pill-alert-box {
+  display: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  line-height: 1.4;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  background-color: rgba(220, 38, 38, 0.25);
+  color: #FECACA;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  backdrop-filter: blur(10px);
+  animation: slideDown 0.25s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pill-alert-box.danger {
+  display: flex;
+}
+
+/* Clean Support Footer */
+.form-card-footer {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.support-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.support-text a {
+  color: #7DD3FC;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color var(--transition-fast);
+}
+
+.support-text a:hover {
+  text-decoration: underline;
+}
+
+.support-text a.bakers-active {
+  color: #FDBA74;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .login-page {
+    flex-direction: column;
+    padding: 36px 20px;
+    gap: 28px;
+  }
+
+  .info-section {
+    padding-right: 0;
+    max-width: 440px;
+    text-align: center;
+  }
+
+  .info-title {
+    font-size: 26px;
+  }
+
+  .form-section {
+    width: 100%;
+    max-width: 440px;
+  }
+}
+
+@media (max-width: 520px) {
+  .login-page {
+    padding: 20px 14px;
+  }
+
+  .form-container {
+    padding: 30px 20px;
+    border-radius: 24px;
+  }
+  
+  .form-title {
+    font-size: 22px;
+  }
+}

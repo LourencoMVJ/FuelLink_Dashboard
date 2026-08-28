@@ -1,18 +1,18 @@
-# public_html/assets/js/views
+# Contexto da Pasta `public_html/assets/js/views`
 
-One JS module per page, controlling that page's HTML in
-[public_html/pages/](../../pages/context.md). Nothing here yet as standalone
-modules.
+Camada de apresentação e controlo de interface (Frontend View Layer). Cada ficheiro aqui controla exclusivamente uma única página HTML (princípio 1 HTML + 1 JS View).
 
-## Existing views
+## Módulos Existentes
 
-_(none yet — see `Antigo dashboard/fuellink-dashboard/index.html`, which
-currently contains all view logic inline for the one existing screen)_
-
-## UI/UX review status
-
-None of the existing screens have been reviewed yet against the UI/UX
-principles in the main handoff doc (Section 8: density over minimalism,
-role-aware interface, visible state/history, explicit confirmation on
-irreversible actions, mobile-first for field forms, meaningful color).
-Update this list as each screen is built or revisited.
+- **`login.js`** — Controla a autenticação, botões de alternância de empresa (FuelLink / Bankers Tankers), estados de alerta e redirecionamento pós-login diretamente para `dashboard.html`.
+- **`dashboard.js`** — Controla o ecrã do Dashboard:
+  - Auth Guard e recuperação da sessão do utilizador.
+  - Filtros dinâmicos por período predefinido e **Data Início / Data Fim**.
+  - Cálculo e renderização reativa dos 4 KPIs da empresa correspondente.
+  - Renderização dos gráficos (Chart.js): Donut de proporção por camião e Linha de tendência temporal com paletas de cores da marca.
+  - Renderização da tabela com as 5 transações mais recentes.
+- **`operations.js`** — Controla o ecrã de Operações:
+  - Mini-KPIs de resumo operacional.
+  - Filtros avançados por intervalo de datas, camião e estado (ativo / anulado).
+  - Tabela completa de operações da empresa com status de guias e notas.
+  - Modal mobile-first para registar novas vendas de combustível (FuelLink) ou entregas de logística (Bankers).
