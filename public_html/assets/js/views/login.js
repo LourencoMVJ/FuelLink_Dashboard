@@ -1,4 +1,4 @@
-import { signIn, getSession, ROLE_PRESETS } from '../core/auth.js';
+import { signIn, getSession, ROLE_PRESETS, RoleMismatchError } from '../core/auth.js';
 import { getCurrentLanguage, setLanguage, t } from '../core/i18n.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -169,19 +169,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setLoading(true);
 
+    // Which company these credentials must belong to — the active pill,
+    // defaulting to 'fuellink' to match its "active" class in the markup
+    // when the user never touches the selector at all.
+    const expectedRole = document.querySelector('.preset-btn.active')?.dataset.preset === 'bakers'
+      ? 'bakers'
+      : 'fuellink';
+
     try {
-      const { user, role } = await signIn(email, password);
+      const { user, role } = await signIn(email, password, expectedRole);
       setLoading(false);
       btnText.textContent = 'Autenticado com sucesso!';
-      
+
       setTimeout(() => {
         redirectToDashboard();
       }, 300);
     } catch (error) {
       setLoading(false);
+      if (error instanceof RoleMismatchError) {
+        showAlert(roleMismatchMessage(error.actualRole));
+        return;
+      }
       showAlert(formatErrorMessage(error.message));
     }
   });
+
+  function roleMismatchMessage(actualRole) {
+    const actualLabel = actualRole === 'bakers' ? 'Bankers Tankers' : 'FuelLink';
+    return getCurrentLanguage() === 'en'
+      ? `These credentials belong to ${actualLabel}. Select the ${actualLabel} tab before signing in.`
+      : `Estas credenciais pertencem à ${actualLabel}. Seleciona o separador ${actualLabel} antes de iniciar sessão.`;
+  }
 
   function setLoading(isLoading) {
     submitBtn.disabled = isLoading;

@@ -29,18 +29,43 @@ const LOCAL_MOCK_USERS = {
 };
 
 /**
- * Sign in using email and password
+ * Thrown when a credential authenticates successfully but belongs to the
+ * OTHER company than the one selected on the login screen (e.g. a Bakers
+ * account, logged in via the FuelLink pill). `actualRole` is always
+ * present so the caller can name the right side in its own message.
+ */
+export class RoleMismatchError extends Error {
+  constructor(actualRole) {
+    super('Estas credenciais pertencem à outra empresa.');
+    this.name = 'RoleMismatchError';
+    this.actualRole = actualRole;
+  }
+}
+
+/**
+ * Sign in using email and password. Which company these credentials
+ * belong to can only be known AFTER authenticating (role lives in
+ * user_roles, resolved via GET /api/me) — so `expectedRole`, when passed,
+ * is checked post-auth: a real diesel-side login attempted with a
+ * logistics-side account (or vice versa) throws RoleMismatchError instead
+ * of silently succeeding into the wrong company's dashboard. A real
+ * Supabase session is explicitly signed back out on mismatch — a failed
+ * check must never leave a valid session behind.
  * @param {string} email
  * @param {string} password
+ * @param {string|null} [expectedRole]
  * @returns {Promise<{user: object, role: string}>}
  */
-export async function signIn(email, password) {
+export async function signIn(email, password, expectedRole = null) {
   const cleanEmail = email.trim().toLowerCase();
 
   // 1. Check if local test mock account matches
   if (LOCAL_MOCK_USERS[cleanEmail]) {
     const mock = LOCAL_MOCK_USERS[cleanEmail];
     if (mock.password === password) {
+      if (expectedRole && mock.role !== expectedRole) {
+        throw new RoleMismatchError(mock.role);
+      }
       const mockSession = {
         user: { id: mock.id, email: cleanEmail },
         role: mock.role,
@@ -63,6 +88,12 @@ export async function signIn(email, password) {
     if (error) throw error;
 
     const profile = await fetchProfile(data.session.access_token);
+
+    if (expectedRole && profile.role !== expectedRole) {
+      await sb.auth.signOut();
+      throw new RoleMismatchError(profile.role);
+    }
+
     return { user: data.user, role: profile.role };
   }
 
