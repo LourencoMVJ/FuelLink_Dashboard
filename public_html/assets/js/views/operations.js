@@ -567,13 +567,16 @@ function renderOperations() {
         ? `<span class="diff-danger-value">-${diffVal.toLocaleString('pt-PT')}&nbsp;L</span>`
         : (diffVal === 0 ? `<span class="diff-zero-value">0&nbsp;L</span>` : `<span class="diff-zero-value">+${Math.abs(diffVal).toLocaleString('pt-PT')}&nbsp;L</span>`);
 
-      // Server-computed and frozen (offloaded_amount * this operation's own
-      // unit_rate, not today's route rate) — never recalculated client-side.
-      // Null (shown as "—") for operations that predate migration 0008 or
-      // don't have offloaded_amount recorded yet.
-      const formattedDeliveryValue = tItem.deliveryValue != null
-        ? `R&nbsp;${tItem.deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : '—';
+      // Prefer the server's frozen delivery_value (offloaded_amount * this
+      // operation's own unit_rate at creation time). Falls back to
+      // offloaded_amount * the route's CURRENT rate — an estimate, not the
+      // frozen figure — only for operations that predate migration 0008 and
+      // have no stored delivery_value, using the route_id link every
+      // operation already has.
+      const deliveryValue = tItem.deliveryValue != null
+        ? tItem.deliveryValue
+        : offloadedAmt * (routeInfo ? (routeInfo.baseRate || 0) : 0);
+      const formattedDeliveryValue = `R&nbsp;${deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
       return `
         <tr class="${isVoided ? 'tr-voided' : ''}">
