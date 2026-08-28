@@ -116,6 +116,18 @@ export async function fetchCompanyData(companyRole) {
       { id: 'tx-bt-15', date: dStr(25), type: 'logistics', amount: 81480.00, balance_delta: 81480.00, litres: 38800, order_amount: 40000, loaded_amount: 39000, offloaded_amount: 38800, route_id: 4, entered_by: 'bakers', truck: 'BT-101-GP', driver: 'Mateus Silveira', trailer: 'TR-101-GP', note: 'BK-5524', delivery_note_name: 'pod_5524.pdf', delivery_note_path: 'mock/path', order_proof_name: 'ord_5524.pdf', order_proof_path: 'mock/path', loaded_proof_name: 'load_5524.pdf', loaded_proof_path: 'mock/path', offloaded_proof_name: 'pod_5524.pdf', offloaded_proof_path: 'mock/path', created_at: new Date().toISOString() },
       { id: 'tx-bt-16', date: dStr(27), type: 'logistics', amount: 75240.00, balance_delta: 75240.00, litres: 41800, order_amount: 42000, loaded_amount: 42000, offloaded_amount: 41800, route_id: 3, entered_by: 'bakers', truck: 'BT-103-GP', driver: 'Liam Gallagher', trailer: 'TR-103-GP', note: 'BK-5525', delivery_note_name: 'pod_5525.pdf', delivery_note_path: 'mock/path', order_proof_name: 'ord_5525.pdf', order_proof_path: 'mock/path', loaded_proof_name: 'load_5525.pdf', loaded_proof_path: 'mock/path', offloaded_proof_name: 'pod_5525.pdf', offloaded_proof_path: 'mock/path', created_at: new Date().toISOString() }
     ];
+
+    // Backfill delivery_value/loaded_offloaded_diff for the offline demo
+    // dataset — these columns (migration 0008) didn't exist when this mock
+    // data was written above. Derived the same way the server does
+    // (OperationController::computeDeliveryTracking) so "Valor a Entregar"
+    // isn't blank in offline/demo mode; amount already equals
+    // offloaded_amount * unit_rate for every Bankers row above.
+    transactions = transactions.map(t => t.type === 'logistics' ? {
+      ...t,
+      delivery_value: t.amount,
+      loaded_offloaded_diff: (t.loaded_amount || 0) - (t.offloaded_amount || 0)
+    } : t);
   }
 
   const dieselPrice = Number(fset?.diesel_price ?? 27.61);
@@ -200,6 +212,12 @@ export function mapTransactionRow(t, trucks, drivers) {
     loadedAmount: loadedAmt,
     offloadedAmount: offloadedAmt,
     diffAmount: diffAmt,
+    // Server-computed and frozen (OperationController::computeDeliveryTracking) —
+    // offloaded_amount * the operation's own frozen unit_rate, never today's
+    // route rate. Null until both inputs exist (pre-migration-0008 rows,
+    // or offloaded_amount not yet recorded) — never fabricated client-side.
+    deliveryValue: t.delivery_value != null ? Number(t.delivery_value) : null,
+    loadedOffloadedDiff: t.loaded_offloaded_diff != null ? Number(t.loaded_offloaded_diff) : null,
     routeId: t.route_id,
     enteredBy: t.entered_by,
     note: t.note || '',

@@ -557,7 +557,6 @@ function renderOperations() {
     if (role === 'bakers') {
       const routeInfo = routeMap[tItem.routeId];
       const routeHtml = routeInfo ? routeInfo.html : '—';
-      const baseRate = routeInfo ? (routeInfo.baseRate || 0) : 1.45;
 
       const orderAmt = Number(tItem.orderAmount || tItem.litres || 0);
       const loadedAmt = Number(tItem.loadedAmount || tItem.litres || 0);
@@ -568,8 +567,13 @@ function renderOperations() {
         ? `<span class="diff-danger-value">-${diffVal.toLocaleString('pt-PT')}&nbsp;L</span>`
         : (diffVal === 0 ? `<span class="diff-zero-value">0&nbsp;L</span>` : `<span class="diff-zero-value">+${Math.abs(diffVal).toLocaleString('pt-PT')}&nbsp;L</span>`);
 
-      const deliveryValue = offloadedAmt * baseRate;
-      const formattedDeliveryValue = deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Server-computed and frozen (offloaded_amount * this operation's own
+      // unit_rate, not today's route rate) — never recalculated client-side.
+      // Null (shown as "—") for operations that predate migration 0008 or
+      // don't have offloaded_amount recorded yet.
+      const formattedDeliveryValue = tItem.deliveryValue != null
+        ? `R&nbsp;${tItem.deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : '—';
 
       return `
         <tr class="${isVoided ? 'tr-voided' : ''}">
@@ -582,7 +586,7 @@ function renderOperations() {
           <td style="text-align: right; font-weight: 600;">${loadedAmt.toLocaleString('pt-PT')}&nbsp;L</td>
           <td style="text-align: right; font-weight: 600;">${offloadedAmt.toLocaleString('pt-PT')}&nbsp;L</td>
           <td style="text-align: right;">${diffDisplay}</td>
-          <td style="text-align: right; font-weight: 700; white-space: nowrap;">R&nbsp;${formattedDeliveryValue}</td>
+          <td style="text-align: right; font-weight: 700; white-space: nowrap;">${formattedDeliveryValue}</td>
           <td style="text-align: center;">${statusBadge}</td>
           <td class="op-note-cell">${tItem.note || '—'}</td>
           <td style="text-align: center;">${actionsHtml}</td>
