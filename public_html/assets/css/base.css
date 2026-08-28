@@ -39,12 +39,12 @@
   --border-focus: #104CCF;
   --grid-line: #DFE0E4;
 
-  /* Radii - Systematic */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
+  /* Radii - Systematic (Scaled Proportions) */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 9999px;
 
   /* Transitions */
@@ -163,6 +163,18 @@ body.role-bakers[data-theme="dark"],
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html {
+  font-size: 13px;
+  overflow-x: clip;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  font-size: 13px;
 }
 
 /* Universal Placeholders & Inputs Readability */
