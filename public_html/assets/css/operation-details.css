@@ -20,14 +20,14 @@
 
 .btn-icon-back {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 9px;
   color: var(--text-main);
   text-decoration: none;
   transition: all var(--transition-fast);
@@ -35,11 +35,16 @@
   flex-shrink: 0;
 }
 
+.btn-icon-back svg {
+  width: 16px;
+  height: 16px;
+}
+
 .btn-icon-back:hover {
   background: var(--bg-surface-subtle);
   border-color: var(--theme-fl);
   color: var(--theme-fl);
-  transform: translateX(-3px);
+  transform: translateX(-2px);
 }
 
 body.role-bakers .btn-icon-back:hover,
@@ -51,20 +56,20 @@ body.role-bakers .btn-icon-back:hover,
 .btn-icon-back .custom-tooltip {
   position: absolute;
   left: 0;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   background: #0F172A;
   color: #FFFFFF;
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   transition: all var(--transition-fast);
   z-index: 50;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
 .btn-icon-back:hover .custom-tooltip {
@@ -73,18 +78,18 @@ body.role-bakers .btn-icon-back:hover,
 }
 
 .details-title-wrap h1 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.03em;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .details-title-wrap p {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -92,18 +97,19 @@ body.role-bakers .btn-icon-back:hover,
 .details-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
 }
 
 /* Two Column Layout for Details */
 .details-main-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 18px;
+  margin-bottom: 24px;
+  width: 100%;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .details-main-grid {
     grid-template-columns: 1fr;
   }
@@ -113,46 +119,46 @@ body.role-bakers .btn-icon-back:hover,
 .details-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.03);
+  margin-bottom: 18px;
 }
 
 .details-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 14px;
-  margin-bottom: 18px;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .details-card-title {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-main);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .details-data-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
 }
 
 .details-data-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .details-data-label {
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -160,7 +166,7 @@ body.role-bakers .btn-icon-back:hover,
 }
 
 .details-data-value {
-  font-size: 15px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-main);
 }
@@ -175,7 +181,7 @@ body.role-bakers .btn-icon-back:hover,
 }
 
 .details-data-value.highlight-amount {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--theme-fl);
 }
@@ -188,8 +194,8 @@ body.role-bakers .details-data-value.highlight-amount,
 /* Documents & Proofs Gallery */
 .docs-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
 }
 
 .doc-card {

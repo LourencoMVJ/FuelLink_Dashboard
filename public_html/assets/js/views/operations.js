@@ -727,8 +727,8 @@ function openQuickActionModal(op) {
   const cleanId = (op.id || '').replace(/^tx-(bt|fl)-/, '');
   const refDisplay = op.note ? op.note : `Ref. #${cleanId}`;
 
-  if (title) title.textContent = `Operação: ${op.truck || '—'} (${refDisplay})`;
-  if (subtitle) subtitle.textContent = `Data: ${op.date} — ${op.driver || 'Sem motorista'}`;
+  if (title) title.textContent = op.truck ? `Operação: ${op.truck} (${refDisplay})` : `Operação (${refDisplay})`;
+  if (subtitle) subtitle.textContent = op.driver ? `Data: ${op.date} - ${op.driver}` : `Data: ${op.date}`;
 
   // View Details Handler
   btnView.onclick = () => {
@@ -1107,7 +1107,7 @@ function handleExportData(format) {
         </style>
       </head>
       <body>
-        <h1>${roleName} — Relatório de Operações</h1>
+        <h1>${roleName} | Relatório de Operações</h1>
         <p>Exportado em: ${new Date().toLocaleString('pt-PT')} | Total de registos: ${operations.length}</p>
         <table>
           <thead>
@@ -1128,7 +1128,7 @@ function handleExportData(format) {
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
       <head><meta charset="utf-8"><title>Relatório ${roleName}</title></head>
       <body>
-        <h2>${roleName} — Relatório Operacional</h2>
+        <h2>${roleName} | Relatório Operacional</h2>
         <p>Data de exportação: ${dateStr}</p>
         <table border="1" style="border-collapse:collapse; width:100%;">
           <tr style="background-color:#f2f2f2;"><th>Data</th><th>Camião</th><th>Motorista</th><th>Litros</th><th>Valor</th><th>Estado</th></tr>

@@ -45,11 +45,10 @@
       </header>
 
       <!-- Operations KPIs Summary (Styled to match Dashboard Elevated Pattern) -->
-      <section class="kpi-grid" id="opsSummaryContainer" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+      <section class="kpi-grid ops-kpi-grid" id="opsSummaryContainer">
         <div class="kpi-card" id="opsKpiCard1">
           <div class="kpi-card-header">
             <span class="kpi-label" id="lblKpiVolume">Volume Total</span>
-            <span class="kpi-status-pill" id="tagKpiVolume">Volume</span>
           </div>
           <div class="kpi-value-row">
             <span class="kpi-value" id="summaryTotalLitres">0</span>
@@ -57,28 +56,24 @@
           </div>
           <div class="kpi-footer">
             <span id="footKpiVolume">No período filtrado</span>
-            <span class="kpi-trend positive">↑ Ativo</span>
           </div>
         </div>
 
         <div class="kpi-card" id="opsKpiCard2">
           <div class="kpi-card-header">
             <span class="kpi-label" id="lblKpiBilling">Faturação Acumulada</span>
-            <span class="kpi-status-pill high" id="tagKpiRands">Rands</span>
           </div>
           <div class="kpi-value-row">
             <span class="kpi-value" id="summaryTotalValue">R 0,00</span>
           </div>
           <div class="kpi-footer">
             <span id="footKpiBilling">Total calculado</span>
-            <span class="kpi-trend positive">Total</span>
           </div>
         </div>
 
         <div class="kpi-card" id="opsKpiCard3">
           <div class="kpi-card-header">
             <span class="kpi-label" id="lblKpiRecords">Total de Registos</span>
-            <span class="kpi-status-pill optimal" id="tagKpiTrips">Operações</span>
           </div>
           <div class="kpi-value-row">
             <span class="kpi-value" id="summaryTotalCount">0</span>
@@ -86,7 +81,6 @@
           </div>
           <div class="kpi-footer">
             <span id="footKpiRecords">Operações listadas</span>
-            <span class="kpi-trend neutral">—</span>
           </div>
         </div>
       </section>

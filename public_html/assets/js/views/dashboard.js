@@ -268,7 +268,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('litresHauled')}</span>
-          <span class="kpi-status-pill">${t('kpiNormalTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${totalLitres.toLocaleString('pt-PT')}</span>
@@ -276,7 +275,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiSelectedPeriod')}</span>
-          <span class="kpi-trend positive">↑ ${t('activeStatus')}</span>
         </div>
       </div>
 
@@ -284,14 +282,12 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('totalSupplyValue')}</span>
-          <span class="kpi-status-pill high">${t('kpiRandsTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">R ${totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
         <div class="kpi-footer">
           <span>${t('kpiAccumulatedTotal')}</span>
-          <span class="kpi-trend positive">Total</span>
         </div>
       </div>
 
@@ -299,7 +295,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('deliveriesCount')}</span>
-          <span class="kpi-status-pill optimal">${t('kpiTripsTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${count}</span>
@@ -307,7 +302,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiRegisteredDeliveries')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
 
@@ -315,14 +309,12 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card bakers">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('fuelDiff')}</span>
-          <span class="kpi-status-pill">${t('kpiMonth4')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">—</span>
         </div>
         <div class="kpi-footer">
           <span>${t('kpiAwaitingDelivered')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
     `;
@@ -337,7 +329,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('litresSold')}</span>
-          <span class="kpi-status-pill">${t('kpiVolumeTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${totalLitres.toLocaleString('pt-PT')}</span>
@@ -345,7 +336,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiReactiveDate')}</span>
-          <span class="kpi-trend positive">↑ ${t('kpiVolumeTag')}</span>
         </div>
       </div>
 
@@ -353,14 +343,12 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('totalSoldValue')}</span>
-          <span class="kpi-status-pill high">${t('kpiRandsTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">R ${totalValue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
         <div class="kpi-footer">
           <span>${t('kpiCalculatedBilling')}</span>
-          <span class="kpi-trend positive">Total</span>
         </div>
       </div>
 
@@ -368,7 +356,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('operationsCount')}</span>
-          <span class="kpi-status-pill optimal">${t('kpiSalesTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">${count}</span>
@@ -376,7 +363,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiActiveOps')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
 
@@ -384,7 +370,6 @@ function renderKPIs(transactions, role) {
       <div class="kpi-card fuellink">
         <div class="kpi-card-header">
           <span class="kpi-label">${t('avgDieselPrice')}</span>
-          <span class="kpi-status-pill">${t('kpiPriceTag')}</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-value">R ${avgPrice.toFixed(2)}</span>
@@ -392,7 +377,6 @@ function renderKPIs(transactions, role) {
         </div>
         <div class="kpi-footer">
           <span>${t('kpiAvgPeriod')}</span>
-          <span class="kpi-trend neutral">—</span>
         </div>
       </div>
     `;

@@ -408,7 +408,7 @@ function openDocumentPreviewModal(doc) {
         <h3 style="font-size: 16px; color: #FFFFFF; margin-bottom: 6px;">${doc.name}</h3>
         <p style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">Documento digitalizado anexado à transação</p>
         <div style="display: inline-flex; gap: 8px; font-size: 11px; padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 20px;">
-          <span>Estado: Verificado</span> • <span>Formato: PDF / Scan</span> • <span>Criptografia: SHA-256</span>
+          <span>Estado: Verificado</span> - <span>Formato: PDF / Scan</span> - <span>Criptografia: SHA-256</span>
         </div>
       </div>
     `;
