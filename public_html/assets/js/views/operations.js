@@ -246,18 +246,6 @@ function setupScreenBranding(session) {
     if (bakersVolumesRow) bakersVolumesRow.style.display = 'none';
     if (flProofField) flProofField.style.display = 'flex';
     if (bakersProofsRow) bakersProofsRow.style.display = 'none';
-
-    // No backend endpoint accepts a FuelLink proof upload yet (only
-    // OperationController::attachProof() for Bankers order/loaded/offloaded
-    // exists) — disabled rather than silently accepting a file that goes
-    // nowhere.
-    const flProofInput = document.getElementById('newOpProof');
-    if (flProofInput) {
-      flProofInput.disabled = true;
-      flProofInput.title = getCurrentLanguage() === 'en'
-        ? 'File upload not yet available on the server'
-        : 'Upload de ficheiro ainda não disponível no servidor';
-    }
   }
 }
 
@@ -884,6 +872,8 @@ async function handleSaveOperation() {
 
     if (isBakers) {
       await uploadBankersProofs(savedOp.id);
+    } else {
+      await uploadFuellinkDeliveryNote(savedOp.id);
     }
 
     document.getElementById('newOperationModal')?.classList.remove('show');
@@ -926,6 +916,27 @@ async function uploadBankersProofs(operationId) {
       console.error(`Error uploading ${field} proof:`, err);
       alert(`Erro ao enviar comprovativo (${field}): ` + (err.message || err));
     }
+  }
+}
+
+/**
+ * Uploads the FuelLink delivery note/proof, against POST
+ * /api/operations/{id}/proof/delivery_note — OperationController::
+ * attachProof() (same validation as the Bankers proofs: extension,
+ * content-sniffed MIME, 5MB cap). No-op if no file was selected.
+ */
+async function uploadFuellinkDeliveryNote(operationId) {
+  const file = document.getElementById('newOpProof')?.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('proof', file);
+
+  try {
+    await api.upload(`operations/${encodeURIComponent(operationId)}/proof/delivery_note`, formData);
+  } catch (err) {
+    console.error('Error uploading delivery note:', err);
+    alert('Erro ao enviar comprovativo: ' + (err.message || err));
   }
 }
 

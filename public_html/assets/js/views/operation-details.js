@@ -9,7 +9,7 @@ import { initHeaderControls, t, getCurrentLanguage, applyTheme, getCurrentTheme 
 import { fetchCompanyData, mapTransactionRow } from '../models/transactions.js';
 import { api, downloadFile } from '../core/api.js';
 
-const DOWNLOADABLE_PROOF_FIELDS = ['order', 'loaded', 'offloaded'];
+const DOWNLOADABLE_PROOF_FIELDS = ['order', 'loaded', 'offloaded', 'delivery_note'];
 
 let currentSession = null;
 let currentOperation = null;
@@ -309,14 +309,14 @@ function renderDocumentsGallery(op, isBakers) {
       field: null
     });
   } else {
-    // FuelLink Delivery Note / Proof — no backend upload/download endpoint
-    // exists yet for this field (only Bankers order/loaded/offloaded do).
+    // FuelLink Delivery Note / Proof — downloadable via
+    // GET /api/operations/{id}/proof/delivery_note.
     const hasDeliveryNote = !!(op.deliveryNotePath || op.deliveryNoteName);
     docs.push({
       type: t('proofDelivery') || 'Guia de Entrega / Fatura Comercial',
       attached: hasDeliveryNote,
       name: op.deliveryNoteName || (hasDeliveryNote ? 'Guia_Venda.pdf' : null),
-      field: null
+      field: 'delivery_note'
     });
   }
 

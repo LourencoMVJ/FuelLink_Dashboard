@@ -40,6 +40,7 @@ use DateTimeImmutable;
 final class OperationController
 {
     private const PROOF_FIELDS = ['order', 'loaded', 'offloaded'];
+    private const DELIVERY_NOTE_FIELD = 'delivery_note';
 
     public function __construct(
         private readonly AuthMiddleware $auth,
@@ -250,28 +251,24 @@ final class OperationController
     /**
      * POST /api/operations/{id}/proof/{field} — attaches a proof file
      * (multipart/form-data, field name `proof`) for one of the 3 Bankers
-     * delivery-tracking quantities. Bypasses `Request::capture()` entirely
-     * — a multipart body has no JSON to parse. Strict server-side
-     * validation (Contract Clause 1.3): extension whitelist, real
-     * content-sniffed MIME type (never the client-supplied one), size
-     * ceiling, and the two must agree with each other
-     * (`FileValidator::contentMatchesExtension()` — catches a renamed
-     * `evil.php` claiming to be `.pdf`).
+     * delivery-tracking quantities (`order`/`loaded`/`offloaded`, logistics
+     * operations only) or the single FuelLink delivery note
+     * (`delivery_note`, diesel operations only — shares the
+     * `delivery_note_path`/`delivery_note_name` columns granted since
+     * migration 0003). Bypasses `Request::capture()` entirely — a
+     * multipart body has no JSON to parse. Strict server-side validation
+     * (Contract Clause 1.3): extension whitelist, real content-sniffed
+     * MIME type (never the client-supplied one), size ceiling, and the two
+     * must agree with each other (`FileValidator::contentMatchesExtension()`
+     * — catches a renamed `evil.php` claiming to be `.pdf`).
      */
     public function attachProof(string $id, string $field): void
     {
         $caller = $this->auth->requireAuth();
         $this->auth->requirePermission($caller['user_id'], 'operations.upload_delivery_proof');
 
-        if (!in_array($field, self::PROOF_FIELDS, true)) {
-            Response::error("Invalid proof field — must be 'order', 'loaded', or 'offloaded'.", 400);
-        }
-
         $tx = $this->fetchEditableTransaction($id, $caller['role']);
-
-        if ($tx['type'] !== 'logistics') {
-            Response::error('Proof uploads are only for Bankers logistics operations.', 400);
-        }
+        [$pathColumn, $nameColumn] = self::resolveProofColumns($field, $tx['type']);
 
         $file = Request::uploadedFile('proof');
 
@@ -326,8 +323,8 @@ final class OperationController
         LocalFileStorage::store($objectPath, $contents);
 
         $payload = [
-            $field . '_proof_path' => $objectPath,
-            $field . '_proof_name' => $filename,
+            $pathColumn => $objectPath,
+            $nameColumn => $filename,
         ];
 
         Response::json($this->transactions->patch($id, $caller['role'], $payload));
@@ -348,18 +345,16 @@ final class OperationController
     {
         $caller = $this->auth->requireAuth();
 
-        if (!in_array($field, self::PROOF_FIELDS, true)) {
-            Response::error("Invalid proof field — must be 'order', 'loaded', or 'offloaded'.", 400);
-        }
-
         $tx = $this->transactions->findById($id, $caller['role']);
 
         if ($tx === null) {
             Response::error('Operation not found.', 404);
         }
 
-        $objectPath = $tx[$field . '_proof_path'] ?? null;
-        $displayName = $tx[$field . '_proof_name'] ?? 'proof';
+        [$pathColumn, $nameColumn] = self::resolveProofColumns($field, $tx['type']);
+
+        $objectPath = $tx[$pathColumn] ?? null;
+        $displayName = $tx[$nameColumn] ?? 'proof';
 
         if (!is_string($objectPath)) {
             Response::error('No proof has been uploaded for this field.', 404);
@@ -456,6 +451,39 @@ final class OperationController
         }
 
         return $tx;
+    }
+
+    /**
+     * Maps a `{field}` path segment to its `transactions` proof columns and
+     * enforces which operation type may use it: the 3 Bankers quantities
+     * (`order`/`loaded`/`offloaded`, column pattern `{field}_proof_*`) are
+     * logistics-only, while `delivery_note` (the single FuelLink slot,
+     * columns `delivery_note_path`/`delivery_note_name` — pre-existing
+     * since migration 0003) is diesel-only. Shared by attachProof() and
+     * downloadProof() so the two can never drift apart on which field goes
+     * with which company.
+     *
+     * @return array{0: string, 1: string} [pathColumn, nameColumn]
+     */
+    private static function resolveProofColumns(string $field, string $txType): array
+    {
+        if ($field === self::DELIVERY_NOTE_FIELD) {
+            if ($txType !== 'diesel') {
+                Response::error('Delivery note uploads are only for FuelLink diesel operations.', 400);
+            }
+
+            return ['delivery_note_path', 'delivery_note_name'];
+        }
+
+        if (in_array($field, self::PROOF_FIELDS, true)) {
+            if ($txType !== 'logistics') {
+                Response::error('Proof uploads are only for Bankers logistics operations.', 400);
+            }
+
+            return [$field . '_proof_path', $field . '_proof_name'];
+        }
+
+        Response::error("Invalid proof field — must be 'order', 'loaded', 'offloaded', or 'delivery_note'.", 400);
     }
 
     /**
