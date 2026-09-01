@@ -4,7 +4,38 @@
  */
 import { sb } from '../config/supabase-client.js';
 
-export async function fetchCompanyData(companyRole) {
+// Only the columns mapTransactionRow()/the dashboard charts/table actually
+// read — not select('*'), which used to pull every proof-path/name and
+// order/loaded/offloaded field on every load regardless of use.
+const TRANSACTION_COLUMNS = 'id,date,created_at,type,amount,balance_delta,unit_rate,litres,order_amount,loaded_amount,offloaded_amount,delivery_value,loaded_offloaded_diff,route_id,entered_by,note,detail,voids_id,voids_type,truck_id,truck_text,driver_id,driver_text,trailer_reg,delivery_note_path,delivery_note_name,order_proof_path,order_proof_name,loaded_proof_path,loaded_proof_name,offloaded_proof_path,offloaded_proof_name';
+
+/**
+ * periodPreset defaults to 'all' (dashboard.js) — "no filter set" must still
+ * resolve to a bounded window here, not literally forever.
+ */
+function resolveDateWindow(startDate, endDate) {
+  if (startDate && endDate) return { from: startDate, to: endDate };
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - 3, 1); // last ~90 days, month-aligned
+  return {
+    from: from.toISOString().split('T')[0],
+    to: now.toISOString().split('T')[0]
+  };
+}
+
+function buildTransactionsQuery(companyRole, startDate, endDate) {
+  const { from, to } = resolveDateWindow(startDate, endDate);
+  return sb.from('transactions')
+    .select(TRANSACTION_COLUMNS)
+    .eq('entered_by', companyRole)
+    .gte('date', from)
+    .lte('date', to)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(2000);
+}
+
+export async function fetchCompanyData(companyRole, { startDate, endDate } = {}) {
   let routes = [];
   let fset = null;
   let bset = null;
@@ -18,7 +49,7 @@ export async function fetchCompanyData(companyRole) {
         sb.from('routes').select('*').order('id'),
         sb.from('fuellink_settings').select('*').eq('id', 1).maybeSingle(),
         sb.from('bakers_settings').select('*').eq('id', 1).maybeSingle(),
-        sb.from('transactions').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
+        buildTransactionsQuery(companyRole, startDate, endDate),
         sb.from('trucks').select('*').order('reg_number'),
         sb.from('drivers').select('*').order('name')
       ]);

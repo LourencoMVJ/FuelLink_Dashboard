@@ -115,6 +115,12 @@ final class FakeSupabaseClient implements SupabaseClientInterface
      */
     private function matchesFilter(mixed $rowValue, string $filter): bool
     {
+        if (str_starts_with($filter, 'in.(') && str_ends_with($filter, ')')) {
+            $values = explode(',', substr($filter, 4, -1));
+
+            return in_array($this->stringify($rowValue), $values, true);
+        }
+
         foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<', 'eq' => '=='] as $op => $comparator) {
             $prefix = $op . '.';
 

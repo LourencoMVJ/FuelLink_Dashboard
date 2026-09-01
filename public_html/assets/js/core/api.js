@@ -4,13 +4,21 @@
  * token, unwraps the {success,data,error,meta} envelope, and throws on
  * failure so callers can just try/catch.
  */
-import { getSession } from './auth.js';
+import { sb } from '../config/supabase-client.js';
 
 const API_BASE = '../api';
 
+/**
+ * Reads the access token straight from the local Supabase session
+ * (network-free except on token-expiry refresh) instead of going through
+ * auth.js's getSession(), which always also fetches the full app profile
+ * via /api/me — a redundant round-trip when all this needs is the token.
+ */
 async function getAccessToken() {
-  const active = await getSession();
-  return active?.session?.access_token || null;
+  if (!sb) return null;
+  const { data, error } = await sb.auth.getSession();
+  if (error || !data.session) return null;
+  return data.session.access_token || null;
 }
 
 async function request(path, { method = 'GET', body, isFormData = false } = {}) {

@@ -34,11 +34,22 @@ final class TransactionModel
      * client or a Controller that hasn't already verified the caller may
      * see across the company boundary.
      *
+     * Column list trimmed to exactly what LedgerController::buildLedger()
+     * and the frontend's computeLogisticsFees()/renderNetBalanceChart()
+     * read. Reduces payload without changing which ROWS are returned —
+     * unlike LIMIT/OFFSET, which would corrupt the from-genesis running
+     * balance and all-time logistics fee total both consumers require, so
+     * real pagination isn't a safe option here without a separate
+     * checkpoint mechanism (not built). Check both consumers before adding
+     * columns back rather than reverting to select('*').
+     *
      * @return list<array<string, mixed>>
      */
     public function listAll(): array
     {
-        return $this->client->get('transactions');
+        return $this->client->get('transactions', [
+            'select' => 'id,date,created_at,type,entered_by,balance_delta,amount,litres,voids_type,detail',
+        ]);
     }
 
     /** @return array<string, mixed>|null */
@@ -98,7 +109,12 @@ final class TransactionModel
             'date' => ['gte.' . $from, 'lte.' . $to],
         ]);
 
-        $voidedIds = $this->voidedIds($type, $enteredBy);
+        if ($originals === []) {
+            return [];
+        }
+
+        $originalIds = array_map(static fn (array $tx): string => (string) $tx['id'], $originals);
+        $voidedIds = $this->voidedIdsFor($originalIds, $type, $enteredBy);
 
         return array_values(array_filter(
             $originals,
@@ -107,20 +123,30 @@ final class TransactionModel
     }
 
     /**
+     * Which of $originalIds are voided — bounded to exactly this page's own
+     * ids (a `voids_id=in.(...)` filter) instead of every void this company
+     * has ever recorded, which used to be re-fetched in full on every call.
+     * Still correct for the "a void can postdate its original" case: this
+     * filters by `voids_id IN (...)`, not by the void row's own date, so a
+     * void entered any time after $to still matches as long as its
+     * `voids_id` is one of $originalIds.
+     *
      * A void row with no `voids_id` (malformed data — buildVoidPayload()
      * always sets it) must never suppress an unrelated original from the
      * active list: filtered out explicitly rather than trusting it can
      * never be null, since `in_array(..., true)` on a null would otherwise
      * silently never match anything, not just this one broken row.
      *
+     * @param list<string> $originalIds
      * @return list<string>
      */
-    private function voidedIds(string $type, string $enteredBy): array
+    private function voidedIdsFor(array $originalIds, string $type, string $enteredBy): array
     {
         $voids = $this->client->get('transactions', [
             'type' => 'eq.void',
             'voids_type' => 'eq.' . $type,
             'entered_by' => 'eq.' . $enteredBy,
+            'voids_id' => 'in.(' . implode(',', $originalIds) . ')',
         ]);
 
         return array_values(array_filter(array_map(

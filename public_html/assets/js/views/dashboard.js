@@ -52,10 +52,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 3. Setup Default Filter Dates (e.g. Current Month)
   setupDefaultDates();
 
-  // 4. Fetch & Render Data — ledger loads first (if admin) so the
-  // cross-company KPI card below can use it on the same render pass.
-  await loadLedgerIfAdmin();
-  await loadAndRender();
+  // 4. Fetch & Render Data — ledger and company data are independent reads,
+  // run together. renderDashboard() (inside loadAndRender()) reads
+  // ledgerData for KPI card 3/charts, so both must settle before it runs,
+  // but neither fetch depends on the other's result.
+  await Promise.all([loadLedgerIfAdmin(), loadAndRender()]);
   renderNetPositionBanner();
 
   // 5. Setup Listeners
@@ -254,12 +255,12 @@ function setupEventListeners() {
       startDateInput.value = firstDay.toISOString().split('T')[0];
       endDateInput.value = lastDay.toISOString().split('T')[0];
     }
-    renderDashboard();
+    loadAndRender();
   });
 
   applyBtn?.addEventListener('click', () => {
     if (periodPreset) periodPreset.value = 'custom';
-    renderDashboard();
+    loadAndRender();
   });
 
   resetBtn?.addEventListener('click', () => {
@@ -268,13 +269,15 @@ function setupEventListeners() {
     if (endDateInput) endDateInput.value = '';
     const truckFilter = document.getElementById('truckFilter');
     if (truckFilter) truckFilter.value = '';
-    renderDashboard();
+    loadAndRender();
   });
 }
 
 async function loadAndRender() {
   try {
-    rawData = await fetchCompanyData(currentSession.role);
+    const startDate = document.getElementById('startDate')?.value;
+    const endDate = document.getElementById('endDate')?.value;
+    rawData = await fetchCompanyData(currentSession.role, { startDate, endDate });
     populateTruckFilter(rawData.trucks);
     await renderDashboard();
   } catch (err) {

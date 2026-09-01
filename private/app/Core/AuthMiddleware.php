@@ -23,6 +23,15 @@ final class AuthMiddleware
 {
     private const JWKS_CACHE_TTL_SECONDS = 3600;
 
+    // Short — unlike the JWKS TTL above — because an admin deactivating a
+    // user or changing their role should take effect quickly, not after an
+    // hour of stale reads.
+    private const PROFILE_CACHE_TTL_SECONDS = 45;
+
+    // Sentinel distinguishing "no cache entry" from a legitimately cached
+    // null profile (deactivated/roleless user) — see readProfileCache().
+    private const CACHE_MISS = '__profile_cache_miss__';
+
     public function __construct(private readonly SupabaseClientInterface $client)
     {
     }
@@ -224,16 +233,82 @@ final class AuthMiddleware
      * Supabase reads (gated by current_user_role(), migration 0004) would
      * already deny them.
      *
+     * Cached per user (see profileCachePath()) for PROFILE_CACHE_TTL_SECONDS
+     * — every PHP request is a fresh process with no shared memory, so
+     * without this, a single dashboard load re-hits user_roles once per
+     * API call for the same user. A future "deactivate user" / "change
+     * role" endpoint should unlink() the corresponding cache file; none
+     * exists yet, so invalidation is TTL-only for now.
+     *
      * @return array<string, mixed>|null
      */
     private function lookupProfile(string $userId): ?array
     {
+        $cachePath = $this->profileCachePath($userId);
+        $cached = $this->readProfileCache($cachePath);
+
+        if ($cached !== self::CACHE_MISS) {
+            return $cached;
+        }
+
         $rows = $this->client->get('user_roles', [
             'user_id' => 'eq.' . $userId,
             'is_active' => 'eq.true',
             'select' => 'role,is_admin,full_name,phone',
         ]);
 
-        return $rows[0] ?? null;
+        $profile = $rows[0] ?? null;
+        $this->writeProfileCache($cachePath, $profile);
+
+        return $profile;
+    }
+
+    private function profileCachePath(string $userId): string
+    {
+        return dirname(__DIR__, 2) . '/storage/profile-cache/' . hash('sha256', $userId) . '.json';
+    }
+
+    /**
+     * Returns self::CACHE_MISS (not null) on a genuine miss, distinct from a
+     * cached negative result (no active user_roles row, itself represented
+     * as null) — otherwise a deactivated/roleless user's cached null would
+     * be indistinguishable from "not cached yet" and re-fetched every
+     * request, defeating the cache for exactly the account that most needs
+     * requireAuth()'s 401 path to stay cheap.
+     *
+     * @return array<string, mixed>|null|string self::CACHE_MISS sentinel
+     */
+    private function readProfileCache(string $path): mixed
+    {
+        if (!is_file($path) || !self::isCacheFresh(filemtime($path) ?: 0, time(), self::PROFILE_CACHE_TTL_SECONDS)) {
+            return self::CACHE_MISS;
+        }
+
+        $contents = file_get_contents($path);
+        $decoded = $contents === false ? null : json_decode($contents, true);
+
+        return is_array($decoded) && array_key_exists('profile', $decoded) ? $decoded['profile'] : self::CACHE_MISS;
+    }
+
+    /** @param array<string, mixed>|null $profile */
+    private function writeProfileCache(string $path, ?array $profile): void
+    {
+        $dir = dirname($path);
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($path, json_encode(['profile' => $profile]));
+    }
+
+    /**
+     * Pure freshness check, split out from readProfileCache() so it's
+     * unit-testable without touching disk — same split as isGranted() from
+     * requirePermission().
+     */
+    public static function isCacheFresh(int $mtime, int $now, int $ttlSeconds): bool
+    {
+        return ($now - $mtime) <= $ttlSeconds;
     }
 }
