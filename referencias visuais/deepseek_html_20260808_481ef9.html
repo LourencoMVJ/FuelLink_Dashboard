@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inter-company Offset Dashboard - Login</title>
+    <style>
+        /* ===== CSS Variables e Temas ===== */
+        :root {
+            --primary-color: #007bff; /* Cor padrão Azul (FuelLink) */
+            --primary-hover: #0056b3;
+            --primary-light: #e6f2ff;
+            --primary-border: #007bff;
+            --text-color: #333;
+            --gray-light: #f8f9fa;
+            --gray-border: #e9ecef;
+            --transition-speed: 0.4s;
+        }
+
+        /* Tema Laranja (Bonkers Tankers) */
+        .theme-orange {
+            --primary-color: #fd7e14;
+            --primary-hover: #e06b0a;
+            --primary-light: #fff3e0;
+            --primary-border: #fd7e14;
+        }
+
+        /* ===== Reset e Configurações Globais ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== Layout Principal ===== */
+        .login-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+        }
+
+        /* ===== Lado Esquerdo (Imagem) ===== */
+        .login-image {
+            flex: 1;
+            background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            display: none;
+            position: relative;
+        }
+
+        .login-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* ===== Lado Direito (Formulário) ===== */
+        .login-form-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #f4f7fc; 
+        }
+
+        .login-card {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .login-card h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .sub-text {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .sub-text a {
+            color: #6f42c1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .sub-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== Botões de Seleção (Toggles) ===== */
+        .option-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 10px;
+            border: 1px solid var(--gray-border);
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .option-btn .icon {
+            font-size: 16px;
+            color: #aaa;
+            transition: color var(--transition-speed) ease;
+        }
+
+        .option-btn.active {
+            border-color: var(--primary-border);
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            box-shadow: 0 0 0 1px var(--primary-border);
+        }
+
+        .option-btn.active .icon {
+            color: var(--primary-color);
+        }
+
+        /* ===== Inputs ===== */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            color: #333;
+            outline: none;
+            transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-border);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* ===== NOVA SEÇÃO: Ações do Formulário (Remember me / Forgot Password) ===== */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0 25px 0;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #333; /* Define a cor do check preto conforme a imagem */
+        }
+
+        .forgot-password {
+            color: #ff4d4f; /* Cor vermelha conforme a imagem */
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s ease;
+        }
+
+        .forgot-password:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        /* ===== Botão de Login ===== */
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color var(--transition-speed) ease, transform 0.1s;
+        }
+
+        .login-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* ===== Responsividade (Mobile) ===== */
+        @media (min-width: 769px) {
+            .login-image {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                background: transparent;
+                box-shadow: none;
+                padding: 20px 10px;
+            }
+            .option-btn {
+                min-width: 120px;
+            }
+            .login-form-wrapper {
+                padding: 0 15px;
+            }
+            .form-actions {
+                flex-direction: column; /* Empilha no mobile se ficar muito apertado */
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <!-- Lado Esquerdo com Imagem -->
+        <div class="login-image"></div>
+
+        <!-- Lado Direito com Formulário -->
+        <div class="login-form-wrapper">
+            <div class="login-card">
+                <h1>Inter-company Offset Dashboard</h1>
+                <p class="sub-text">Doesn't have an account? <a href="#">Contact us</a></p>
+
+                <!-- Seletores de Empresa -->
+                <div class="option-group">
+                    <button class="option-btn active" data-theme="blue" onclick="setTheme('blue')">
+                        <span class="icon">✦</span> FuelLink/ Rwanda Service
+                    </button>
+                    <button class="option-btn" data-theme="orange" onclick="setTheme('orange')">
+                        <span class="icon">✦</span> Bonkers Tankers Ltd
+                    </button>
+                </div>
+
+                <!-- Campos -->
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" value="Malcolm@bonkers.co.za">
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" value="**************">
+                </div>
+
+                <!-- NOVA SEÇÃO ADICIONADA AQUI -->
+                <div class="form-actions">
+                    <label class="remember-me">
+                        <input type="checkbox" checked>
+                        Remember Me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot Password</a>
+                </div>
+
+                <button class="login-btn">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        function setTheme(theme) {
+            if (theme === 'orange') {
+                document.body.className = 'theme-orange';
+            } else {
+                document.body.className = '';
+            }
+
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-theme') === theme) {
+                    btn.classList.add('active');
+                } else if (theme === 'blue' && btn.getAttribute('data-theme') === 'blue') {
+                    btn.classList.add('active');
+                } else if (theme === 'blue' && btn.getAttribute('data-theme') === 'orange') {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTheme('blue');
+        });
+    </script>
+
+</body>
+</html>

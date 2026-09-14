@@ -4,7 +4,38 @@
  */
 import { sb } from '../config/supabase-client.js';
 
-export async function fetchCompanyData(companyRole) {
+// Only the columns mapTransactionRow()/the dashboard charts/table actually
+// read — not select('*'), which used to pull every proof-path/name and
+// order/loaded/offloaded field on every load regardless of use.
+const TRANSACTION_COLUMNS = 'id,date,created_at,type,amount,balance_delta,unit_rate,litres,order_amount,loaded_amount,offloaded_amount,delivery_value,loaded_offloaded_diff,route_id,entered_by,note,detail,voids_id,voids_type,truck_id,truck_text,driver_id,driver_text,trailer_reg,delivery_note_path,delivery_note_name,order_proof_path,order_proof_name,loaded_proof_path,loaded_proof_name,offloaded_proof_path,offloaded_proof_name';
+
+/**
+ * periodPreset defaults to 'all' (dashboard.js) — "no filter set" must still
+ * resolve to a bounded window here, not literally forever.
+ */
+function resolveDateWindow(startDate, endDate) {
+  if (startDate && endDate) return { from: startDate, to: endDate };
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - 3, 1); // last ~90 days, month-aligned
+  return {
+    from: from.toISOString().split('T')[0],
+    to: now.toISOString().split('T')[0]
+  };
+}
+
+function buildTransactionsQuery(companyRole, startDate, endDate) {
+  const { from, to } = resolveDateWindow(startDate, endDate);
+  return sb.from('transactions')
+    .select(TRANSACTION_COLUMNS)
+    .eq('entered_by', companyRole)
+    .gte('date', from)
+    .lte('date', to)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(2000);
+}
+
+export async function fetchCompanyData(companyRole, { startDate, endDate } = {}) {
   let routes = [];
   let fset = null;
   let bset = null;
@@ -18,7 +49,7 @@ export async function fetchCompanyData(companyRole) {
         sb.from('routes').select('*').order('id'),
         sb.from('fuellink_settings').select('*').eq('id', 1).maybeSingle(),
         sb.from('bakers_settings').select('*').eq('id', 1).maybeSingle(),
-        sb.from('transactions').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
+        buildTransactionsQuery(companyRole, startDate, endDate),
         sb.from('trucks').select('*').order('reg_number'),
         sb.from('drivers').select('*').order('name')
       ]);
@@ -116,6 +147,17 @@ export async function fetchCompanyData(companyRole) {
       { id: 'tx-bt-15', date: dStr(25), type: 'logistics', amount: 81480.00, balance_delta: 81480.00, litres: 38800, order_amount: 40000, loaded_amount: 39000, offloaded_amount: 38800, route_id: 4, entered_by: 'bakers', truck: 'BT-101-GP', driver: 'Mateus Silveira', trailer: 'TR-101-GP', note: 'BK-5524', delivery_note_name: 'pod_5524.pdf', delivery_note_path: 'mock/path', order_proof_name: 'ord_5524.pdf', order_proof_path: 'mock/path', loaded_proof_name: 'load_5524.pdf', loaded_proof_path: 'mock/path', offloaded_proof_name: 'pod_5524.pdf', offloaded_proof_path: 'mock/path', created_at: new Date().toISOString() },
       { id: 'tx-bt-16', date: dStr(27), type: 'logistics', amount: 75240.00, balance_delta: 75240.00, litres: 41800, order_amount: 42000, loaded_amount: 42000, offloaded_amount: 41800, route_id: 3, entered_by: 'bakers', truck: 'BT-103-GP', driver: 'Liam Gallagher', trailer: 'TR-103-GP', note: 'BK-5525', delivery_note_name: 'pod_5525.pdf', delivery_note_path: 'mock/path', order_proof_name: 'ord_5525.pdf', order_proof_path: 'mock/path', loaded_proof_name: 'load_5525.pdf', loaded_proof_path: 'mock/path', offloaded_proof_name: 'pod_5525.pdf', offloaded_proof_path: 'mock/path', created_at: new Date().toISOString() }
     ];
+    // Backfill delivery_value/loaded_offloaded_diff for the offline demo
+    // dataset — these columns (migration 0008) didn't exist when this mock
+    // data was written above. Derived the same way the server does
+    // (OperationController::computeDeliveryTracking) so "Valor a Entregar"
+    // isn't blank in offline/demo mode; amount already equals
+    // offloaded_amount * unit_rate for every Bankers row above.
+    transactions = transactions.map(t => t.type === 'logistics' ? {
+      ...t,
+      delivery_value: t.amount,
+      loaded_offloaded_diff: (t.loaded_amount || 0) - (t.offloaded_amount || 0)
+    } : t);
   }
 
   const dieselPrice = Number(fset?.diesel_price ?? 27.61);
@@ -136,43 +178,7 @@ export async function fetchCompanyData(companyRole) {
   }));
 
   // Map and calculate effective rates and voids
-  const mappedTransactions = (transactions || []).map(t => {
-    const orderAmt = t.order_amount != null ? Number(t.order_amount) : Number(t.litres || 0);
-    const loadedAmt = t.loaded_amount != null ? Number(t.loaded_amount) : Number(t.litres || 0);
-    const offloadedAmt = t.offloaded_amount != null ? Number(t.offloaded_amount) : Number(t.litres || 0);
-    const diffAmt = loadedAmt - offloadedAmt;
-
-    return {
-      id: t.id,
-      date: t.date,
-      type: t.type, // 'diesel', 'logistics', 'settlement'
-      amount: Number(t.amount || 0),
-      balanceDelta: Number(t.balance_delta || 0),
-      litres: t.litres != null ? Number(t.litres) : (offloadedAmt || loadedAmt || 0),
-      orderAmount: orderAmt,
-      loadedAmount: loadedAmt,
-      offloadedAmount: offloadedAmt,
-      diffAmount: diffAmt,
-      routeId: t.route_id,
-      enteredBy: t.entered_by,
-      note: t.note || '',
-      detail: t.detail || '',
-      voidsId: t.voids_id,
-      voidsType: t.voids_type,
-      truck: t.truck || '',
-      driver: t.driver || '',
-      trailer: t.trailer || '',
-      deliveryNotePath: t.delivery_note_path || t.offloaded_proof_path || null,
-      deliveryNoteName: t.delivery_note_name || t.offloaded_proof_name || null,
-      orderProofPath: t.order_proof_path || null,
-      orderProofName: t.order_proof_name || null,
-      loadedProofPath: t.loaded_proof_path || null,
-      loadedProofName: t.loaded_proof_name || null,
-      offloadedProofPath: t.offloaded_proof_path || t.delivery_note_path || null,
-      offloadedProofName: t.offloaded_proof_name || t.delivery_note_name || null,
-      createdAt: t.created_at
-    };
-  });
+  const mappedTransactions = (transactions || []).map(t => mapTransactionRow(t, trucks, drivers));
 
   // Calculate status (isVoided if another transaction has voidsId === this.id)
   const voidedIds = new Set(
@@ -195,3 +201,71 @@ export async function fetchCompanyData(companyRole) {
     drivers: drivers || []
   };
 }
+
+/**
+ * Resolves a Fleet display label from a real schema row (truck_id/truck_text,
+ * driver_id/driver_text — migration 0002) — same precedence as the backend's
+ * OperationController::currentFleetLabel(): prefer the live Fleet row's label
+ * if the id still resolves, otherwise fall back to the free-text value stored
+ * at entry time. Also accepts the flat legacy field (e.g. `truck`) used by
+ * the offline/mock dataset below, so both shapes render correctly.
+ */
+function resolveFleetLabel(id, text, list, matchColumn) {
+  if (id != null) {
+    const match = (list || []).find(item => String(item.id) === String(id));
+    if (match) return match[matchColumn] || '';
+  }
+  return text || '';
+}
+
+/**
+ * Maps one raw `transactions` row (real Supabase schema or the offline mock
+ * dataset) into the shape every view consumes. Does not compute
+ * status/isVoided — that requires cross-referencing the full transaction
+ * list for void rows, done once in fetchCompanyData() above.
+ */
+export function mapTransactionRow(t, trucks, drivers) {
+  const orderAmt = t.order_amount != null ? Number(t.order_amount) : Number(t.litres || 0);
+  const loadedAmt = t.loaded_amount != null ? Number(t.loaded_amount) : Number(t.litres || 0);
+  const offloadedAmt = t.offloaded_amount != null ? Number(t.offloaded_amount) : Number(t.litres || 0);
+  const diffAmt = loadedAmt - offloadedAmt;
+
+  return {
+    id: t.id,
+    date: t.date,
+    type: t.type, // 'diesel', 'logistics', 'settlement', 'void'
+    amount: Number(t.amount || 0),
+    balanceDelta: Number(t.balance_delta || 0),
+    unitRate: t.unit_rate != null ? Number(t.unit_rate) : null,
+    litres: t.litres != null ? Number(t.litres) : (offloadedAmt || loadedAmt || 0),
+    orderAmount: orderAmt,
+    loadedAmount: loadedAmt,
+    offloadedAmount: offloadedAmt,
+    diffAmount: diffAmt,
+    // Server-computed and frozen (OperationController::computeDeliveryTracking) —
+    // offloaded_amount * the operation's own frozen unit_rate, never today's
+    // route rate. Null until both inputs exist (pre-migration-0008 rows,
+    // or offloaded_amount not yet recorded) — never fabricated client-side.
+    deliveryValue: t.delivery_value != null ? Number(t.delivery_value) : null,
+    loadedOffloadedDiff: t.loaded_offloaded_diff != null ? Number(t.loaded_offloaded_diff) : null,
+    routeId: t.route_id,
+    enteredBy: t.entered_by,
+    note: t.note || '',
+    detail: t.detail || '',
+    voidsId: t.voids_id,
+    voidsType: t.voids_type,
+    truck: resolveFleetLabel(t.truck_id, t.truck_text ?? t.truck, trucks, 'reg_number'),
+    driver: resolveFleetLabel(t.driver_id, t.driver_text ?? t.driver, drivers, 'name'),
+    trailer: t.trailer_reg ?? t.trailer ?? '',
+    deliveryNotePath: t.delivery_note_path || t.offloaded_proof_path || null,
+    deliveryNoteName: t.delivery_note_name || t.offloaded_proof_name || null,
+    orderProofPath: t.order_proof_path || null,
+    orderProofName: t.order_proof_name || null,
+    loadedProofPath: t.loaded_proof_path || null,
+    loadedProofName: t.loaded_proof_name || null,
+    offloadedProofPath: t.offloaded_proof_path || t.delivery_note_path || null,
+    offloadedProofName: t.offloaded_proof_name || t.delivery_note_name || null,
+    createdAt: t.created_at
+  };
+}
+>>>>>>> 6b6614fab47592a4371d2640b524f00364171dec

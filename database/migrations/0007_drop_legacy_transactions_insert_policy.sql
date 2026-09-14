@@ -1,0 +1,28 @@
+-- Run manually in the Supabase SQL editor for this project, after 0006.
+-- Security fix, found 2026-08-27 while testing GET /api/operations/{id}
+-- live: `pg_policies` showed a pre-existing permissive INSERT policy on
+-- transactions that predates migrations 0001-0004 and was never dropped:
+--
+--   "transactions insert" (INSERT, role public, qual: null — no WITH CHECK)
+--
+-- Postgres RLS policies for the same command are combined with OR, so this
+-- one neutralized migration 0004's insert_own_company_transactions policy
+-- (WITH CHECK entered_by = current_user_role()) entirely — any
+-- authenticated caller could insert a transaction claiming ANY entered_by,
+-- exactly the spoofing gap 0004 was written to close, confirmed still
+-- open in production until this runs.
+--
+-- Safe to drop with no functional impact: every real INSERT path (the
+-- Antigo dashboard, and OperationController::create()) already writes its
+-- own company's correct entered_by — nothing legitimately relies on this
+-- policy's absence of a WITH CHECK.
+--
+-- NOT included here: "transactions readable" (SELECT, role public, qual:
+-- auth.role() = 'authenticated') — same OR-neutralization problem, but for
+-- SELECT, and the Antigo dashboard's Ledger view currently depends on
+-- seeing both companies' rows through it. Decided 2026-08-27: build the
+-- privileged Net Position/Ledger de Compensação endpoint first (see
+-- docs/RELATORIO_REQUISITOS_FRONTEND.md Section 5.1), then drop this
+-- policy in a follow-up migration once nothing legitimate still needs it.
+
+DROP POLICY IF EXISTS "transactions insert" ON public.transactions;

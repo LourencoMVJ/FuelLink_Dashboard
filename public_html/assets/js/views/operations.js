@@ -2,7 +2,7 @@ import { getSession } from '../core/auth.js';
 import { initSidebar } from '../core/sidebar.js';
 import { initHeaderControls, t, getCurrentLanguage } from '../core/i18n.js';
 import { fetchCompanyData } from '../models/transactions.js';
-import { sb } from '../config/supabase-client.js';
+import { api } from '../core/api.js';
 
 let rawData = null;
 let currentSession = null;
@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const localRole = localStorage.getItem('fuellink_current_role') || 'fuellink';
     currentSession = {
       role: localRole,
-      session: { user: { email: localRole === 'bakers' ? 'shads@bakers.co.za' : 'shads@fuelink.co.za' } }
+      session: { user: { email: localRole === 'bakers' ? 'admin@bakers.co.za' : 'admin@fuelink.co.za' } },
+      isAdmin: true
     };
   }
 
@@ -545,7 +546,6 @@ function renderOperations() {
     if (role === 'bakers') {
       const routeInfo = routeMap[tItem.routeId];
       const routeHtml = routeInfo ? routeInfo.html : '—';
-      const baseRate = routeInfo ? (routeInfo.baseRate || 0) : 1.45;
 
       const orderAmt = Number(tItem.orderAmount || tItem.litres || 0);
       const loadedAmt = Number(tItem.loadedAmount || tItem.litres || 0);
@@ -556,8 +556,16 @@ function renderOperations() {
         ? `<span class="diff-danger-value">-${diffVal.toLocaleString('pt-PT')}&nbsp;L</span>`
         : (diffVal === 0 ? `<span class="diff-zero-value">0&nbsp;L</span>` : `<span class="diff-zero-value">+${Math.abs(diffVal).toLocaleString('pt-PT')}&nbsp;L</span>`);
 
-      const deliveryValue = offloadedAmt * baseRate;
-      const formattedDeliveryValue = deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Prefer the server's frozen delivery_value (offloaded_amount * this
+      // operation's own unit_rate at creation time). Falls back to
+      // offloaded_amount * the route's CURRENT rate — an estimate, not the
+      // frozen figure — only for operations that predate migration 0008 and
+      // have no stored delivery_value, using the route_id link every
+      // operation already has.
+      const deliveryValue = tItem.deliveryValue != null
+        ? tItem.deliveryValue
+        : offloadedAmt * (routeInfo ? (routeInfo.baseRate || 0) : 0);
+      const formattedDeliveryValue = `R&nbsp;${deliveryValue.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
       return `
         <tr class="${isVoided ? 'tr-voided' : ''}">
@@ -570,7 +578,7 @@ function renderOperations() {
           <td style="text-align: right; font-weight: 600;">${loadedAmt.toLocaleString('pt-PT')}&nbsp;L</td>
           <td style="text-align: right; font-weight: 600;">${offloadedAmt.toLocaleString('pt-PT')}&nbsp;L</td>
           <td style="text-align: right;">${diffDisplay}</td>
-          <td style="text-align: right; font-weight: 700; white-space: nowrap;">R&nbsp;${formattedDeliveryValue}</td>
+          <td style="text-align: right; font-weight: 700; white-space: nowrap;">${formattedDeliveryValue}</td>
           <td style="text-align: center;">${statusBadge}</td>
           <td class="op-note-cell">${tItem.note || '—'}</td>
           <td style="text-align: center;">${actionsHtml}</td>
@@ -806,48 +814,11 @@ async function executeDeleteOperation(id) {
   if (!confirmDelete) return;
 
   try {
-    const targetOp = rawData.transactions.find(t => t.id === id);
-    if (!targetOp) return;
-
-    // Invert balance delta for reversal/deletion tracking
-    const reversalPayload = {
-      date: new Date().toISOString().split('T')[0],
-      type: targetOp.type,
-      amount: targetOp.amount,
-      balance_delta: -targetOp.balanceDelta,
-      litres: targetOp.litres,
-      order_amount: targetOp.orderAmount,
-      loaded_amount: targetOp.loadedAmount,
-      offloaded_amount: targetOp.offloadedAmount,
-      route_id: targetOp.routeId,
-      entered_by: currentSession.role,
-      truck: targetOp.truck,
-      driver: targetOp.driver,
-      trailer: targetOp.trailer,
-      note: `Deleção de ${targetOp.id}: ${targetOp.note || ''}`,
-      voids_id: targetOp.id,
-      voids_type: targetOp.type
-    };
-
-    if (sb) {
-      const { error } = await sb.from('transactions').insert([reversalPayload]);
-      if (error) throw error;
-    }
-
-    // Local state update
-    rawData.transactions.push({
-      ...reversalPayload,
-      id: `void-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      status: 'voided'
-    });
-    targetOp.status = 'voided';
-    targetOp.isVoided = true;
-
-    renderOperations();
+    await api.post(`operations/${encodeURIComponent(id)}/void`, {});
+    await loadAndRender();
     alert(t('deleteSuccess'));
   } catch (err) {
-    console.error('Error deleting transaction:', err);
+    console.error('Error voiding transaction:', err);
     alert(t('deleteError') + (err.message || err));
   }
 }
@@ -863,161 +834,52 @@ async function handleSaveOperation() {
   const trailer = document.getElementById('newOpTrailer').value.trim();
   const note = document.getElementById('newOpNote').value.trim();
 
-  let litres = 0;
-  let orderAmount = 0;
-  let loadedAmount = 0;
-  let offloadedAmount = 0;
-  let routeId = null;
+  const payload = { date, truck, driver, trailer, note };
 
   if (isBakers) {
-    orderAmount = parseFloat(document.getElementById('newOpOrderAmount').value) || 0;
-    loadedAmount = parseFloat(document.getElementById('newOpLoadedAmount').value) || 0;
-    offloadedAmount = parseFloat(document.getElementById('newOpOffloadedAmount').value) || 0;
-    litres = offloadedAmount || loadedAmount || 0;
-    routeId = parseInt(document.getElementById('newOpRoute').value) || 1;
+    const orderAmount = parseFloat(document.getElementById('newOpOrderAmount').value) || 0;
+    const loadedAmount = parseFloat(document.getElementById('newOpLoadedAmount').value) || 0;
+    const offloadedAmount = parseFloat(document.getElementById('newOpOffloadedAmount').value) || 0;
 
     if (!date || loadedAmount <= 0 || offloadedAmount <= 0 || !truck || !driver) {
       alert(t('fillRequired'));
       return;
     }
+
+    payload.litres = offloadedAmount || loadedAmount || 0;
+    payload.order_amount = orderAmount;
+    payload.loaded_amount = loadedAmount;
+    payload.offloaded_amount = offloadedAmount;
+    payload.route_id = document.getElementById('newOpRoute').value;
   } else {
-    litres = parseFloat(document.getElementById('newOpLitres').value) || 0;
+    const litres = parseFloat(document.getElementById('newOpLitres').value) || 0;
     if (!date || litres <= 0 || !truck || !driver) {
       alert(t('fillRequired'));
       return;
     }
+    payload.litres = litres;
   }
 
   submitBtn.disabled = true;
   submitBtn.textContent = t('saving');
 
   try {
-    let orderProofPath = null;
-    let orderProofName = null;
-    let loadedProofPath = null;
-    let loadedProofName = null;
-    let offloadedProofPath = null;
-    let offloadedProofName = null;
-    let deliveryNotePath = null;
-    let deliveryNoteName = null;
-
-    // Handle File Uploads (Mock / Supabase Storage)
-    if (isBakers) {
-      const orderFile = document.getElementById('newOpOrderProof')?.files[0];
-      const loadedFile = document.getElementById('newOpLoadedProof')?.files[0];
-      const offloadedFile = document.getElementById('newOpOffloadedProof')?.files[0];
-
-      if (orderFile) {
-        orderProofPath = `bakers/order_${Date.now()}_${orderFile.name}`;
-        orderProofName = orderFile.name;
-      }
-      if (loadedFile) {
-        loadedProofPath = `bakers/loaded_${Date.now()}_${loadedFile.name}`;
-        loadedProofName = loadedFile.name;
-      }
-      if (offloadedFile) {
-        offloadedProofPath = `bakers/offloaded_${Date.now()}_${offloadedFile.name}`;
-        offloadedProofName = offloadedFile.name;
-        deliveryNotePath = offloadedProofPath;
-        deliveryNoteName = offloadedProofName;
-      }
-    } else {
-      const proofFile = document.getElementById('newOpProof')?.files[0];
-      if (proofFile) {
-        deliveryNotePath = `fuellink/${Date.now()}_${proofFile.name}`;
-        deliveryNoteName = proofFile.name;
-      }
-    }
-
-    let amount = 0;
-    let balanceDelta = 0;
-    let type = isBakers ? 'logistics' : 'diesel';
+    // amount/unit_rate/detail (and, for Bankers, loaded_offloaded_diff/
+    // delivery_value) are computed server-side — see
+    // OperationController::computeFinancials(). Never sent from here.
+    const savedOp = editingTransactionId
+      ? await api.patch(`operations/${encodeURIComponent(editingTransactionId)}`, payload)
+      : await api.post('operations', payload);
 
     if (isBakers) {
-      const route = (rawData.routes || []).find(r => r.id === routeId);
-      const rate = route ? (route.baseRate || 0) : 1.45;
-      amount = offloadedAmount * rate;
-      balanceDelta = amount;
+      await uploadBankersProofs(savedOp.id);
     } else {
-      const price = rawData.dieselPrice || 27.61;
-      amount = litres * price;
-      balanceDelta = -amount;
-    }
-
-    const payload = {
-      date,
-      type,
-      amount,
-      balance_delta: balanceDelta,
-      litres,
-      order_amount: orderAmount,
-      loaded_amount: loadedAmount,
-      offloaded_amount: offloadedAmount,
-      route_id: routeId,
-      entered_by: role,
-      truck,
-      driver,
-      trailer,
-      note,
-      delivery_note_path: deliveryNotePath,
-      delivery_note_name: deliveryNoteName,
-      order_proof_path: orderProofPath,
-      order_proof_name: orderProofName,
-      loaded_proof_path: loadedProofPath,
-      loaded_proof_name: loadedProofName,
-      offloaded_proof_path: offloadedProofPath,
-      offloaded_proof_name: offloadedProofName
-    };
-
-    if (editingTransactionId) {
-      // Edit existing transaction
-      if (sb) {
-        await sb.from('transactions').update(payload).eq('id', editingTransactionId);
-      }
-      const existing = rawData.transactions.find(t => t.id === editingTransactionId);
-      if (existing) {
-        Object.assign(existing, {
-          ...payload,
-          orderAmount,
-          loadedAmount,
-          offloadedAmount,
-          diffAmount: loadedAmount - offloadedAmount,
-          deliveryNotePath: deliveryNotePath || existing.deliveryNotePath,
-          deliveryNoteName: deliveryNoteName || existing.deliveryNoteName,
-          orderProofPath: orderProofPath || existing.orderProofPath,
-          orderProofName: orderProofName || existing.orderProofName,
-          loadedProofPath: loadedProofPath || existing.loadedProofPath,
-          loadedProofName: loadedProofName || existing.loadedProofName,
-          offloadedProofPath: offloadedProofPath || existing.offloadedProofPath,
-          offloadedProofName: offloadedProofName || existing.offloadedProofName
-        });
-      }
-    } else {
-      // Create new transaction
-      if (sb) {
-        await sb.from('transactions').insert([payload]);
-      }
-      rawData.transactions.unshift({
-        ...payload,
-        id: `tx-${Date.now()}`,
-        orderAmount,
-        loadedAmount,
-        offloadedAmount,
-        diffAmount: loadedAmount - offloadedAmount,
-        orderProofPath,
-        orderProofName,
-        loadedProofPath,
-        loadedProofName,
-        offloadedProofPath,
-        offloadedProofName,
-        status: 'active',
-        createdAt: new Date().toISOString()
-      });
+      await uploadFuellinkDeliveryNote(savedOp.id);
     }
 
     document.getElementById('newOperationModal')?.classList.remove('show');
     document.getElementById('newOperationForm')?.reset();
-    renderOperations();
+    await loadAndRender();
 
   } catch (err) {
     console.error('Error saving operation:', err);
@@ -1028,6 +890,56 @@ async function handleSaveOperation() {
   }
 }
 
+/**
+ * Uploads whichever Bankers proof files were selected, one multipart POST
+ * per field, against POST /api/operations/{id}/proof/{field} —
+ * OperationController::attachProof() (server validates extension, real
+ * content-sniffed MIME, and a 5MB size cap). A field with no file selected
+ * is skipped, not sent as an empty upload.
+ */
+async function uploadBankersProofs(operationId) {
+  const fields = [
+    ['order', 'newOpOrderProof'],
+    ['loaded', 'newOpLoadedProof'],
+    ['offloaded', 'newOpOffloadedProof']
+  ];
+
+  for (const [field, inputId] of fields) {
+    const file = document.getElementById(inputId)?.files?.[0];
+    if (!file) continue;
+
+    const formData = new FormData();
+    formData.append('proof', file);
+
+    try {
+      await api.upload(`operations/${encodeURIComponent(operationId)}/proof/${field}`, formData);
+    } catch (err) {
+      console.error(`Error uploading ${field} proof:`, err);
+      alert(`Erro ao enviar comprovativo (${field}): ` + (err.message || err));
+    }
+  }
+}
+
+/**
+ * Uploads the FuelLink delivery note/proof, against POST
+ * /api/operations/{id}/proof/delivery_note — OperationController::
+ * attachProof() (same validation as the Bankers proofs: extension,
+ * content-sniffed MIME, 5MB cap). No-op if no file was selected.
+ */
+async function uploadFuellinkDeliveryNote(operationId) {
+  const file = document.getElementById('newOpProof')?.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('proof', file);
+
+  try {
+    await api.upload(`operations/${encodeURIComponent(operationId)}/proof/delivery_note`, formData);
+  } catch (err) {
+    console.error('Error uploading delivery note:', err);
+    alert('Erro ao enviar comprovativo: ' + (err.message || err));
+  }
+}
 function handleExportData(format) {
   const operations = getFilteredOperations();
   const role = currentSession.role || 'fuellink';

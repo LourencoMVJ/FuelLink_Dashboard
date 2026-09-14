@@ -119,8 +119,6 @@
 
   --card-bg: var(--bg-surface);
   --card-border: var(--border-subtle);
-  --text-main: var(--text-main);
-  --text-muted: var(--text-muted);
 }
 
 [data-theme="dark"] .app-container {

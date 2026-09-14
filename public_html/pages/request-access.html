@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FuelLink & Bankers Tankers — Solicitar Acesso</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Core Layout & Auth Styles -->
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/login.css">
+</head>
+
+<body class="login-body">
+
+  <!-- Fixed Header Controls: Language & Theme Switches -->
+  <header class="login-header-controls" id="headerControls"></header>
+
+  <!-- Main Split Layout Container -->
+  <main class="login-wrapper">
+
+    <!-- Left Brand Panel -->
+    <section class="brand-panel">
+      <div class="brand-glow-bg"></div>
+
+      <div class="brand-content-wrapper">
+        <header class="brand-logos-container">
+          <div class="logo-box fuellink" title="FuelLink">
+            <span class="logo-text">FuelLink</span>
+            <span class="logo-sub">Operations</span>
+          </div>
+          <div class="brand-divider"></div>
+          <div class="logo-box bankers" title="Bankers Tankers">
+            <span class="logo-text">Bankers</span>
+            <span class="logo-sub">Tankers</span>
+          </div>
+        </header>
+
+        <div class="brand-tagline-block">
+          <h1 class="brand-main-heading">
+            <span id="lblLoginTitle">Gestão Integrada de</span>
+            <span class="brand-gradient-text">Frotas & Combustível</span>
+          </h1>
+          <p class="brand-subtext" id="lblLoginSubtitle">
+            Painel centralizado de operações, reconciliação de viagens e controlo financeiro em tempo real.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Interaction Panel (Request Access Form) -->
+    <section class="interaction-panel">
+
+      <div class="form-card">
+
+        <header class="form-card-header">
+          <h2 class="welcome-heading" id="lblForgotTitle">Recuperar Credenciais ou Solicitar Acesso</h2>
+          <p class="auth-sub-instruction" id="lblForgotSubtitle">
+            Introduza o seu email institucional para iniciar o processo.
+          </p>
+        </header>
+
+        <!-- Status Message Box (Agnostic Security Feedback) -->
+        <div id="requestAlert" class="login-alert-box" style="display: none;" role="alert">
+          <span class="alert-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </span>
+          <span class="alert-message" id="requestAlertMsg"></span>
+        </div>
+
+        <form id="requestAccessForm" class="login-form" autocomplete="on" novalidate>
+
+          <!-- Email Input (Pill) -->
+          <div class="input-pill-wrapper">
+            <span class="input-pill-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </span>
+            <input type="email" id="requestEmailInput" class="pill-input" placeholder="Email institucional"
+              autocomplete="email" required />
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="btnSubmitRequest" class="pill-submit-btn">
+            <span class="pill-spinner"></span>
+            <span class="btn-text" id="btnSubmitRequestText">Submeter Pedido</span>
+            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Back to Login Link -->
+        <footer class="form-card-footer" style="margin-top: 24px;">
+          <a href="login.html" class="pill-forgot-link" style="display: inline-flex; align-items: center; gap: 6px;" id="lblBackToLogin">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Voltar ao Login
+          </a>
+        </footer>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script type="module" src="../assets/js/views/request-access.js"></script>
+</body>
+
+</html>

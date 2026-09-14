@@ -6,10 +6,9 @@ return [
     'SUPABASE_URL' => 'https://YOUR-PROJECT.supabase.co',
     'SUPABASE_SECRET_KEY' => 'sb_secret_xxx',
 
-    // 'jwks' (asymmetric, preferred) or 'legacy_hs256' — confirm in
-    // Supabase Settings -> API -> JWT Keys before relying on this.
+    // Confirmed 2026-08-11: this project uses asymmetric JWKS (ES256).
     'SUPABASE_JWT_MODEL' => 'jwks',
 
-    // Only required if SUPABASE_JWT_MODEL is 'legacy_hs256'.
+    // Not used on the asymmetric model — leave empty.
     'SUPABASE_JWT_SECRET' => '',
 ];

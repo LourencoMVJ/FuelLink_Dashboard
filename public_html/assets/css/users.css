@@ -1,0 +1,261 @@
+/* Users Management & Permissions Drawer Styles */
+
+.users-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.users-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.table-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.table-status-pill.active {
+  background: rgba(8, 241, 169, 0.12);
+  color: #059669;
+  border: 1px solid rgba(8, 241, 169, 0.3);
+}
+
+.table-status-pill.inactive {
+  background: rgba(226, 51, 77, 0.1);
+  color: #E2334D;
+  border: 1px solid rgba(226, 51, 77, 0.25);
+}
+
+[data-theme="dark"] .table-status-pill.active {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.16);
+}
+
+[data-theme="dark"] .table-status-pill.inactive {
+  color: #F87171;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+/* User avatar initials */
+.user-table-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-table-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--theme-fl);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.user-table-avatar.bakers {
+  background: var(--theme-bt);
+}
+
+.user-name-title {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.user-email-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Slide-over Permissions Drawer */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.drawer-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drawer-panel {
+  position: fixed;
+  top: 0;
+  right: -520px;
+  width: 100%;
+  max-width: 520px;
+  height: 100vh;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.25);
+  z-index: 1051;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-overlay.show .drawer-panel {
+  right: 0;
+}
+
+.drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--glass-surface-elevated);
+}
+
+.drawer-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.drawer-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.drawer-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.drawer-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: var(--glass-surface-elevated);
+}
+
+/* Permission Groups & Switches */
+.perm-group-section {
+  margin-bottom: 24px;
+}
+
+.perm-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.perm-group-title.sensitive {
+  color: #DB7806;
+}
+
+.perm-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: border-color var(--transition-fast);
+}
+
+.perm-item-row:hover {
+  border-color: var(--border-focus);
+}
+
+.perm-item-info {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.perm-code-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.perm-code-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--border-subtle);
+  transition: 0.25s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--theme-fl);
+}
+
+.role-bakers input:checked + .toggle-slider {
+  background-color: var(--theme-bt);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}

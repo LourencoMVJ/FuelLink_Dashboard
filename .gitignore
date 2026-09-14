@@ -1,5 +1,16 @@
+# Composer-managed dependencies — reproducible via composer.lock, never committed
+vendor/
+
 # Real secrets — never commit
 private/config/env.php
+private/config/.env
+
+# Runtime storage (JWKS cache, uploaded proof files, etc.) — never commit
+private/storage/
+
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache
 
 # OS / editor junk
 .DS_Store
@@ -8,11 +19,13 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Sprint Documentation
+# Sprint Documentation & Notes
 FASE_1_FRONTEND.md
 FASE_2_FRONTEND.md
 Fase 1.md
 Fase 2.md
 Fase*.md
 FASE*.md
+
+bruno/
 
