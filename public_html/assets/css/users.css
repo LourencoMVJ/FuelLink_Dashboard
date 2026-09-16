@@ -1,54 +1,59 @@
-/* Users Management & Permissions Drawer Styles */
+/**
+ * User Management & Permissions Drawer Styles
+ * Canonical 75% Scale Proportions & Liquid Glass Architecture
+ * Adheres to: No Badges/Chips, Rich Light/Dark Mode Contrast, Company Theming
+ */
 
 .users-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 0;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px;
 }
 
 .users-actions-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.table-status-pill {
+/* Status Indicator (Identical to operations table standard: .table-badge) */
+.table-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 11px;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 8.5px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
 }
 
-.table-status-pill.active {
-  background: rgba(8, 241, 169, 0.12);
-  color: #059669;
-  border: 1px solid rgba(8, 241, 169, 0.3);
+.table-badge.active {
+  background: #EAFBF0;
+  color: #0E8A42;
 }
 
-.table-status-pill.inactive {
-  background: rgba(226, 51, 77, 0.1);
-  color: #E2334D;
-  border: 1px solid rgba(226, 51, 77, 0.25);
+.table-badge.inactive,
+.table-badge.voided {
+  background: #F1F5F9;
+  color: #94A3B8;
 }
 
-[data-theme="dark"] .table-status-pill.active {
-  color: #10B981;
+[data-theme="dark"] .table-badge.active {
   background: rgba(16, 185, 129, 0.16);
+  color: #34D399;
 }
 
-[data-theme="dark"] .table-status-pill.inactive {
-  color: #F87171;
-  background: rgba(239, 68, 68, 0.16);
+[data-theme="dark"] .table-badge.inactive,
+[data-theme="dark"] .table-badge.voided {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
 }
 
-/* User avatar initials */
+/* User Table Cell & Avatar */
 .user-table-cell {
   display: flex;
   align-items: center;
@@ -56,40 +61,74 @@
 }
 
 .user-table-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--theme-fl);
+  background: var(--primary-fuellink);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11.5px;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px var(--primary-fuellink-light);
 }
 
 .user-table-avatar.bakers {
-  background: var(--theme-bt);
+  background: var(--primary-bakers) !important;
+  box-shadow: 0 2px 6px var(--primary-bakers-light) !important;
 }
 
 .user-name-title {
   font-weight: 600;
   color: var(--text-main);
   font-size: 13px;
+  letter-spacing: -0.01em;
 }
 
 .user-email-sub {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-muted);
+}
+
+/* Table Action Buttons */
+.btn-row-action.danger:hover,
+.btn-table-action.danger:hover {
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+  background: var(--color-danger-light) !important;
+}
+
+.btn-row-action.success:hover,
+.btn-table-action.success:hover {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
+  background: var(--color-success-light) !important;
+}
+
+body.role-bakers .btn-row-action:hover,
+[data-company="bakers"] .btn-row-action:hover,
+body.role-bakers .btn-table-action:hover,
+[data-company="bakers"] .btn-table-action:hover {
+  border-color: var(--primary-bakers) !important;
+  color: var(--primary-bakers) !important;
+}
+
+body.role-bakers .btn-row-action.edit:hover,
+[data-company="bakers"] .btn-row-action.edit:hover {
+  background: var(--primary-bakers-light) !important;
+  border-color: var(--primary-bakers) !important;
+  color: var(--primary-bakers) !important;
 }
 
 /* Slide-over Permissions Drawer */
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1050;
   opacity: 0;
   visibility: hidden;
@@ -106,11 +145,11 @@
   top: 0;
   right: -520px;
   width: 100%;
-  max-width: 520px;
+  max-width: 500px;
   height: 100vh;
   background: var(--bg-surface);
   border-left: 1px solid var(--border-subtle);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.25);
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.35);
   z-index: 1051;
   display: flex;
   flex-direction: column;
@@ -122,19 +161,62 @@
 }
 
 .drawer-header {
-  padding: 20px 24px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  background: var(--glass-surface-elevated);
+  align-items: center;
+  background: var(--bg-surface);
+  position: relative;
+  gap: 16px;
+}
+
+.btn-drawer-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.btn-drawer-close:hover {
+  background: var(--bg-body);
+  border-color: var(--border-focus);
+  color: var(--primary-fuellink);
+  transform: rotate(90deg);
+}
+
+body.role-bakers .btn-drawer-close:hover,
+[data-company="bakers"] .btn-drawer-close:hover {
+  border-color: var(--primary-bakers) !important;
+  color: var(--primary-bakers) !important;
+}
+
+[data-theme="dark"] .btn-drawer-close {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .btn-drawer-close:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
 }
 
 .drawer-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
 }
 
 .drawer-subtitle {
@@ -143,39 +225,30 @@
 }
 
 .drawer-body {
-  padding: 24px;
+  padding: 20px 22px;
   overflow-y: auto;
   flex: 1;
 }
 
-.drawer-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  background: var(--glass-surface-elevated);
-}
-
-/* Permission Groups & Switches */
+/* Permission Groups & Items */
 .perm-group-section {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .perm-group-title {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .perm-group-title.sensitive {
-  color: #DB7806;
+  color: var(--color-warning);
 }
 
 .perm-item-row {
@@ -183,20 +256,21 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: var(--bg-card);
+  background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 8px;
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .perm-item-row:hover {
+  background: var(--bg-surface);
   border-color: var(--border-focus);
 }
 
 .perm-item-info {
   flex: 1;
-  padding-right: 16px;
+  padding-right: 14px;
 }
 
 .perm-code-title {
@@ -207,16 +281,17 @@
 }
 
 .perm-code-desc {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-muted);
+  line-height: 1.35;
 }
 
 /* Toggle Switch */
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 42px;
+  height: 22px;
   flex-shrink: 0;
 }
 
@@ -232,30 +307,190 @@
   inset: 0;
   background-color: var(--border-subtle);
   transition: 0.25s;
-  border-radius: 24px;
+  border-radius: 22px;
+  border: 1px solid var(--border-subtle);
 }
 
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #FFFFFF;
   transition: 0.25s;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 
 input:checked + .toggle-slider {
-  background-color: var(--theme-fl);
+  background-color: var(--primary-fuellink);
+  border-color: var(--primary-fuellink);
 }
 
-.role-bakers input:checked + .toggle-slider {
-  background-color: var(--theme-bt);
+body.role-bakers input:checked + .toggle-slider,
+[data-company="bakers"] input:checked + .toggle-slider {
+  background-color: var(--primary-bakers) !important;
+  border-color: var(--primary-bakers) !important;
 }
 
 input:checked + .toggle-slider:before {
   transform: translateX(20px);
+}
+
+/* Form Modal Actions */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.btn-action.secondary {
+  background: var(--bg-surface-subtle);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+
+.btn-action.secondary:hover {
+  background: var(--bg-body);
+}
+
+.btn-action.primary {
+  background: var(--primary-fuellink);
+  color: #FFFFFF;
+}
+
+.btn-action.primary:hover {
+  background: var(--primary-fuellink-hover);
+  transform: translateY(-1px);
+}
+
+body.role-bakers .btn-action.primary,
+[data-company="bakers"] .btn-action.primary {
+  background: var(--primary-bakers) !important;
+}
+
+body.role-bakers .btn-action.primary:hover,
+[data-company="bakers"] .btn-action.primary:hover {
+  background: var(--primary-bakers-hover) !important;
+}
+
+.btn-action.danger {
+  background: var(--color-danger);
+  color: #FFFFFF;
+}
+
+.btn-action.danger:hover {
+  opacity: 0.9;
+}
+
+/* Form Labels & Explicit Text/Icon Contrast */
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   Comprehensive Dark Mode Text & Icon Overrides (White / High Contrast)
+   ========================================================================== */
+[data-theme="dark"] #lblUsersTitle,
+[data-theme="dark"] .greeting-block h1,
+[data-theme="dark"] .table-section-title,
+[data-theme="dark"] .drawer-title,
+[data-theme="dark"] .modal-title,
+[data-theme="dark"] .user-name-title,
+[data-theme="dark"] .perm-code-title,
+[data-theme="dark"] .form-label,
+[data-theme="dark"] .filter-group label,
+[data-theme="dark"] .modern-table th,
+[data-theme="dark"] .modern-table td,
+[data-theme="dark"] .btn-action.secondary,
+[data-theme="dark"] .btn-filter-reset,
+[data-theme="dark"] #sensitivePermTargetLabel {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] #lblUsersSubtitle,
+[data-theme="dark"] .greeting-block p,
+[data-theme="dark"] .drawer-subtitle,
+[data-theme="dark"] .user-email-sub,
+[data-theme="dark"] .perm-code-desc,
+[data-theme="dark"] .perm-group-title,
+[data-theme="dark"] .modal-body,
+[data-theme="dark"] .modal-body p,
+[data-theme="dark"] #lblUserCountBadge {
+  color: #EFF2F8 !important;
+}
+
+/* Icons to White in Dark Mode */
+[data-theme="dark"] .btn-row-action,
+[data-theme="dark"] .btn-row-action svg,
+[data-theme="dark"] .btn-close-modal,
+[data-theme="dark"] .filter-card svg,
+[data-theme="dark"] .perm-group-title svg,
+[data-theme="dark"] .modal-header .btn-close-modal {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+[data-theme="dark"] .perm-group-title.sensitive,
+[data-theme="dark"] .perm-group-title.sensitive svg {
+  color: var(--color-warning) !important;
+  stroke: var(--color-warning) !important;
+}
+
+[data-theme="dark"] .btn-close-modal:hover {
+  color: #FFFFFF !important;
+  opacity: 1;
+}
+
+/* Input text in Dark Mode */
+[data-theme="dark"] .filter-control,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] select.filter-control {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .filter-control::placeholder {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* Sidebar Dark Mode Complete Whitening */
+[data-theme="dark"] .sidebar-wrapper .brand-name,
+[data-theme="dark"] .sidebar-wrapper .user-name {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .sidebar-wrapper .brand-sub,
+[data-theme="dark"] .sidebar-wrapper .user-role-badge,
+[data-theme="dark"] .sidebar-wrapper .btn-logout {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+[data-theme="dark"] .sidebar-wrapper .nav-item {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .sidebar-wrapper .nav-item svg {
+  stroke: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .sidebar-wrapper .btn-sidebar-pin {
+  color: #FFFFFF !important;
 }

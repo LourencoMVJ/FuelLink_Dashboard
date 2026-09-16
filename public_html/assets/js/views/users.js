@@ -1,9 +1,14 @@
 /**
  * User Management & Permissions Controller (Frontend View Layer)
+ * Strictly adheres to:
+ * 1. Multi-tenant isolation: FuelLink Admin only sees/manages FuelLink users, Bankers Admin only sees/manages Bankers users.
+ * 2. No badges/chips: Clean status indicators with status dots.
+ * 3. Liquid Glass styling & 75% Canonical Scale Proportions.
+ * 4. Full Bilingual Synchronization (PT/EN).
  */
 import { getSession } from '../core/auth.js';
 import { initSidebar } from '../core/sidebar.js';
-import { initHeaderControls, t, applyTheme, getCurrentTheme } from '../core/i18n.js';
+import { initHeaderControls, t, applyTheme, getCurrentTheme, getCurrentLanguage } from '../core/i18n.js';
 import { api } from '../core/api.js';
 
 // Permissions Catalog Definition (Operational vs Sensitive Groups)
@@ -22,24 +27,23 @@ const PERMISSIONS_CATALOG = {
   ]
 };
 
-// Mock Initial Users Dataset (Admins + 3 Users for each company)
-let usersList = [
-  // FuelLink Admin
+// Initial Users Directory Dataset
+let allUsersList = [
+  // FuelLink Accounts
   { id: 'usr-fl-admin', name: 'FuelLink Administrator', email: 'admin@fuelink.co.za', phone: '+27 82 000 0001', company: 'fuellink', is_active: true, is_admin: true, created_at: '2026-08-01', permissions: ['ops_create', 'ops_edit', 'ops_void', 'reports_export', 'prices_edit', 'users_manage', 'financial_view', 'cross_ledger_view'] },
-  // FuelLink Users
   { id: 'usr-fl-01', name: 'Carlos Mendes', email: 'carlos.mendes@fuelink.co.za', phone: '+27 83 987 6543', company: 'fuellink', is_active: true, is_admin: false, created_at: '2026-08-15', permissions: ['ops_create', 'ops_edit', 'reports_export'] },
   { id: 'usr-fl-02', name: 'Johan Van Der Merwe', email: 'johan.merwe@fuelink.co.za', phone: '+27 81 777 6620', company: 'fuellink', is_active: true, is_admin: false, created_at: '2026-08-18', permissions: ['ops_create', 'reports_export'] },
   { id: 'usr-fl-03', name: 'Sarah Jenkins', email: 'sarah.jenkins@fuelink.co.za', phone: '+27 84 555 0192', company: 'fuellink', is_active: true, is_admin: false, created_at: '2026-08-20', permissions: ['ops_create', 'ops_edit'] },
 
-  // Bankers Tankers Admin
+  // Bankers Tankers Accounts
   { id: 'usr-bt-admin', name: 'Bankers Administrator', email: 'admin@bakers.co.za', phone: '+27 83 000 0002', company: 'bakers', is_active: true, is_admin: true, created_at: '2026-08-01', permissions: ['ops_create', 'ops_edit', 'ops_void', 'reports_export', 'prices_edit', 'users_manage', 'financial_view', 'cross_ledger_view'] },
-  // Bankers Tankers Users
   { id: 'usr-bt-01', name: 'Sipho Zulu', email: 'sipho.zulu@bakers.co.za', phone: '+27 83 222 1983', company: 'bakers', is_active: true, is_admin: false, created_at: '2026-08-12', permissions: ['ops_create', 'ops_edit', 'reports_export'] },
   { id: 'usr-bt-02', name: 'Thabo Molefe', email: 'thabo.molefe@bakers.co.za', phone: '+27 82 444 8891', company: 'bakers', is_active: true, is_admin: false, created_at: '2026-08-14', permissions: ['ops_create', 'reports_export'] },
   { id: 'usr-bt-03', name: 'Elena Rossi', email: 'elena.rossi@bakers.co.za', phone: '+27 84 333 4501', company: 'bakers', is_active: true, is_admin: false, created_at: '2026-08-22', permissions: ['ops_create', 'ops_edit'] }
 ];
 
 let currentSession = null;
+let activeCompany = 'fuellink';
 let activeDrawerUser = null;
 let pendingSensitiveToggle = null;
 let pendingDeactivateUserId = null;
@@ -51,29 +55,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     currentSession = await getSession();
+    if (!currentSession || !currentSession.session) {
+      window.location.href = 'login.html';
+      return;
+    }
   } catch (err) {
-    console.warn('Session verification fallback:', err);
+    console.warn('Session verification error, redirecting to login:', err);
+    window.location.href = 'login.html';
+    return;
   }
 
-  if (!currentSession || !currentSession.session) {
-    const localRole = localStorage.getItem('fuellink_current_role') || 'fuellink';
-    currentSession = {
-      role: localRole,
-      session: { user: { email: localRole === 'bakers' ? 'admin@bakers.co.za' : 'admin@fuelink.co.za' } },
-      isAdmin: true
-    };
-  }
-
-  setupScreenBranding(currentSession);
+  activeCompany = currentSession?.role === 'bakers' ? 'bakers' : 'fuellink';
+  setupScreenBranding(activeCompany);
   initSidebar('users', currentSession);
   applyStaticTranslations();
+
+  // Listen for language toggle event
+  window.addEventListener('languageChanged', () => {
+    applyStaticTranslations();
+    renderUsersTable();
+    if (activeDrawerUser) {
+      openPermissionsDrawer(activeDrawerUser.id);
+    }
+  });
 
   await loadUsers();
   setupEventListeners();
 });
 
-function setupScreenBranding(session) {
-  const role = session?.role || 'fuellink';
+function setupScreenBranding(role) {
   document.documentElement.setAttribute('data-company', role);
   if (role === 'bakers') {
     document.body.classList.add('role-bakers');
@@ -88,13 +98,18 @@ async function loadUsers() {
   try {
     const apiUsers = await api.get('users');
     if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-      usersList = apiUsers;
+      allUsersList = apiUsers;
     }
   } catch (err) {
-    console.warn('API users fetch failed or offline, using enriched local directory:', err);
+    console.warn('API users fetch fallback to local directory:', err);
   }
 
   renderUsersTable();
+}
+
+function getScopedUsers() {
+  // Multi-tenant rule: FuelLink Admin only sees FuelLink users, Bankers Admin only sees Bankers users
+  return allUsersList.filter(u => (u.company || u.role) === activeCompany);
 }
 
 function renderUsersTable() {
@@ -102,10 +117,14 @@ function renderUsersTable() {
   if (!tbody) return;
 
   const searchVal = document.getElementById('userSearchInput')?.value.toLowerCase().trim() || '';
-  const companyFilter = document.getElementById('userCompanyFilter')?.value || 'all';
+  const statusFilter = document.getElementById('userStatusFilter')?.value || 'active';
 
-  const filtered = usersList.filter(u => {
-    if (companyFilter !== 'all' && u.company !== companyFilter) return false;
+  const scopedUsers = getScopedUsers();
+
+  const filtered = scopedUsers.filter(u => {
+    if (statusFilter === 'active' && !u.is_active) return false;
+    if (statusFilter === 'inactive' && u.is_active) return false;
+
     if (searchVal) {
       const matchName = (u.name || '').toLowerCase().includes(searchVal);
       const matchEmail = (u.email || '').toLowerCase().includes(searchVal);
@@ -114,11 +133,16 @@ function renderUsersTable() {
     return true;
   });
 
+  const countBadge = document.getElementById('lblUserCountBadge');
+  if (countBadge) {
+    countBadge.textContent = `${filtered.length} ${t('records') || 'registos'}`;
+  }
+
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">
-          ${t('noDataFound')}
+        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
+          ${t('noDataFound') || 'Nenhum utilizador encontrado com os filtros selecionados.'}
         </td>
       </tr>
     `;
@@ -126,11 +150,14 @@ function renderUsersTable() {
   }
 
   tbody.innerHTML = filtered.map(u => {
-    const isBakers = u.company === 'bakers';
+    const isBakers = (u.company || u.role) === 'bakers';
+    const companyDisplayName = isBakers ? 'Bankers Tankers' : 'FuelLink';
     const initials = (u.name || u.email || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    const statusPill = u.is_active
-      ? `<span class="table-status-pill active">${t('active')}</span>`
-      : `<span class="table-status-pill inactive">${t('inactive')}</span>`;
+    
+    // Status follows exact operations table standard (.table-badge.active / .table-badge.inactive)
+    const statusBadge = u.is_active
+      ? `<span class="table-badge active">${t('activeStatus')}</span>`
+      : `<span class="table-badge inactive">${t('inactive')}</span>`;
 
     return `
       <tr>
@@ -138,34 +165,37 @@ function renderUsersTable() {
           <div class="user-table-cell">
             <div class="user-table-avatar ${isBakers ? 'bakers' : ''}">${initials}</div>
             <div>
-              <div class="user-name-title">${u.name || '—'}</div>
+              <div class="user-name-title">${u.name || 'N/A'}</div>
               <div class="user-email-sub">${u.email}</div>
             </div>
           </div>
         </td>
-        <td><b>${isBakers ? 'Bankers Tankers' : 'FuelLink'}</b></td>
-        <td>${u.phone || '—'}</td>
-        <td style="text-align: center;">${statusPill}</td>
-        <td>${u.created_at || '—'}</td>
+        <td><b>${companyDisplayName}</b></td>
+        <td>${u.phone || 'N/A'}</td>
+        <td style="text-align: center;">${statusBadge}</td>
+        <td>${u.created_at || 'N/A'}</td>
         <td style="text-align: center;">
-          <div style="display: inline-flex; gap: 8px;">
-            <button type="button" class="btn-table-action" data-edit-user="${u.id}" title="${t('editUser')}">
+          <div class="row-actions-group" style="justify-content: center;">
+            <button type="button" class="btn-row-action edit" data-edit-user="${u.id}" title="${t('editUser')}" aria-label="${t('editUser')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
+              <span class="action-tooltip">${t('editUser')}</span>
             </button>
-            <button type="button" class="btn-table-action" data-perms-user="${u.id}" title="${t('managePermissions')}">
+            <button type="button" class="btn-row-action" data-perms-user="${u.id}" title="${t('managePermissions')}" aria-label="${t('managePermissions')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
+              <span class="action-tooltip">${t('managePermissions')}</span>
             </button>
-            <button type="button" class="btn-table-action ${u.is_active ? 'danger' : 'success'}" data-toggle-status="${u.id}" title="${u.is_active ? t('inactive') : t('active')}">
+            <button type="button" class="btn-row-action ${u.is_active ? 'danger' : 'success'}" data-toggle-status="${u.id}" title="${u.is_active ? t('inactive') : t('active')}" aria-label="${u.is_active ? t('inactive') : t('active')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
                 <line x1="12" y1="2" x2="12" y2="12"></line>
               </svg>
+              <span class="action-tooltip">${u.is_active ? t('confirmDeactivateTitle') : t('active')}</span>
             </button>
           </div>
         </td>
@@ -197,15 +227,13 @@ function attachTableEventHandlers() {
   document.querySelectorAll('[data-toggle-status]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-toggle-status');
-      const targetUser = usersList.find(u => u.id === id);
+      const targetUser = allUsersList.find(u => u.id === id);
       if (!targetUser) return;
 
       if (targetUser.is_active) {
-        // Confirmation modal before deactivating
         pendingDeactivateUserId = id;
         document.getElementById('deactivateConfirmModal')?.classList.add('show');
       } else {
-        // Direct reactivation
         toggleUserActiveStatus(id, true);
       }
     });
@@ -213,7 +241,7 @@ function attachTableEventHandlers() {
 }
 
 function openPermissionsDrawer(userId) {
-  const user = usersList.find(u => u.id === userId);
+  const user = allUsersList.find(u => u.id === userId);
   if (!user) return;
 
   activeDrawerUser = user;
@@ -221,7 +249,7 @@ function openPermissionsDrawer(userId) {
   document.getElementById('drawerUserEmail').textContent = user.email;
 
   const container = document.getElementById('drawerPermissionsList');
-  const isPt = (localStorage.getItem('app_lang') || 'pt') === 'pt';
+  const isPt = getCurrentLanguage() === 'pt';
 
   const userPerms = new Set(user.permissions || []);
 
@@ -261,7 +289,7 @@ function openPermissionsDrawer(userId) {
       ${PERMISSIONS_CATALOG.sensitive.map(p => `
         <div class="perm-item-row">
           <div class="perm-item-info">
-            <div class="perm-code-title" style="color: #DB7806;">${isPt ? p.name_pt : p.name_en}</div>
+            <div class="perm-code-title" style="color: var(--color-warning);">${isPt ? p.name_pt : p.name_en}</div>
             <div class="perm-code-desc">${isPt ? p.desc_pt : p.desc_en}</div>
           </div>
           <label class="toggle-switch">
@@ -285,7 +313,7 @@ function attachDrawerToggleHandlers() {
       const shouldGrant = checkbox.checked;
 
       if (isSensitive) {
-        // Prevent default toggle until confirmed in modal
+        // Prevent immediate toggle until confirmed in security modal
         checkbox.checked = !shouldGrant;
         pendingSensitiveToggle = { code, shouldGrant, checkbox };
 
@@ -315,7 +343,7 @@ async function executePermissionChange(userId, permCode, shouldGrant) {
   }
 
   // Update local memory
-  const user = usersList.find(u => u.id === userId);
+  const user = allUsersList.find(u => u.id === userId);
   if (user) {
     if (!user.permissions) user.permissions = [];
     if (shouldGrant) {
@@ -333,7 +361,7 @@ async function toggleUserActiveStatus(userId, newActiveStatus) {
     console.warn('API status toggle fallback to local state:', err);
   }
 
-  const user = usersList.find(u => u.id === userId);
+  const user = allUsersList.find(u => u.id === userId);
   if (user) {
     user.is_active = newActiveStatus;
   }
@@ -351,13 +379,12 @@ function openUserModal(userId = null) {
   form?.reset();
 
   if (userId) {
-    const user = usersList.find(u => u.id === userId);
+    const user = allUsersList.find(u => u.id === userId);
     if (user) {
       if (modalTitle) modalTitle.textContent = t('editUser');
       document.getElementById('userFormName').value = user.name || '';
       document.getElementById('userFormEmail').value = user.email || '';
       document.getElementById('userFormPhone').value = user.phone || '';
-      document.getElementById('userFormCompany').value = user.company || 'fuellink';
       if (passwordGroup) passwordGroup.style.display = 'none';
       if (passwordInput) passwordInput.required = false;
     }
@@ -373,16 +400,20 @@ function openUserModal(userId = null) {
 function setupEventListeners() {
   // Search & Filter
   document.getElementById('userSearchInput')?.addEventListener('input', renderUsersTable);
-  document.getElementById('userCompanyFilter')?.addEventListener('change', renderUsersTable);
+  document.getElementById('userStatusFilter')?.addEventListener('change', renderUsersTable);
+  document.getElementById('btnResetUsersFilters')?.addEventListener('click', () => {
+    const searchInput = document.getElementById('userSearchInput');
+    const statusSelect = document.getElementById('userStatusFilter');
+    if (searchInput) searchInput.value = '';
+    if (statusSelect) statusSelect.value = 'active';
+    renderUsersTable();
+  });
 
   // New User Button
   document.getElementById('btnOpenNewUserModal')?.addEventListener('click', () => openUserModal(null));
 
   // Drawer Close
   document.getElementById('btnCloseDrawer')?.addEventListener('click', () => {
-    document.getElementById('permissionsDrawer')?.classList.remove('show');
-  });
-  document.getElementById('btnCancelPermissions')?.addEventListener('click', () => {
     document.getElementById('permissionsDrawer')?.classList.remove('show');
   });
 
@@ -436,10 +467,16 @@ function setupEventListeners() {
     const name = document.getElementById('userFormName').value.trim();
     const email = document.getElementById('userFormEmail').value.trim().toLowerCase();
     const phone = document.getElementById('userFormPhone').value.trim();
-    const company = document.getElementById('userFormCompany').value;
     const password = document.getElementById('userFormPassword')?.value;
 
-    const payload = { name, email, phone, role: company, company };
+    const payload = {
+      name,
+      email,
+      phone,
+      role: activeCompany,
+      company: activeCompany
+    };
+
     if (!editingUserId && password) {
       payload.password = password;
     }
@@ -447,11 +484,11 @@ function setupEventListeners() {
     try {
       if (editingUserId) {
         await api.patch(`users/${encodeURIComponent(editingUserId)}`, payload);
-        const existing = usersList.find(u => u.id === editingUserId);
+        const existing = allUsersList.find(u => u.id === editingUserId);
         if (existing) Object.assign(existing, payload);
       } else {
         const created = await api.post('users', payload);
-        usersList.unshift({
+        allUsersList.unshift({
           ...payload,
           id: created?.id || `usr-${Date.now()}`,
           is_active: true,
@@ -462,7 +499,7 @@ function setupEventListeners() {
     } catch (err) {
       console.warn('API save user fallback to local memory:', err);
       if (!editingUserId) {
-        usersList.unshift({
+        allUsersList.unshift({
           ...payload,
           id: `usr-${Date.now()}`,
           is_active: true,
@@ -478,10 +515,31 @@ function setupEventListeners() {
 }
 
 function applyStaticTranslations() {
+  const isBakers = activeCompany === 'bakers';
+  const companyTitle = isBakers ? 'Bankers Tankers' : 'FuelLink';
+
+  const lblUsersTitle = document.getElementById('lblUsersTitle');
+  const lblUsersSubtitle = document.getElementById('lblUsersSubtitle');
+  const tableSectionTitle = document.getElementById('tableSectionTitle');
+
+  if (lblUsersTitle) {
+    lblUsersTitle.textContent = `${t('usersListTitle')} (${companyTitle})`;
+  }
+  if (lblUsersSubtitle) {
+    lblUsersSubtitle.textContent = t('usersListSubtitle');
+  }
+  if (tableSectionTitle) {
+    tableSectionTitle.textContent = `${t('usersListTitle')} (${companyTitle})`;
+  }
+
   const ids = {
-    lblUsersTitle: 'usersListTitle',
-    lblUsersSubtitle: 'usersListSubtitle',
+    lblSearchPrompt: 'searchUsersPrompt',
+    lblStatusFilter: 'accountStatus',
+    btnResetUsersFilters: 'resetFilters',
     lblAddUserBtn: 'addUser',
+    optStatusAll: 'allStatuses',
+    optStatusActive: 'activeOnly',
+    optStatusInactive: 'inactiveOnly',
     thUserName: 'userColName',
     thUserCompany: 'userColCompany',
     thUserPhone: 'userColPhone',
@@ -493,9 +551,15 @@ function applyStaticTranslations() {
     lblConfirmDeactivateTitle: 'confirmDeactivateTitle',
     lblConfirmDeactivateDesc: 'confirmDeactivateDesc',
     lblFormFullName: 'userFullName',
+    lblFormEmail: 'emailAddress',
     lblFormPhone: 'userPhone',
-    lblFormCompany: 'userCompany',
-    lblFormPassword: 'userPassword'
+    lblFormPassword: 'userPassword',
+    btnCancelSensitiveChange: 'cancel',
+    btnConfirmSensitiveChange: 'confirm',
+    btnCancelDeactivate: 'cancel',
+    btnConfirmDeactivate: 'confirm',
+    btnCancelUserForm: 'cancel',
+    btnSaveUser: 'saveUser'
   };
 
   for (const [domId, key] of Object.entries(ids)) {
@@ -505,4 +569,7 @@ function applyStaticTranslations() {
 
   const searchInput = document.getElementById('userSearchInput');
   if (searchInput) searchInput.placeholder = t('searchUsersPlaceholder');
+
+  const passwordInput = document.getElementById('userFormPassword');
+  if (passwordInput) passwordInput.placeholder = t('passwordMinLength');
 }

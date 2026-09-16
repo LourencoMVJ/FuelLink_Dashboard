@@ -4,77 +4,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FuelLink & Bankers Tankers — Solicitar Acesso</title>
-  <!-- Google Fonts: Inter -->
+  <title>Recuperar Credenciais | FuelLink & Bankers Tankers</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Core Layout & Auth Styles -->
-  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Blank Favicon until official logo is added -->
+  <link rel="icon" href="data:,">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/login.css">
 </head>
 
-<body class="login-body">
+<body>
 
-  <!-- Fixed Header Controls: Language & Theme Switches -->
-  <header class="login-header-controls" id="headerControls"></header>
+  <main class="login-page">
 
-  <!-- Main Split Layout Container -->
-  <main class="login-wrapper">
+    <!-- Fullscreen Photographic Background -->
+    <div class="fullscreen-bg" aria-hidden="true"></div>
+    <div class="fullscreen-overlay" aria-hidden="true"></div>
 
-    <!-- Left Brand Panel -->
-    <section class="brand-panel">
-      <div class="brand-glow-bg"></div>
+    <!-- Top Right Floating Modern Language Switcher -->
+    <div class="login-screen-top-bar" aria-label="Idioma / Language">
+      <div id="requestLangToggle" class="pill-toggle-group login-top-toggle" role="group" aria-label="Idioma / Language"></div>
+    </div>
 
-      <div class="brand-content-wrapper">
-        <header class="brand-logos-container">
-          <div class="logo-box fuellink" title="FuelLink">
-            <span class="logo-text">FuelLink</span>
-            <span class="logo-sub">Operations</span>
-          </div>
-          <div class="brand-divider"></div>
-          <div class="logo-box bankers" title="Bankers Tankers">
-            <span class="logo-text">Bankers</span>
-            <span class="logo-sub">Tankers</span>
-          </div>
-        </header>
-
-        <div class="brand-tagline-block">
-          <h1 class="brand-main-heading">
-            <span id="lblLoginTitle">Gestão Integrada de</span>
-            <span class="brand-gradient-text">Frotas & Combustível</span>
-          </h1>
-          <p class="brand-subtext" id="lblLoginSubtitle">
-            Painel centralizado de operações, reconciliação de viagens e controlo financeiro em tempo real.
-          </p>
-        </div>
+    <!-- LEFT SECTION: Platform Information -->
+    <section class="info-section" aria-label="Informações da Plataforma">
+      <div class="info-content">
+        <h1 class="info-title" id="lblInfoTitle">
+          Gestão Integrada de <span class="accent-fl">Combustível</span> & <span class="accent-bt">Logística</span>
+        </h1>
+        <p class="info-subtitle" id="lblInfoSubtitle">
+          Painel centralizado de operações, reconciliação de viagens e controlo financeiro em tempo real.
+        </p>
       </div>
     </section>
 
-    <!-- Right Interaction Panel (Request Access Form) -->
-    <section class="interaction-panel">
+    <!-- RIGHT SECTION: Floating Liquid Glass Form Card -->
+    <section class="form-section" aria-label="Recuperação de Acesso">
+      <div class="form-container">
 
-      <div class="form-card">
-
-        <header class="form-card-header">
-          <h2 class="welcome-heading" id="lblForgotTitle">Recuperar Credenciais ou Solicitar Acesso</h2>
-          <p class="auth-sub-instruction" id="lblForgotSubtitle">
-            Introduza o seu email institucional para iniciar o processo.
-          </p>
+        <!-- Header -->
+        <header class="form-header centered">
+          <span class="welcome-label" id="lblRecoveryBadge">Apoio ao Utilizador</span>
+          <h2 class="form-title" id="lblForgotTitle">Recuperar Acesso</h2>
+          <p class="form-subtitle" id="lblForgotSubtitle">Introduza o seu email institucional para iniciar o processo.</p>
         </header>
 
-        <!-- Status Message Box (Agnostic Security Feedback) -->
-        <div id="requestAlert" class="login-alert-box" style="display: none;" role="alert">
-          <span class="alert-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-          </span>
-          <span class="alert-message" id="requestAlertMsg"></span>
+        <!-- Feedback Alert Banner -->
+        <div id="requestAlert" class="pill-alert-box" role="alert" aria-live="polite" style="display: none;">
+          <svg class="alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="requestAlertMsg"></span>
         </div>
 
+        <!-- Request Access Form -->
         <form id="requestAccessForm" class="login-form" autocomplete="on" novalidate>
 
           <!-- Email Input (Pill) -->
@@ -103,18 +96,19 @@
         </form>
 
         <!-- Back to Login Link -->
-        <footer class="form-card-footer" style="margin-top: 24px;">
-          <a href="login.html" class="pill-forgot-link" style="display: inline-flex; align-items: center; gap: 6px;" id="lblBackToLogin">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            Voltar ao Login
-          </a>
+        <footer class="form-card-footer">
+          <p class="support-text">
+            <a href="login.html" class="pill-forgot-link" id="lblBackToLogin" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span id="lblBackToLoginText">Voltar ao Início de Sessão</span>
+            </a>
+          </p>
         </footer>
 
       </div>
-
     </section>
 
   </main>

@@ -197,7 +197,7 @@
 
 [data-theme="dark"] .modern-table td.text-muted,
 [data-theme="dark"] .modern-table .sub-text {
-  color: #737680;
+  color: var(--text-muted) !important;
 }
 
 [data-theme="dark"] .modern-table tr:hover td {
@@ -1214,10 +1214,25 @@ body.role-bakers .link-all {
   color: #0E8A42;
 }
 
+.table-badge.inactive,
 .table-badge.voided {
   background: #F1F5F9;
   color: #94A3B8;
+}
+
+.table-badge.voided {
   text-decoration: line-through;
+}
+
+[data-theme="dark"] .table-badge.active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34D399;
+}
+
+[data-theme="dark"] .table-badge.inactive,
+[data-theme="dark"] .table-badge.voided {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
 }
 
 .tr-voided {

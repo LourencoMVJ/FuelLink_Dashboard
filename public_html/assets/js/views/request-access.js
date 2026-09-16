@@ -1,19 +1,50 @@
 /**
  * Request Access / Password Recovery Controller (Frontend View Layer)
+ * Aligned with Login Screen: identical floating language toggle & visual design.
  */
-import { initHeaderControls, t, applyTheme, getCurrentTheme } from '../core/i18n.js';
+import { getCurrentLanguage, setLanguage, t, applyTheme, getCurrentTheme } from '../core/i18n.js';
 import { api } from '../core/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   applyTheme(getCurrentTheme());
-  initHeaderControls('headerControls');
+  initLoginLangToggle();
   applyTranslations();
+
+  // Listen for language toggle event
+  window.addEventListener('languageChanged', () => {
+    initLoginLangToggle();
+    applyTranslations();
+  });
 
   const form = document.getElementById('requestAccessForm');
   const emailInput = document.getElementById('requestEmailInput');
   const submitBtn = document.getElementById('btnSubmitRequest');
   const alertBox = document.getElementById('requestAlert');
   const alertMsg = document.getElementById('requestAlertMsg');
+
+  function initLoginLangToggle() {
+    const langContainer = document.getElementById('requestLangToggle');
+    if (!langContainer) return;
+    const currentLang = getCurrentLanguage();
+
+    langContainer.innerHTML = `
+      <button type="button" class="pill-toggle-btn ${currentLang === 'pt' ? 'active' : ''}" data-lang="pt" title="Português">
+        <span>PT</span>
+      </button>
+      <button type="button" class="pill-toggle-btn ${currentLang === 'en' ? 'active' : ''}" data-lang="en" title="English">
+        <span>EN</span>
+      </button>
+    `;
+
+    langContainer.querySelectorAll('[data-lang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.getAttribute('data-lang');
+        if (lang !== currentLang) {
+          setLanguage(lang);
+        }
+      });
+    });
+  }
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -24,21 +55,35 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    submitBtn.classList.add('loading');
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alertBox.style.display = 'flex';
+      alertBox.className = 'pill-alert-box danger';
+      alertMsg.textContent = t('invalidEmailFormat') || 'Por favor, introduza um endereço de email válido.';
+      emailInput.focus();
+      return;
+    }
+
+    submitBtn.classList.add('is-loading');
     submitBtn.disabled = true;
+    alertBox.style.display = 'none';
 
     try {
-      // Call backend API /api/forgot-password
+      // Call backend endpoint if available
       await api.post('forgot-password', { email });
     } catch (err) {
       console.warn('Forgot password request processed with agnostic response:', err);
     } finally {
-      submitBtn.classList.remove('loading');
+      submitBtn.classList.remove('is-loading');
       submitBtn.disabled = false;
 
       // Always show agnostic fixed security message to prevent user enumeration
       alertBox.style.display = 'flex';
-      alertBox.className = 'login-alert-box success';
+      alertBox.className = 'pill-alert-box';
+      alertBox.style.backgroundColor = 'rgba(6, 169, 119, 0.25)';
+      alertBox.style.borderColor = 'rgba(6, 169, 119, 0.45)';
+      alertBox.style.color = '#A7F3D0';
       alertMsg.textContent = t('requestSentSuccess');
       form.reset();
     }
@@ -46,25 +91,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function applyTranslations() {
-  const lblLoginTitle = document.getElementById('lblLoginTitle');
-  const lblLoginSubtitle = document.getElementById('lblLoginSubtitle');
+  const lblInfoTitle = document.getElementById('lblInfoTitle');
+  const lblInfoSubtitle = document.getElementById('lblInfoSubtitle');
+  const lblRecoveryBadge = document.getElementById('lblRecoveryBadge');
   const lblForgotTitle = document.getElementById('lblForgotTitle');
   const lblForgotSubtitle = document.getElementById('lblForgotSubtitle');
+  const requestEmailInput = document.getElementById('requestEmailInput');
   const btnSubmitRequestText = document.getElementById('btnSubmitRequestText');
-  const lblBackToLogin = document.getElementById('lblBackToLogin');
+  const lblBackToLoginText = document.getElementById('lblBackToLoginText');
 
-  if (lblLoginTitle) lblLoginTitle.textContent = t('loginTitle');
-  if (lblLoginSubtitle) lblLoginSubtitle.textContent = t('loginSubtitle');
-  if (lblForgotTitle) lblForgotTitle.textContent = t('forgotPasswordTitle');
-  if (lblForgotSubtitle) lblForgotSubtitle.textContent = t('forgotPasswordSubtitle');
-  if (btnSubmitRequestText) btnSubmitRequestText.textContent = t('sendRequest');
-  if (lblBackToLogin) {
-    lblBackToLogin.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      ${t('backToLogin')}
+  if (lblInfoTitle) {
+    lblInfoTitle.innerHTML = `
+      ${t('loginTitle')} <span class="accent-fl">Combustível</span> & <span class="accent-bt">Logística</span>
     `;
   }
+  if (lblInfoSubtitle) lblInfoSubtitle.textContent = t('loginSubtitle');
+  if (lblRecoveryBadge) lblRecoveryBadge.textContent = t('supportPrompt') || 'Apoio ao Utilizador';
+  if (lblForgotTitle) lblForgotTitle.textContent = t('forgotPasswordTitle');
+  if (lblForgotSubtitle) lblForgotSubtitle.textContent = t('forgotPasswordSubtitle');
+  if (requestEmailInput) requestEmailInput.placeholder = t('emailPlaceholder') || 'Email institucional';
+  if (btnSubmitRequestText) btnSubmitRequestText.textContent = t('sendRequest');
+  if (lblBackToLoginText) lblBackToLoginText.textContent = t('backToLogin');
 }

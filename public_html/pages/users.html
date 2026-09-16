@@ -4,75 +4,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FuelLink & Bankers Tankers — Gestão de Utilizadores</title>
-  <!-- Google Fonts: Inter -->
+  <title>Gestão de Utilizadores | FuelLink & Bankers Tankers</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Blank Favicon until official logo is added -->
+  <link rel="icon" href="data:,">
+
   <!-- Stylesheets -->
+  <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/operations.css">
   <link rel="stylesheet" href="../assets/css/users.css">
 </head>
 
 <body class="role-fuellink">
 
-  <div class="app-layout">
+  <div class="app-container">
     <!-- Collapsible Sidebar Navigation Component -->
-    <aside class="sidebar-wrapper" id="sidebarContainer"></aside>
+    <aside class="sidebar-container" id="globalSidebar" aria-label="Navegação Principal"></aside>
 
     <!-- Main Content Area -->
-    <main class="main-content">
+    <main class="main-content" id="mainUsers">
 
-      <!-- Header Row with Greeting & Controls -->
-      <header class="app-header">
-        <div class="header-left">
-          <h1 class="page-title" id="lblUsersTitle">Diretório de Utilizadores</h1>
-          <p class="page-subtitle" id="lblUsersSubtitle">Administração de contas, perfis e permissões de acesso</p>
+      <!-- Header Presentation Row with Theme/Language Controls -->
+      <header class="page-header-row">
+        <div class="greeting-block">
+          <h1 id="lblUsersTitle">Diretório de Utilizadores</h1>
+          <p id="lblUsersSubtitle">Administração de contas e privilégios de acesso</p>
         </div>
-        <div class="header-right" id="headerControls"></div>
+
+        <div class="operations-header-action">
+          <div id="headerControls" class="header-controls-container"></div>
+        </div>
       </header>
 
-      <!-- Users Action & Search Toolbar -->
-      <section class="glass-card" style="margin-bottom: 20px; padding: 14px 20px;">
-        <div class="users-header-row" style="margin-bottom: 0;">
-          <div class="search-input-wrapper" style="max-width: 380px; width: 100%;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Users Search & Actions Toolbar -->
+      <section class="filter-card users-filter-card" aria-label="Filtros de Utilizadores">
+        <div class="filter-group search-filter-group" style="flex: 2 1 380px; max-width: 620px;">
+          <label for="userSearchInput" id="lblSearchPrompt">Pesquisar Utilizadores</label>
+          <div style="position: relative; width: 100%;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="userSearchInput" class="pill-input" placeholder="Pesquisar por nome ou email...">
-          </div>
-
-          <div class="users-actions-group">
-            <select id="userCompanyFilter" class="pill-select">
-              <option value="all">Todas as Empresas</option>
-              <option value="fuellink">FuelLink</option>
-              <option value="bakers">Bankers Tankers</option>
-            </select>
-
-            <button type="button" class="btn-action primary" id="btnOpenNewUserModal">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span id="lblAddUserBtn">Novo Utilizador</span>
-            </button>
+            <input type="text" id="userSearchInput" class="filter-control" placeholder="Pesquisar por nome ou email..." style="padding-left: 36px; width: 100%;">
           </div>
         </div>
+
+        <div class="filter-group status-filter-group" style="flex: 0 0 150px; max-width: 160px;">
+          <label for="userStatusFilter" id="lblStatusFilter">Estado da Conta</label>
+          <select id="userStatusFilter" class="filter-control" style="width: 100%;">
+            <option value="all" id="optStatusAll">Todos os Estados</option>
+            <option value="active" id="optStatusActive" selected>Apenas Ativos</option>
+            <option value="inactive" id="optStatusInactive">Inativos</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-filter-reset" id="btnResetUsersFilters" title="Limpar Filtros">
+          Limpar
+        </button>
+
+        <button type="button" class="btn-primary-action" id="btnOpenNewUserModal" style="margin-left: auto;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span id="lblAddUserBtn">Novo Utilizador</span>
+        </button>
       </section>
 
-      <!-- Users Directory Table -->
-      <section class="glass-card table-card">
+      <!-- Users Directory Table Section -->
+      <section class="section-card" aria-label="Tabela de Utilizadores">
+        <div class="table-header-action-row">
+          <h3 class="table-section-title" id="tableSectionTitle">Lista de Utilizadores</h3>
+          <span id="lblUserCountBadge" style="font-size: 12px; color: var(--text-muted); font-weight: 600;"></span>
+        </div>
+
         <div class="table-responsive">
-          <table class="data-table" id="usersTable">
+          <table class="modern-table" id="usersTable">
             <thead>
               <tr>
-                <th id="thUserName">Nome e Email</th>
-                <th id="thUserCompany">Empresa</th>
-                <th id="thUserPhone">Telefone</th>
-                <th id="thUserStatus" style="text-align: center;">Estado</th>
-                <th id="thUserCreated">Data de Criação</th>
-                <th id="thUserActions" style="text-align: center;">Ações</th>
+                <th id="thUserName" style="min-width: 200px;">Nome e Email</th>
+                <th id="thUserCompany" style="min-width: 140px;">Empresa</th>
+                <th id="thUserPhone" style="min-width: 140px;">Telefone</th>
+                <th id="thUserStatus" style="text-align: center; min-width: 100px;">Estado</th>
+                <th id="thUserCreated" style="min-width: 120px;">Data de Criação</th>
+                <th id="thUserActions" style="text-align: center; min-width: 120px;">Ações</th>
               </tr>
             </thead>
             <tbody id="usersTableBody">
@@ -93,104 +114,92 @@
           <h3 class="drawer-title" id="drawerUserName">Permissões de Acesso</h3>
           <p class="drawer-subtitle" id="drawerUserEmail">user@company.co.za</p>
         </div>
-        <button type="button" class="btn-close-modal" id="btnCloseDrawer">&times;</button>
+        <button type="button" class="btn-close-modal btn-drawer-close" id="btnCloseDrawer" aria-label="Fechar" title="Fechar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </header>
 
       <div class="drawer-body" id="drawerPermissionsList">
         <!-- Rendered via users.js with Operational and Sensitive groups -->
       </div>
-
-      <footer class="drawer-footer">
-        <button type="button" class="btn-action secondary" id="btnCancelPermissions">Fechar</button>
-      </footer>
     </div>
   </div>
 
   <!-- Modal: Sensitive Permission Confirmation -->
-  <div class="modal-backdrop" id="sensitiveConfirmModal">
+  <div class="modal-backdrop" id="sensitiveConfirmModal" role="dialog" aria-modal="true">
     <div class="modal-dialog" style="max-width: 440px;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" style="color: #DB7806;" id="lblConfirmSensitiveTitle">Confirmar Permissão Sensível</h3>
-          <button type="button" class="btn-close-modal" id="btnCloseSensitiveModal">&times;</button>
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--color-warning);" id="lblConfirmSensitiveTitle">Confirmar Permissão Sensível</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseSensitiveModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="lblConfirmSensitiveDesc" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+          Esta é uma ação com impacto financeiro ou operacional crítico. Deseja aplicar a alteração de permissão:
+        </p>
+        <div style="padding: 10px 14px; background: var(--color-warning-light); border: 1px solid var(--border-subtle); border-radius: 8px; font-weight: 600; color: var(--text-main); font-size: 13px;" id="sensitivePermTargetLabel">
+          Permissão:
         </div>
-        <div class="modal-body">
-          <p id="lblConfirmSensitiveDesc" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
-            Esta é uma ação com impacto financeiro ou operacional crítico. Deseja aplicar a alteração de permissão:
-          </p>
-          <div style="padding: 10px 14px; background: rgba(219, 120, 6, 0.08); border: 1px solid rgba(219, 120, 6, 0.25); border-radius: 8px; font-weight: 600; color: var(--text-main); font-size: 13px;" id="sensitivePermTargetLabel">
-            Permissão: —
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn-action secondary" id="btnCancelSensitiveChange">Cancelar</button>
-          <button type="button" class="btn-action primary" id="btnConfirmSensitiveChange">Confirmar</button>
-        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" id="btnCancelSensitiveChange">Cancelar</button>
+        <button type="button" class="btn-action primary" id="btnConfirmSensitiveChange">Confirmar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Deactivate User Confirmation -->
-  <div class="modal-backdrop" id="deactivateConfirmModal">
+  <div class="modal-backdrop" id="deactivateConfirmModal" role="dialog" aria-modal="true">
     <div class="modal-dialog" style="max-width: 440px;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" style="color: #E2334D;" id="lblConfirmDeactivateTitle">Desativar Utilizador</h3>
-          <button type="button" class="btn-close-modal" id="btnCloseDeactivateModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p id="lblConfirmDeactivateDesc" style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-            Tem a certeza que deseja desativar o acesso deste utilizador? O acesso será revogado, mas o histórico operacional permanecerá intacto. Poderá reativá-lo a qualquer momento.
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn-action secondary" id="btnCancelDeactivate">Cancelar</button>
-          <button type="button" class="btn-action danger" id="btnConfirmDeactivate" style="background: #E2334D; color: #FFF; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer;">Desativar</button>
-        </div>
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--color-danger);" id="lblConfirmDeactivateTitle">Desativar Utilizador</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseDeactivateModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="lblConfirmDeactivateDesc" style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+          Tem a certeza que deseja desativar o acesso deste utilizador? O acesso será revogado, mas o histórico operacional permanecerá intacto. Poderá reativá-lo a qualquer momento.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action secondary" id="btnCancelDeactivate">Cancelar</button>
+        <button type="button" class="btn-action danger" id="btnConfirmDeactivate">Desativar</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Create / Edit User -->
-  <div class="modal-backdrop" id="userFormModal">
-    <div class="modal-dialog" style="max-width: 480px;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="lblUserModalTitle">Novo Utilizador</h3>
-          <button type="button" class="btn-close-modal" id="btnCloseUserModal">&times;</button>
-        </div>
-        <form id="userForm">
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
-            <div>
-              <label class="form-label" id="lblFormFullName">Nome Completo *</label>
-              <input type="text" id="userFormName" class="pill-input" required placeholder="Ex: Carlos Mendes">
-            </div>
-            <div>
-              <label class="form-label">Email Institucional *</label>
-              <input type="email" id="userFormEmail" class="pill-input" required placeholder="Ex: carlos.mendes@fuelink.co.za">
-            </div>
-            <div>
-              <label class="form-label" id="lblFormPhone">Número de Telefone</label>
-              <input type="tel" id="userFormPhone" class="pill-input" placeholder="Ex: +27 82 123 4567">
-            </div>
-            <div>
-              <label class="form-label" id="lblFormCompany">Empresa Associada *</label>
-              <select id="userFormCompany" class="pill-select" style="width: 100%;">
-                <option value="fuellink">FuelLink</option>
-                <option value="bakers">Bankers Tankers</option>
-              </select>
-            </div>
-            <div id="passwordFieldGroup">
-              <label class="form-label" id="lblFormPassword">Palavra-passe Inicial *</label>
-              <input type="password" id="userFormPassword" class="pill-input" placeholder="Mínimo de 8 caracteres" minlength="8">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-action secondary" id="btnCancelUserForm">Cancelar</button>
-            <button type="submit" class="btn-action primary" id="btnSaveUser">Guardar Utilizador</button>
-          </div>
-        </form>
+  <div class="modal-backdrop" id="userFormModal" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="lblUserModalTitle">Novo Utilizador</h3>
+        <button type="button" class="btn-close-modal" id="btnCloseUserModal">&times;</button>
       </div>
+      <form id="userForm">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label class="form-label" id="lblFormFullName" style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 4px;">Nome Completo *</label>
+            <input type="text" id="userFormName" class="filter-control" required placeholder="Ex: Carlos Mendes" style="width: 100%;">
+          </div>
+          <div>
+            <label class="form-label" id="lblFormEmail" style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 4px;">Email Institucional *</label>
+            <input type="email" id="userFormEmail" class="filter-control" required placeholder="Ex: carlos.mendes@fuelink.co.za" style="width: 100%;">
+          </div>
+          <div>
+            <label class="form-label" id="lblFormPhone" style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 4px;">Número de Telefone</label>
+            <input type="tel" id="userFormPhone" class="filter-control" placeholder="Ex: +27 82 123 4567" style="width: 100%;">
+          </div>
+          <div id="passwordFieldGroup">
+            <label class="form-label" id="lblFormPassword" style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 4px;">Palavra-passe Inicial *</label>
+            <input type="password" id="userFormPassword" class="filter-control" placeholder="Mínimo de 8 caracteres" minlength="8" style="width: 100%;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-action secondary" id="btnCancelUserForm">Cancelar</button>
+          <button type="submit" class="btn-action primary" id="btnSaveUser">Guardar Utilizador</button>
+        </div>
+      </form>
     </div>
   </div>
 
