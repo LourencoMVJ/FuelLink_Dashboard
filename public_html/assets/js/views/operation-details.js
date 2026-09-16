@@ -21,22 +21,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     currentSession = await getSession();
+    if (!currentSession || !currentSession.session) {
+      window.location.href = 'login.html';
+      return;
+    }
   } catch (err) {
-    console.warn('getSession error:', err);
-  }
-
-  if (!currentSession || !currentSession.session) {
-    const localRole = localStorage.getItem('fuellink_current_role') || 'fuellink';
-    currentSession = {
-      role: localRole,
-      session: { user: { email: localRole === 'bakers' ? 'admin@bakers.co.za' : 'admin@fuelink.co.za' } },
-      isAdmin: true
-    };
+    console.warn('getSession error, redirecting to login:', err);
+    window.location.href = 'login.html';
+    return;
   }
 
   setupScreenBranding(currentSession);
   initSidebar('operations', currentSession);
   initHeaderControls('headerControls');
+  applyStaticTranslations();
 
   setupEventListeners();
   await loadOperationDetails();
@@ -460,9 +458,9 @@ function openDocumentPreviewModal(doc) {
           <polyline points="10 9 9 9 8 9"></polyline>
         </svg>
         <h3 style="font-size: 16px; color: #FFFFFF; margin-bottom: 6px;">${doc.name}</h3>
-        <p style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">Documento digitalizado anexado à transação</p>
+        <p style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">${t('docAttachedDesc')}</p>
         <div style="display: inline-flex; gap: 8px; font-size: 11px; padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 20px;">
-          <span>Estado: Verificado</span> - <span>Formato: PDF / Scan</span> - <span>Criptografia: SHA-256</span>
+          <span>${t('statusVerified')}</span> - <span>${t('formatPdfScan')}</span> - <span>${t('encryptionSha')}</span>
         </div>
       </div>
     `;
@@ -470,3 +468,51 @@ function openDocumentPreviewModal(doc) {
 
   modal?.classList.add('show');
 }
+
+function applyStaticTranslations() {
+  const ids = {
+    opDetailsPageTitle: 'opDetailsTitle',
+    opDetailsPageSubtitle: 'opDetailsSubtitle',
+    lblTransportFleetTitle: 'transportFleetTitle',
+    lblTruckPlate: 'truckPlateLabel',
+    lblDriver: 'driverLabel',
+    lblTrailer: 'trailerLabel',
+    lblOpDate: 'opDateLabel',
+    lblRouteLogisticsTitle: 'routeLogisticsTitle',
+    lblRoutePath: 'routePathLabel',
+    lblCargoType: 'cargoTypeLabel',
+    lblStandardCapacity: 'standardCapacityLabel',
+    lblBaseRate: 'baseRateLabel',
+    lblVolumesBillingTitle: 'volumesBillingTitle',
+    lblOrderedVolume: 'orderedVolumeLabel',
+    lblLoadedVolume: 'loadedVolumeLabel',
+    lblOffloadedVolume: 'offloadedVolumeLabel',
+    lblDifferenceBreakage: 'differenceBreakageLabel',
+    lblTotalPayableDelivery: 'totalPayableDeliveryLabel',
+    lblLitresSold: 'litresSoldCol',
+    lblDieselPrice: 'dieselPricePerLitreLabel',
+    lblTotalSoldAmount: 'totalSaleAmountLabel',
+    lblNotesAuditTitle: 'notesAuditTitle',
+    lblReferenceNotes: 'referenceNotesLabel',
+    lblEnteredBy: 'enteredByLabel',
+    lblRegistrationDate: 'registrationDateLabel',
+    lblProofsDocumentsTitle: 'proofsAndDocumentsTitle',
+    previewModalTitle: 'docPreviewTitle',
+    btnClosePreviewBtn: 'close',
+    lblDownloadDocBtn: 'downloadDocBtn'
+  };
+
+  for (const [domId, key] of Object.entries(ids)) {
+    const el = document.getElementById(domId);
+    if (el) el.textContent = t(key);
+  }
+
+  const backLink = document.getElementById('btnBackToOps');
+  if (backLink) {
+    backLink.setAttribute('title', t('backToOps'));
+    backLink.setAttribute('aria-label', t('backToOps'));
+    const tooltip = backLink.querySelector('.custom-tooltip');
+    if (tooltip) tooltip.textContent = t('backToOps');
+  }
+}
+

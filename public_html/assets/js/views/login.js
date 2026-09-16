@@ -1,4 +1,4 @@
-import { signIn, getSession, ROLE_PRESETS } from '../core/auth.js';
+import { signIn, getSession, validateSessionOrBlock, ROLE_PRESETS } from '../core/auth.js';
 import { getCurrentLanguage, setLanguage, t } from '../core/i18n.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -78,9 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (passwordInput) passwordInput.placeholder = t('passwordPlaceholder');
   }
 
-  // Check if session already exists
+  // Check if session already exists (do not show expired modal on the login page itself)
   try {
-    const active = await getSession();
+    const active = await validateSessionOrBlock(false);
     if (active && active.session) {
       redirectToDashboard();
       return;
@@ -156,13 +156,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const password = passwordInput.value;
 
     if (!email) {
-      showAlert('Por favor, introduza o seu email institucional.');
+      showAlert(t('fillEmail'));
       emailInput.focus();
       return;
     }
 
     if (!password) {
-      showAlert('Por favor, introduza a sua palavra-passe.');
+      showAlert(t('fillPassword'));
       passwordInput.focus();
       return;
     }
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const { user, role } = await signIn(email, password);
       setLoading(false);
-      btnText.textContent = 'Autenticado com sucesso!';
+      btnText.textContent = t('authenticatedSuccess');
       
       setTimeout(() => {
         redirectToDashboard();
@@ -187,10 +187,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitBtn.disabled = isLoading;
     if (isLoading) {
       submitBtn.classList.add('is-loading');
-      btnText.textContent = 'A validar credenciais...';
+      btnText.textContent = t('authenticating');
     } else {
       submitBtn.classList.remove('is-loading');
-      btnText.textContent = 'Iniciar Sessão';
+      btnText.textContent = t('signInBtn');
     }
   }
 
@@ -205,12 +205,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function formatErrorMessage(msg) {
-    if (!msg) return 'Ocorreu um erro ao tentar autenticar.';
-    if (msg.includes('Invalid login credentials')) {
-      return 'Email ou palavra-passe incorretos. Por favor, verifique e tente novamente.';
+    if (!msg) return t('authGenericError');
+    if (msg === 'WRONG_TEST_PASSWORD') {
+      return t('wrongTestPassword');
+    }
+    if (msg.includes('Invalid login credentials') || msg === 'Credenciais inválidas.') {
+      return t('invalidCredentials');
     }
     if (msg.includes('Email not confirmed')) {
-      return 'O seu endereço de email ainda não foi confirmado.';
+      return t('emailNotConfirmed');
     }
     return msg;
   }

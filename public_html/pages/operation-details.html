@@ -119,25 +119,25 @@
                   <circle cx="5.5" cy="18.5" r="2.5"></circle>
                   <circle cx="18.5" cy="18.5" r="2.5"></circle>
                 </svg>
-                Transporte e Frota
+                <span id="lblTransportFleetTitle">Transporte e Frota</span>
               </h2>
             </div>
 
             <div class="details-data-grid">
               <div class="details-data-item">
-                <span class="details-data-label">Camião / Matrícula</span>
+                <span class="details-data-label" id="lblTruckPlate">Camião / Matrícula</span>
                 <span class="details-data-value" id="valTruck">---</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Motorista</span>
+                <span class="details-data-label" id="lblDriver">Motorista</span>
                 <span class="details-data-value" id="valDriver">---</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Reboque / Trela</span>
+                <span class="details-data-label" id="lblTrailer">Reboque / Trela</span>
                 <span class="details-data-value" id="valTrailer">---</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Data da Operação</span>
+                <span class="details-data-label" id="lblOpDate">Data da Operação</span>
                 <span class="details-data-value" id="valDate">---</span>
               </div>
             </div>
@@ -150,25 +150,25 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
                 </svg>
-                Rota e Logística
+                <span id="lblRouteLogisticsTitle">Rota e Logística</span>
               </h2>
             </div>
 
             <div class="details-data-grid">
               <div class="details-data-item full-width" style="grid-column: 1 / -1;">
-                <span class="details-data-label">Itinerário da Rota</span>
+                <span class="details-data-label" id="lblRoutePath">Itinerário da Rota</span>
                 <span class="details-data-value" id="valRoutePath" style="font-size: 16px;">---</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Tipo de Carga</span>
+                <span class="details-data-label" id="lblCargoType">Tipo de Carga</span>
                 <span class="details-data-value" id="valCargo">Diesel 50ppm</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Capacidade Padrão</span>
+                <span class="details-data-label" id="lblStandardCapacity">Capacidade Padrão</span>
                 <span class="details-data-value" id="valPayload">40 000 L</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Taxa Base (R / Litro)</span>
+                <span class="details-data-label" id="lblBaseRate">Taxa Base (R / Litro)</span>
                 <span class="details-data-value" id="valBaseRate">R 1,45</span>
               </div>
             </div>
@@ -183,30 +183,30 @@
                   <line x1="12" y1="20" x2="12" y2="4"></line>
                   <line x1="6" y1="20" x2="6" y2="14"></line>
                 </svg>
-                Volumes e Faturação
+                <span id="lblVolumesBillingTitle">Volumes e Faturação</span>
               </h2>
             </div>
 
             <!-- Bankers Tankers Volume Breakdown -->
             <div class="details-data-grid" id="bakersVolumeGrid">
               <div class="details-data-item">
-                <span class="details-data-label">Volume Encomendado (Ordem)</span>
+                <span class="details-data-label" id="lblOrderedVolume">Volume Encomendado (Ordem)</span>
                 <span class="details-data-value" id="valOrderAmt">0 L</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Volume Carregado</span>
+                <span class="details-data-label" id="lblLoadedVolume">Volume Carregado</span>
                 <span class="details-data-value" id="valLoadedAmt">0 L</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Volume Descarregado (Entregue)</span>
+                <span class="details-data-label" id="lblOffloadedVolume">Volume Descarregado (Entregue)</span>
                 <span class="details-data-value" id="valOffloadedAmt">0 L</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Diferença / Quebra (Loaded - Offloaded)</span>
+                <span class="details-data-label" id="lblDifferenceBreakage">Diferença / Quebra (Loaded - Offloaded)</span>
                 <span class="details-data-value" id="valDiffAmt">0 L</span>
               </div>
               <div class="details-data-item full-width" style="grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--border-subtle);">
-                <span class="details-data-label">Valor Total a Entregar (Offloaded × Taxa)</span>
+                <span class="details-data-label" id="lblTotalPayableDelivery">Valor Total a Entregar (Offloaded × Taxa)</span>
                 <span class="details-data-value highlight-amount" id="valCalculatedDelivery">R 0,00</span>
               </div>
             </div>
@@ -214,15 +214,15 @@
             <!-- FuelLink Volume Breakdown -->
             <div class="details-data-grid" id="fuellinkVolumeGrid" style="display: none;">
               <div class="details-data-item">
-                <span class="details-data-label">Litros Vendidos</span>
+                <span class="details-data-label" id="lblLitresSold">Litros Vendidos</span>
                 <span class="details-data-value" id="valLitresSold">0 L</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Preço por Litro</span>
+                <span class="details-data-label" id="lblDieselPrice">Preço por Litro</span>
                 <span class="details-data-value" id="valDieselPrice">R 27,61 / L</span>
               </div>
               <div class="details-data-item full-width" style="grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--border-subtle);">
-                <span class="details-data-label">Valor Total da Venda</span>
+                <span class="details-data-label" id="lblTotalSoldAmount">Valor Total da Venda</span>
                 <span class="details-data-value highlight-amount" id="valTotalSoldAmount">R 0,00</span>
               </div>
             </div>
@@ -239,21 +239,21 @@
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                Notas e Auditoria
+                <span id="lblNotesAuditTitle">Notas e Auditoria</span>
               </h2>
             </div>
 
             <div class="details-data-grid">
               <div class="details-data-item full-width" style="grid-column: 1 / -1;">
-                <span class="details-data-label">Referência / Observações</span>
+                <span class="details-data-label" id="lblReferenceNotes">Referência / Observações</span>
                 <span class="details-data-value" id="valNote">Nenhuma observação registada</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Registado Por</span>
+                <span class="details-data-label" id="lblEnteredBy">Registado Por</span>
                 <span class="details-data-value" id="valEnteredBy">---</span>
               </div>
               <div class="details-data-item">
-                <span class="details-data-label">Data de Registo</span>
+                <span class="details-data-label" id="lblRegistrationDate">Data de Registo</span>
                 <span class="details-data-value" id="valCreatedAt">---</span>
               </div>
             </div>
@@ -270,7 +270,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                 </svg>
-                Comprovativos e Documentos
+                <span id="lblProofsDocumentsTitle">Comprovativos e Documentos</span>
               </h2>
             </div>
 
@@ -299,7 +299,7 @@
       <div class="form-modal-actions" style="margin-top: 14px;">
         <button type="button" class="btn-filter-reset" id="btnClosePreviewBtn">Fechar</button>
         <a id="btnDownloadCurrentDoc" href="#" download class="btn-primary-action" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-          Descarregar Ficheiro
+          <span id="lblDownloadDocBtn">Descarregar Ficheiro</span>
         </a>
       </div>
     </div>

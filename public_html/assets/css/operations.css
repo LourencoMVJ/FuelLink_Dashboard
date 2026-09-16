@@ -793,13 +793,16 @@ body.role-bakers .btn-page.active {
 .export-format-card:hover,
 .export-format-card.selected {
   background: var(--bg-surface);
-  border-color: var(--theme-fl);
-  box-shadow: 0 6px 18px rgba(42, 120, 214, 0.15);
+  border-color: var(--primary-fuellink);
+  box-shadow: 0 6px 18px var(--primary-fuellink-glow);
 }
 
-.export-format-card.bakers.selected {
-  border-color: var(--theme-bt);
-  box-shadow: 0 6px 18px rgba(235, 104, 52, 0.15);
+body.role-bakers .export-format-card.selected,
+body.role-bakers .export-format-card:hover,
+[data-company="bakers"] .export-format-card.selected,
+[data-company="bakers"] .export-format-card:hover {
+  border-color: var(--primary-bakers) !important;
+  box-shadow: 0 6px 18px var(--primary-bakers-glow) !important;
 }
 
 .export-icon-box {
@@ -1110,4 +1113,26 @@ body.role-bakers[data-theme="dark"] .qa-item-icon,
   cursor: pointer;
   user-select: none;
 }
+
+/* Export Modal Button & Card Theme Overrides */
+#btnExecuteExport {
+  background: var(--primary-fuellink);
+  color: #FFFFFF;
+}
+
+#btnExecuteExport:hover {
+  background: var(--primary-fuellink-hover);
+}
+
+body.role-bakers #btnExecuteExport,
+[data-company="bakers"] #btnExecuteExport {
+  background: var(--primary-bakers) !important;
+  color: #FFFFFF !important;
+}
+
+body.role-bakers #btnExecuteExport:hover,
+[data-company="bakers"] #btnExecuteExport:hover {
+  background: var(--primary-bakers-hover) !important;
+}
+
 

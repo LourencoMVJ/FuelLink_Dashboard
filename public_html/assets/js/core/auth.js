@@ -128,7 +128,7 @@ export async function signIn(email, password) {
       localStorage.setItem('fuellink_local_session', JSON.stringify(mockSession));
       return { user: mockSession.user, role: mock.role, isAdmin: mockSession.isAdmin };
     } else {
-      throw new Error('Palavra-passe incorreta para conta de teste.');
+      throw new Error('WRONG_TEST_PASSWORD');
     }
   }
 
@@ -186,6 +186,12 @@ export async function fetchProfile(accessToken) {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
 
+  if (res.status === 401) {
+    const err = new Error('SESSION_EXPIRED');
+    err.status = 401;
+    throw err;
+  }
+
   let envelope = null;
   try {
     envelope = await res.json();
@@ -201,11 +207,14 @@ export async function fetchProfile(accessToken) {
 }
 
 /**
- * Get current session and role if signed in
- * @returns {Promise<{session: object, role: string, isAdmin: boolean}|null>}
+ * Validates the active user session against the backend immediately.
+ * If the session is expired or revoked (401), triggers the global session expired modal and returns null.
+ * Also handles mock test sessions gracefully.
+ * @param {boolean} [showModalOnExpire=true]
+ * @returns {Promise<{session: object, role: string, isAdmin: boolean, permissions: string[]}|null>}
  */
-export async function getSession() {
-  // Check local mock session first
+export async function validateSessionOrBlock(showModalOnExpire = true) {
+  // Check local mock test accounts first
   const localSaved = localStorage.getItem('fuellink_local_session');
   if (localSaved) {
     try {
@@ -223,10 +232,15 @@ export async function getSession() {
     }
   }
 
-  if (!sb) return null;
+  // Supabase live session validation
+  if (!sb) {
+    return null;
+  }
 
   const { data: { session }, error } = await sb.auth.getSession();
-  if (error || !session) return null;
+  if (error || !session) {
+    return null;
+  }
 
   try {
     const profile = await fetchProfile(session.access_token);
@@ -237,14 +251,82 @@ export async function getSession() {
       permissions: profile.permissions || []
     };
   } catch (err) {
-    console.warn('Session found but profile lookup failed, attempting direct role lookup:', err);
+    if (err.status === 401 || err.message === 'SESSION_EXPIRED') {
+      console.warn('Session expired on backend validation (401). Triggering session expired modal.');
+      if (showModalOnExpire) {
+        // Dynamically import sidebar's showSessionExpiredModal to avoid circular dependencies
+        import('./sidebar.js').then(module => {
+          module.showSessionExpiredModal();
+        }).catch(() => {});
+      }
+      return null;
+    }
+    
+    // Fallback if backend /api/me is unreachable or non-401 error
+    console.warn('Backend profile verification returned error, falling back to role query:', err);
     try {
       const role = await fetchUserRole(session.user.id);
-      return { session, role, isAdmin: false };
+      return { session, role, isAdmin: false, permissions: [] };
     } catch (e2) {
-      return { session, role: null, isAdmin: false };
+      return { session, role: null, isAdmin: false, permissions: [] };
     }
   }
+}
+
+/**
+ * Sets up global event listeners for window focus and tab visibility changes
+ * to immediately re-verify backend session validity when the user returns to the tab.
+ */
+export function setupSessionExpiryWatcher() {
+  if (window.__sessionWatcherInitialized) return;
+  window.__sessionWatcherInitialized = true;
+
+  let isChecking = false;
+  const checkSession = async () => {
+    // Only check if user has an active session
+    const hasLocalSession = !!localStorage.getItem('fuellink_local_session');
+    if (hasLocalSession) return; // Local mock test sessions don't expire on backend
+
+    if (isChecking) return;
+    isChecking = true;
+    try {
+      if (sb) {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          await fetchProfile(session.access_token);
+        }
+      }
+    } catch (err) {
+      if (err.status === 401 || err.message === 'SESSION_EXPIRED') {
+        import('./sidebar.js').then(module => {
+          module.showSessionExpiredModal();
+        }).catch(() => {});
+      }
+    } finally {
+      isChecking = false;
+    }
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkSession();
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    checkSession();
+  });
+}
+
+// Automatically start the session watcher
+setupSessionExpiryWatcher();
+
+/**
+ * Get current session and role if signed in
+ * @returns {Promise<{session: object, role: string, isAdmin: boolean}|null>}
+ */
+export async function getSession() {
+  return validateSessionOrBlock(true);
 }
 
 /**
@@ -256,4 +338,5 @@ export async function signOut() {
     await sb.auth.signOut();
   }
 }
+
 

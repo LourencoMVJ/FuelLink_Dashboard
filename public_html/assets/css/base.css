@@ -12,16 +12,16 @@
   --primary-fuellink-glow: rgba(16, 76, 207, 0.35);
 
   /* Brand Palettes - Bankers Tankers */
-  --primary-bakers: #DB7806;
-  --primary-bakers-hover: #B86303;
-  --primary-bakers-light: rgba(219, 120, 6, 0.14);
-  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+  --primary-bakers: #C25E00;
+  --primary-bakers-hover: #9E4500;
+  --primary-bakers-light: rgba(194, 94, 0, 0.12);
+  --primary-bakers-glow: rgba(194, 94, 0, 0.28);
 
   /* Semantic Colors (Light Mode) */
   --color-success: #06A977;
   --color-success-light: rgba(6, 169, 119, 0.14);
-  --color-warning: #DB7806;
-  --color-warning-light: rgba(219, 120, 6, 0.14);
+  --color-warning: #C25E00;
+  --color-warning-light: rgba(194, 94, 0, 0.14);
   --color-danger: #C11A33;
   --color-danger-light: rgba(193, 26, 51, 0.14);
 
@@ -57,34 +57,34 @@
 }
 
 /* ==========================================================================
-   1. Bankers Tankers — Modo Claro (Clay Terminal Warm Palette)
+   1. Bankers Tankers — Modo Claro (Clay Warm Terracotta Palette)
    ========================================================================== */
 [data-company="bakers"],
 body.role-bakers,
 body.bakers-theme {
-  --primary-fuellink: #DB7806;
-  --theme-fl: #DB7806;
-  --theme-fl-hover: #B86303;
-  --theme-fl-light: rgba(219, 120, 6, 0.14);
-  --theme-fl-glow: rgba(219, 120, 6, 0.35);
+  --primary-fuellink: #C25E00;
+  --theme-fl: #C25E00;
+  --theme-fl-hover: #9E4500;
+  --theme-fl-light: rgba(194, 94, 0, 0.12);
+  --theme-fl-glow: rgba(194, 94, 0, 0.28);
 
-  --primary-bakers: #DB7806;
-  --primary-bakers-hover: #B86303;
-  --primary-bakers-light: rgba(219, 120, 6, 0.14);
-  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+  --primary-bakers: #C25E00;
+  --primary-bakers-hover: #9E4500;
+  --primary-bakers-light: rgba(194, 94, 0, 0.12);
+  --primary-bakers-glow: rgba(194, 94, 0, 0.28);
 
-  --bg-body: #F8F4EF;
-  --bg-surface: #FCFBF9;
-  --bg-surface-subtle: #F3F4F6;
+  --bg-body: #F8F5F0;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #F3ECE2;
   --bg-input: #FFFFFF;
 
-  --text-main: #161821;
-  --text-muted: #5A5D68;
-  --text-subtle: #92949D;
+  --text-main: #181512;
+  --text-muted: #57524D;
+  --text-subtle: #8C847B;
 
-  --border-subtle: #EBECEF;
-  --border-focus: #DB7806;
-  --grid-line: #DFE0E5;
+  --border-subtle: #E8E0D5;
+  --border-focus: #C25E00;
+  --grid-line: #DFD7CC;
 }
 
 /* ==========================================================================
@@ -96,16 +96,16 @@ body.bakers-theme {
   --primary-fuellink-light: rgba(103, 146, 241, 0.18);
   --primary-fuellink-glow: rgba(103, 146, 241, 0.35);
 
-  --primary-bakers: #DB7806;
-  --primary-bakers-hover: #F58E18;
-  --primary-bakers-light: rgba(219, 120, 6, 0.18);
-  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+  --primary-bakers: #EA7A18;
+  --primary-bakers-hover: #FB923C;
+  --primary-bakers-light: rgba(234, 122, 24, 0.18);
+  --primary-bakers-glow: rgba(234, 122, 24, 0.35);
 
   /* Semantic Colors (Dark Mode) */
   --color-success: #08F1A9;
   --color-success-light: rgba(8, 241, 169, 0.16);
-  --color-warning: #DB7806;
-  --color-warning-light: rgba(219, 120, 6, 0.16);
+  --color-warning: #EA7A18;
+  --color-warning-light: rgba(234, 122, 24, 0.16);
   --color-danger: #E2334D;
   --color-danger-light: rgba(226, 51, 77, 0.16);
 
@@ -125,37 +125,37 @@ body.bakers-theme {
 }
 
 /* ==========================================================================
-   3. Bankers Tankers — Modo Escuro (Custom Palette)
+   3. Bankers Tankers — Modo Escuro (Warm Amber Dark Palette)
    ========================================================================== */
 [data-theme="dark"][data-company="bakers"],
 [data-theme="dark"] body.role-bakers,
 body.role-bakers[data-theme="dark"],
 [data-theme="dark"] body.bakers-theme,
 [data-theme="dark"] .sidebar-wrapper.bakers ~ .main-content {
-  --primary-fuellink: #DB7806;
-  --theme-fl: #DB7806;
-  --theme-fl-hover: #F58E18;
-  --theme-fl-light: rgba(219, 120, 6, 0.18);
-  --theme-fl-glow: rgba(219, 120, 6, 0.35);
+  --primary-fuellink: #EA7A18;
+  --theme-fl: #EA7A18;
+  --theme-fl-hover: #FB923C;
+  --theme-fl-light: rgba(234, 122, 24, 0.18);
+  --theme-fl-glow: rgba(234, 122, 24, 0.35);
 
-  --primary-bakers: #DB7806;
-  --primary-bakers-hover: #F58E18;
-  --primary-bakers-light: rgba(219, 120, 6, 0.18);
-  --primary-bakers-glow: rgba(219, 120, 6, 0.35);
+  --primary-bakers: #EA7A18;
+  --primary-bakers-hover: #FB923C;
+  --primary-bakers-light: rgba(234, 122, 24, 0.18);
+  --primary-bakers-glow: rgba(234, 122, 24, 0.35);
 
   /* Bankers Custom Dark Surfaces & Neutrals */
-  --bg-body: #27231D;
-  --bg-surface: #28241F;
-  --bg-surface-subtle: #332D27;
-  --bg-input: #332D27;
+  --bg-body: #1E1A16;
+  --bg-surface: #27221C;
+  --bg-surface-subtle: #332B23;
+  --bg-input: #332B23;
 
   --text-main: #FFFFFF;
-  --text-muted: #C7BFB5;
-  --text-subtle: #8E8478;
+  --text-muted: #C8BFB5;
+  --text-subtle: #94887B;
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-focus: #DB7806;
-  --grid-line: #353029;
+  --border-subtle: rgba(255, 237, 213, 0.09);
+  --border-focus: #EA7A18;
+  --grid-line: #383027;
 }
 
 /* Reset & Box Sizing */
@@ -333,4 +333,152 @@ body {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Global Modal Dialogs (Session Expiry & Logout Confirmation)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 15, 26, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  padding: 16px;
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 460px;
+  padding: 24px;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.4);
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(16px) scale(0.98);
+  transition: transform var(--transition-bounce);
+  color: var(--text-main);
+}
+
+.modal-backdrop.show .modal-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.modal-body {
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-close-modal:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+}
+
+.btn-modal-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.btn-modal-action.secondary {
+  background: var(--bg-surface-subtle);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+
+.btn-modal-action.secondary:hover {
+  background: var(--bg-body);
+}
+
+.btn-modal-action.primary {
+  background: var(--primary-fuellink);
+  color: #FFFFFF;
+}
+
+body.role-bakers .btn-modal-action.primary,
+[data-company="bakers"] .btn-modal-action.primary {
+  background: var(--primary-bakers) !important;
+}
+
+.btn-modal-action.primary:hover {
+  background: var(--primary-fuellink-hover);
+}
+
+.btn-modal-action.danger {
+  background: var(--color-danger);
+  color: #FFFFFF;
+}
+
+.btn-modal-action.danger:hover {
+  opacity: 0.9;
+}
+
 

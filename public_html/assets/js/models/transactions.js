@@ -264,8 +264,7 @@ export function mapTransactionRow(t, trucks, drivers) {
     loadedProofPath: t.loaded_proof_path || null,
     loadedProofName: t.loaded_proof_name || null,
     offloadedProofPath: t.offloaded_proof_path || t.delivery_note_path || null,
-    offloadedProofName: t.offloaded_proof_name || t.delivery_note_name || null,
     createdAt: t.created_at
   };
 }
->>>>>>> 6b6614fab47592a4371d2640b524f00364171dec
+

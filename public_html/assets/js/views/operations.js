@@ -14,20 +14,17 @@ let editingTransactionId = null;
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Operations DOMContentLoaded triggered');
 
-  // 1. Auth Guard (with robust local fallback)
+  // 1. Auth Guard (Redirect to login if no valid session)
   try {
     currentSession = await getSession();
+    if (!currentSession || !currentSession.session) {
+      window.location.href = 'login.html';
+      return;
+    }
   } catch (err) {
-    console.warn('getSession error:', err);
-  }
-
-  if (!currentSession || !currentSession.session) {
-    const localRole = localStorage.getItem('fuellink_current_role') || 'fuellink';
-    currentSession = {
-      role: localRole,
-      session: { user: { email: localRole === 'bakers' ? 'admin@bakers.co.za' : 'admin@fuelink.co.za' } },
-      isAdmin: true
-    };
+    console.warn('getSession error, redirecting to login:', err);
+    window.location.href = 'login.html';
+    return;
   }
 
   // 2. Initialize Header Toggles, Sidebar & Screen Branding

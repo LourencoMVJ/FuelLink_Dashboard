@@ -210,6 +210,9 @@ export const translations = {
     fillEmail: "Por favor, introduza o seu email institucional.",
     fillPassword: "Por favor, introduza a sua palavra-passe.",
     invalidCredentials: "Email ou palavra-passe incorretos. Por favor, verifique e tente novamente.",
+    wrongTestPassword: "Palavra-passe incorreta para conta de teste.",
+    emailNotConfirmed: "O seu endereço de email ainda não foi confirmado.",
+    authGenericError: "Ocorreu um erro ao tentar autenticar.",
     
     // Pagination
     showing: "A mostrar",
@@ -261,7 +264,47 @@ export const translations = {
     userPhone: "Número de Telefone",
     userCompany: "Empresa Associada",
     userPassword: "Palavra-passe Inicial",
-    userPasswordHint: "Mínimo de 8 caracteres"
+    userPasswordHint: "Mínimo de 8 caracteres",
+    // Modals: Session Expired & Logout Confirmation
+    sessionExpiredTitle: "Sessão Expirada",
+    sessionExpiredDesc: "A sua sessão de autenticação expirou por motivos de segurança. Por favor, volte a iniciar sessão para continuar.",
+    reconnectBtn: "Iniciar Sessão Novamente",
+    confirmLogoutTitle: "Terminar Sessão",
+    confirmLogoutDesc: "Tem a certeza que deseja terminar a sessão e sair da plataforma?",
+    confirmLogoutBtn: "Sim, Sair",
+    cancelLogoutBtn: "Cancelar",
+    
+    // Operation Details Specific Labels
+    transportFleetTitle: "Transporte e Frota",
+    truckPlateLabel: "Camião / Matrícula",
+    driverLabel: "Motorista",
+    trailerLabel: "Reboque / Trela",
+    opDateLabel: "Data da Operação",
+    routeLogisticsTitle: "Rota e Logística",
+    routePathLabel: "Itinerário da Rota",
+    cargoTypeLabel: "Tipo de Carga",
+    standardCapacityLabel: "Capacidade Padrão",
+    baseRateLabel: "Taxa Base (R / Litro)",
+    volumesBillingTitle: "Volumes e Faturação",
+    orderedVolumeLabel: "Volume Encomendado (Ordem)",
+    loadedVolumeLabel: "Volume Carregado",
+    offloadedVolumeLabel: "Volume Descarregado (Entregue)",
+    differenceBreakageLabel: "Diferença / Quebra (Carregado - Descarregado)",
+    totalPayableDeliveryLabel: "Valor Total a Entregar (Descarregado × Taxa)",
+    dieselPricePerLitreLabel: "Preço por Litro",
+    totalSaleAmountLabel: "Valor Total da Venda",
+    notesAuditTitle: "Notas e Auditoria",
+    referenceNotesLabel: "Referência / Observações",
+    enteredByLabel: "Registado Por",
+    registrationDateLabel: "Data de Registo",
+    proofsAndDocumentsTitle: "Comprovativos e Documentos",
+    docPreviewTitle: "Visualização de Documento",
+    docAttachedDesc: "Documento digitalizado anexado à transação",
+    statusVerified: "Estado: Verificado",
+    formatPdfScan: "Formato: PDF / Scan",
+    encryptionSha: "Criptografia: SHA-256",
+    downloadDocBtn: "Descarregar Ficheiro",
+    noNoteRegistered: "Nenhuma observação registada."
   },
   en: {
     // Header & Controls
@@ -469,6 +512,9 @@ export const translations = {
     fillEmail: "Please enter your corporate email.",
     fillPassword: "Please enter your password.",
     invalidCredentials: "Incorrect email or password. Please verify and try again.",
+    wrongTestPassword: "Incorrect password for test account.",
+    emailNotConfirmed: "Your email address has not been confirmed yet.",
+    authGenericError: "An error occurred while authenticating.",
     
     // Pagination
     showing: "Showing",
@@ -520,7 +566,47 @@ export const translations = {
     userPhone: "Phone Number",
     userCompany: "Associated Company",
     userPassword: "Initial Password",
-    userPasswordHint: "Minimum 8 characters"
+    userPasswordHint: "Minimum 8 characters",
+    // Modals: Session Expired & Logout Confirmation
+    sessionExpiredTitle: "Session Expired",
+    sessionExpiredDesc: "Your authentication session has expired for security reasons. Please sign in again to continue.",
+    reconnectBtn: "Sign In Again",
+    confirmLogoutTitle: "Sign Out",
+    confirmLogoutDesc: "Are you sure you want to sign out and leave the platform?",
+    confirmLogoutBtn: "Yes, Sign Out",
+    cancelLogoutBtn: "Cancel",
+    
+    // Operation Details Specific Labels
+    transportFleetTitle: "Transport & Fleet",
+    truckPlateLabel: "Truck / License Plate",
+    driverLabel: "Driver",
+    trailerLabel: "Trailer",
+    opDateLabel: "Operation Date",
+    routeLogisticsTitle: "Route & Logistics",
+    routePathLabel: "Route Itinerary",
+    cargoTypeLabel: "Cargo Type",
+    standardCapacityLabel: "Standard Capacity",
+    baseRateLabel: "Base Freight Rate (R / Litre)",
+    volumesBillingTitle: "Volumes & Invoicing",
+    orderedVolumeLabel: "Ordered Volume",
+    loadedVolumeLabel: "Loaded Volume",
+    offloadedVolumeLabel: "Delivered Volume (Offloaded)",
+    differenceBreakageLabel: "Loaded vs Delivered Diff",
+    totalPayableDeliveryLabel: "Payable Transport Value (Offloaded × Rate)",
+    dieselPricePerLitreLabel: "Price per Litre",
+    totalSaleAmountLabel: "Total Sales Amount",
+    notesAuditTitle: "Notes & Audit Log",
+    referenceNotesLabel: "Reference / Notes",
+    enteredByLabel: "Recorded By",
+    registrationDateLabel: "Record Timestamp",
+    proofsAndDocumentsTitle: "Proofs & Attached Documents",
+    docPreviewTitle: "Document Preview",
+    docAttachedDesc: "Digitized document attached to transaction",
+    statusVerified: "Status: Verified",
+    formatPdfScan: "Format: PDF / Scan",
+    encryptionSha: "Encryption: SHA-256",
+    downloadDocBtn: "Download File",
+    noNoteRegistered: "No notes recorded."
   }
 };
 

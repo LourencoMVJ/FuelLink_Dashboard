@@ -16,24 +16,17 @@ let trendChartInstance = null;
 let ledgerData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Auth Guard (with graceful local fallback)
+  // 1. Auth Guard (Redirect to login if no valid session)
   try {
     currentSession = await getSession();
     if (!currentSession || !currentSession.session) {
-      const localRole = localStorage.getItem('fuellink_current_role') || 'fuellink';
-      currentSession = {
-        role: localRole,
-        session: { user: { email: localRole === 'bakers' ? 'admin@bakers.co.za' : 'admin@fuelink.co.za' } },
-        isAdmin: true
-      };
+      window.location.href = 'login.html';
+      return;
     }
   } catch (err) {
-    console.warn('Auth verification fallback:', err);
-    currentSession = {
-      role: 'fuellink',
-      session: { user: { email: 'admin@fuelink.co.za' } },
-      isAdmin: true
-    };
+    console.warn('Auth verification failed, redirecting to login:', err);
+    window.location.href = 'login.html';
+    return;
   }
 
   // 2. Init Controls (Theme, Language, Sidebar, Header)
@@ -580,7 +573,10 @@ function renderCharts(transactions, role) {
   });
 
   const monthLabels = MONTH_LABELS[getCurrentLanguage() === 'en' ? 'en' : 'pt'];
-  const themePrimary = role === 'bakers' ? '#DB7806' : '#104CCF';
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const themePrimary = role === 'bakers' 
+    ? (isDark ? '#EA7A18' : '#C25E00') 
+    : (isDark ? '#6792F1' : '#104CCF');
 
   if (donutChartInstance) donutChartInstance.destroy();
 
@@ -663,8 +659,13 @@ function renderVolumeTrendChart(canvas, activeTxs, role) {
     return runningVolume;
   });
 
-  const themeColor = role === 'bakers' ? '#DB7806' : '#104CCF';
-  const themeBg = role === 'bakers' ? 'rgba(219, 120, 6, 0.14)' : 'rgba(16, 76, 207, 0.14)';
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+  const themeColor = role === 'bakers' 
+    ? (isDarkTheme ? '#EA7A18' : '#C25E00') 
+    : (isDarkTheme ? '#6792F1' : '#104CCF');
+  const themeBg = role === 'bakers' 
+    ? (isDarkTheme ? 'rgba(234, 122, 24, 0.18)' : 'rgba(194, 94, 0, 0.12)') 
+    : (isDarkTheme ? 'rgba(103, 146, 241, 0.18)' : 'rgba(16, 76, 207, 0.12)');
 
   return new Chart(canvas, {
     type: 'line',

@@ -5,6 +5,7 @@
  * failure so callers can just try/catch.
  */
 import { sb } from '../config/supabase-client.js';
+import { showSessionExpiredModal } from './sidebar.js';
 
 const API_BASE = '../api';
 
@@ -39,6 +40,12 @@ async function request(path, { method = 'GET', body, isFormData = false } = {}) 
 
   const res = await fetch(`${API_BASE}/${path}`, { method, headers, body: requestBody });
 
+  // Handle Session Expiry (401 Unauthorized)
+  if (res.status === 401) {
+    showSessionExpiredModal();
+    throw new Error('Sessão expirada. Por favor, volte a iniciar sessão.');
+  }
+
   let envelope = null;
   try {
     envelope = await res.json();
@@ -68,6 +75,11 @@ export async function downloadFile(path) {
 
   const res = await fetch(`${API_BASE}/${path}`, { headers });
 
+  if (res.status === 401) {
+    showSessionExpiredModal();
+    throw new Error('Sessão expirada. Por favor, volte a iniciar sessão.');
+  }
+
   if (!res.ok) {
     let message = `Erro ${res.status} ao transferir o ficheiro.`;
     try {
@@ -81,3 +93,4 @@ export async function downloadFile(path) {
 
   return res.blob();
 }
+

@@ -136,12 +136,12 @@
 }
 
 .info-subtitle {
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: clamp(14px, 1.15vw, 16px);
+  line-height: 1.65;
   color: rgba(255, 255, 255, 0.95);
   font-weight: 400;
-  max-width: 340px;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  max-width: 480px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 /* ==========================================================================

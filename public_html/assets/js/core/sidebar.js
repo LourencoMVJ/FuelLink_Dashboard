@@ -157,11 +157,116 @@ export function initSidebar(activePage = 'dashboard', userSession = null) {
     updatePinState(!isPinned);
   });
 
-  // Logout click handler
-  logoutBtn?.addEventListener('click', async (e) => {
+  // Logout click handler -> Shows user-friendly Confirmation Modal
+  logoutBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
-    await signOut();
-    window.location.href = 'login.html';
+    showLogoutConfirmModal();
   });
 }
+
+/**
+ * Shows a user-friendly modal to confirm logout before terminating session
+ */
+export function showLogoutConfirmModal() {
+  let modal = document.getElementById('globalLogoutModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'globalLogoutModal';
+    modal.className = 'modal-backdrop';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.innerHTML = `
+      <div class="modal-dialog" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3 class="modal-title" id="lblGlobalLogoutTitle">${t('confirmLogoutTitle')}</h3>
+          <button type="button" class="btn-close-modal" id="btnCloseGlobalLogoutModal" aria-label="${t('close')}">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="lblGlobalLogoutDesc" style="font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin: 0;">
+            ${t('confirmLogoutDesc')}
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-action secondary" id="btnCancelGlobalLogout">${t('cancelLogoutBtn')}</button>
+          <button type="button" class="btn-modal-action danger" id="btnConfirmGlobalLogout">${t('confirmLogoutBtn')}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.classList.remove('show');
+    modal.querySelector('#btnCloseGlobalLogoutModal')?.addEventListener('click', closeModal);
+    modal.querySelector('#btnCancelGlobalLogout')?.addEventListener('click', closeModal);
+
+    modal.querySelector('#btnConfirmGlobalLogout')?.addEventListener('click', async () => {
+      closeModal();
+      await signOut();
+      window.location.href = 'login.html';
+    });
+  } else {
+    // Refresh texts in case of language change
+    const title = modal.querySelector('#lblGlobalLogoutTitle');
+    const desc = modal.querySelector('#lblGlobalLogoutDesc');
+    const btnCancel = modal.querySelector('#btnCancelGlobalLogout');
+    const btnConfirm = modal.querySelector('#btnConfirmGlobalLogout');
+    if (title) title.textContent = t('confirmLogoutTitle');
+    if (desc) desc.textContent = t('confirmLogoutDesc');
+    if (btnCancel) btnCancel.textContent = t('cancelLogoutBtn');
+    if (btnConfirm) btnConfirm.textContent = t('confirmLogoutBtn');
+  }
+
+  modal.classList.add('show');
+}
+
+/**
+ * Shows a user-friendly modal when backend detects session expiry (401),
+ * clearing session and redirecting cleanly to login on acknowledge.
+ */
+export function showSessionExpiredModal() {
+  let modal = document.getElementById('globalSessionExpiredModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'globalSessionExpiredModal';
+    modal.className = 'modal-backdrop';
+    modal.setAttribute('role', 'alertdialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.innerHTML = `
+      <div class="modal-dialog" style="max-width: 440px; text-align: center;">
+        <div style="margin: 8px auto 16px; width: 48px; height: 48px; border-radius: 50%; background: rgba(226, 51, 77, 0.12); color: var(--color-danger); display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 class="modal-title" id="lblGlobalSessionExpTitle" style="margin-bottom: 8px; font-size: 17px;">${t('sessionExpiredTitle')}</h3>
+        <p id="lblGlobalSessionExpDesc" style="font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
+          ${t('sessionExpiredDesc')}
+        </p>
+        <div style="display: flex; justify-content: center;">
+          <button type="button" class="btn-modal-action primary" id="btnAcknowledgeSessionExp" style="min-width: 200px;">
+            ${t('reconnectBtn')}
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('#btnAcknowledgeSessionExp')?.addEventListener('click', async () => {
+      modal.classList.remove('show');
+      await signOut();
+      window.location.href = 'login.html';
+    });
+  } else {
+    const title = modal.querySelector('#lblGlobalSessionExpTitle');
+    const desc = modal.querySelector('#lblGlobalSessionExpDesc');
+    const btnAck = modal.querySelector('#btnAcknowledgeSessionExp');
+    if (title) title.textContent = t('sessionExpiredTitle');
+    if (desc) desc.textContent = t('sessionExpiredDesc');
+    if (btnAck) btnAck.textContent = t('reconnectBtn');
+  }
+
+  modal.classList.add('show');
+}
+
