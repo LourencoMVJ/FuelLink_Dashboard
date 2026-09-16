@@ -771,64 +771,174 @@ body.role-bakers .btn-page.active {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  margin: 20px 0;
+  margin: 16px 0 20px;
 }
 
 .export-format-card {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
-  border-radius: 16px;
-  border: 2px solid transparent;
-  background: #F8FAFC;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-surface-subtle);
   cursor: pointer;
   transition: all var(--transition-fast);
+  position: relative;
 }
 
 [data-theme="dark"] .export-format-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--bg-surface-subtle);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-.export-format-card:hover,
-.export-format-card.selected {
+[data-theme="dark"][data-company="bakers"] .export-format-card,
+[data-theme="dark"] body.role-bakers .export-format-card,
+body.role-bakers[data-theme="dark"] .export-format-card {
+  background: #332B23;
+  border-color: rgba(255, 237, 213, 0.1);
+}
+
+/* Hover & Selected States - FuelLink */
+.export-format-card:hover {
   background: var(--bg-surface);
   border-color: var(--primary-fuellink);
-  box-shadow: 0 6px 18px var(--primary-fuellink-glow);
+  transform: translateY(-1px);
+}
+
+.export-format-card.selected {
+  background: var(--bg-surface);
+  border-color: var(--primary-fuellink) !important;
+  box-shadow: 0 4px 16px var(--primary-fuellink-light), 0 0 0 1px var(--primary-fuellink) !important;
+}
+
+[data-theme="dark"] .export-format-card.selected {
+  background: rgba(103, 146, 241, 0.12);
+  border-color: var(--primary-fuellink) !important;
+  box-shadow: 0 4px 18px rgba(103, 146, 241, 0.25), 0 0 0 1px var(--primary-fuellink) !important;
+}
+
+/* Hover & Selected States - Bankers Tankers */
+body.role-bakers .export-format-card:hover,
+[data-company="bakers"] .export-format-card:hover {
+  background: var(--bg-surface);
+  border-color: var(--primary-bakers) !important;
+  transform: translateY(-1px);
 }
 
 body.role-bakers .export-format-card.selected,
-body.role-bakers .export-format-card:hover,
-[data-company="bakers"] .export-format-card.selected,
-[data-company="bakers"] .export-format-card:hover {
+[data-company="bakers"] .export-format-card.selected {
+  background: var(--bg-surface);
   border-color: var(--primary-bakers) !important;
-  box-shadow: 0 6px 18px var(--primary-bakers-glow) !important;
+  box-shadow: 0 4px 16px var(--primary-bakers-light), 0 0 0 1px var(--primary-bakers) !important;
+}
+
+[data-theme="dark"] body.role-bakers .export-format-card.selected,
+[data-theme="dark"][data-company="bakers"] .export-format-card.selected,
+body.role-bakers[data-theme="dark"] .export-format-card.selected {
+  background: rgba(234, 122, 24, 0.12) !important;
+  border-color: var(--primary-bakers) !important;
+  box-shadow: 0 4px 18px rgba(234, 122, 24, 0.28), 0 0 0 1px var(--primary-bakers) !important;
 }
 
 .export-icon-box {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.export-icon-box.excel { background: var(--color-success-light); color: var(--color-success); }
-.export-icon-box.pdf { background: var(--color-danger-light); color: var(--color-danger); }
-.export-icon-box.word { background: var(--primary-fuellink-light); color: var(--primary-fuellink); }
+[data-theme="dark"] .export-icon-box {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.export-icon-box.excel-box {
+  background: rgba(6, 169, 119, 0.12);
+  border-color: rgba(6, 169, 119, 0.25);
+}
+
+.export-icon-box.pdf-box {
+  background: rgba(193, 26, 51, 0.12);
+  border-color: rgba(193, 26, 51, 0.25);
+}
+
+.export-icon-box.word-box {
+  background: var(--primary-fuellink-light);
+  border-color: rgba(16, 76, 207, 0.25);
+}
+
+body.role-bakers .export-icon-box.word-box,
+[data-company="bakers"] .export-icon-box.word-box {
+  background: var(--primary-bakers-light);
+  border-color: rgba(194, 94, 0, 0.25);
+}
+
+.export-brand-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.export-details {
+  flex: 1;
+}
 
 .export-details h4 {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  margin-bottom: 2px;
+  color: var(--text-main) !important;
+  margin: 0 0 3px 0;
+  letter-spacing: -0.01em;
 }
 
 .export-details p {
   font-size: 12px;
-  color: #64748B;
+  color: var(--text-muted) !important;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Explicit High-Contrast Dark Mode Typography for Export Modal */
+[data-theme="dark"] #exportModalTitle {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] #exportModalSubtitle {
+  color: rgba(226, 232, 240, 0.85) !important;
+}
+
+[data-theme="dark"] .export-details h4 {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .export-details p {
+  color: #CBD5E1 !important;
+}
+
+/* Bankers Tankers Dark Mode Specific Contrast */
+[data-theme="dark"][data-company="bakers"] #exportModalSubtitle,
+[data-theme="dark"] body.role-bakers #exportModalSubtitle,
+body.role-bakers[data-theme="dark"] #exportModalSubtitle {
+  color: rgba(245, 238, 230, 0.88) !important;
+}
+
+[data-theme="dark"][data-company="bakers"] .export-details h4,
+[data-theme="dark"] body.role-bakers .export-details h4,
+body.role-bakers[data-theme="dark"] .export-details h4 {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"][data-company="bakers"] .export-details p,
+[data-theme="dark"] body.role-bakers .export-details p,
+body.role-bakers[data-theme="dark"] .export-details p {
+  color: #DCD3C7 !important;
 }
 
 /* Table Pagination Bar */
